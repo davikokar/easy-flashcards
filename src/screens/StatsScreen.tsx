@@ -5,14 +5,22 @@ import EmptyState from '../components/EmptyState';
 import SuccessBar from '../components/SuccessBar';
 import { useDecks } from '../state/DecksContext';
 import { StatsStackParamList } from '../navigation/types';
-import { formatDate, formatRate, getDeckStats, getGlobalStats } from '../utils/stats';
+import {
+  EMPTY_SESSION_SUMMARY,
+  formatDate,
+  formatRate,
+  getDeckStats,
+  getGlobalStats,
+  summarizeSessionsByDeck,
+} from '../utils/stats';
 import { colors, radius, spacing } from '../theme';
 
 type Props = NativeStackScreenProps<StatsStackParamList, 'StatsOverview'>;
 
 export default function StatsScreen({ navigation }: Props) {
-  const { decks } = useDecks();
+  const { decks, sessions } = useDecks();
   const global = useMemo(() => getGlobalStats(decks), [decks]);
+  const sessionsByDeck = useMemo(() => summarizeSessionsByDeck(sessions), [sessions]);
 
   return (
     <View style={styles.container}>
@@ -30,7 +38,7 @@ export default function StatsScreen({ navigation }: Props) {
                 <Stat label="Decks" value={String(global.deckCount)} />
                 <Stat label="Cards" value={String(global.cardCount)} />
                 <Stat label="Reviews" value={String(global.reviewCount)} />
-                <Stat label="Sessions" value={String(global.sessionCount)} />
+                <Stat label="Sessions" value={String(sessions.length)} />
                 <Stat label="Ok" value={String(global.okCount)} tint={colors.success} />
                 <Stat label="Not Ok" value={String(global.notOkCount)} tint={colors.danger} />
               </View>
@@ -45,6 +53,7 @@ export default function StatsScreen({ navigation }: Props) {
         }
         renderItem={({ item }) => {
           const stats = getDeckStats(item);
+          const summary = sessionsByDeck.get(item.id) ?? EMPTY_SESSION_SUMMARY;
           return (
             <Pressable
               accessibilityRole="button"
@@ -60,8 +69,8 @@ export default function StatsScreen({ navigation }: Props) {
               <View style={styles.metaRow}>
                 <Text style={styles.meta}>{stats.cardCount} cards</Text>
                 <Text style={styles.meta}>{stats.reviewCount} reviews</Text>
-                <Text style={styles.meta}>{item.sessionCount} sessions</Text>
-                <Text style={styles.meta}>Last {formatDate(item.lastStudiedAt)}</Text>
+                <Text style={styles.meta}>{summary.total} sessions</Text>
+                <Text style={styles.meta}>Last {formatDate(summary.lastSessionAt)}</Text>
               </View>
               <Text style={styles.drillDown}>Tap for per-card details</Text>
             </Pressable>

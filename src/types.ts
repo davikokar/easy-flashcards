@@ -13,7 +13,6 @@ export type Deck = {
   sourceFileName: string | null;
   createdAt: number;
   lastStudiedAt: number | null;
-  sessionCount: number;
   cards: Card[];
 };
 
@@ -24,10 +23,38 @@ export type SessionResult = {
   answer: Answer;
 };
 
+/** A learning session: one pass over a snapshot of a deck's cards. */
+export type Session = {
+  id: string;
+  deckId: string;
+  deckName: string;
+  cardIds: string[];
+  results: SessionResult[];
+  startedAt: number;
+  updatedAt: number;
+  completedAt: number | null;
+};
+
 export type DeckStats = {
   cardCount: number;
   reviewCount: number;
   okCount: number;
   notOkCount: number;
   successRate: number | null;
+};
+
+export type SessionSummary = {
+  total: number;
+  active: number;
+  completed: number;
+  lastSessionAt: number | null;
+};
+
+export type SessionStats = {
+  cardCount: number;
+  answered: number;
+  okCount: number;
+  notOkCount: number;
+  successRate: number | null;
+  isActive: boolean;
 };

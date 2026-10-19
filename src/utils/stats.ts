@@ -1,4 +1,4 @@
-import { Card, Deck, DeckStats } from '../types';
+import { Card, Deck, DeckStats, Session, SessionStats, SessionSummary } from '../types';
 
 export function cardReviewCount(card: Card): number {
   return card.okCount + card.notOkCount;
@@ -25,7 +25,7 @@ export function getDeckStats(deck: Deck): DeckStats {
   };
 }
 
-export function getGlobalStats(decks: Deck[]): DeckStats & { deckCount: number; sessionCount: number } {
+export function getGlobalStats(decks: Deck[]): DeckStats & { deckCount: number } {
   const totals = decks.reduce(
     (acc, deck) => {
       const stats = getDeckStats(deck);
@@ -33,10 +33,9 @@ export function getGlobalStats(decks: Deck[]): DeckStats & { deckCount: number; 
         cardCount: acc.cardCount + stats.cardCount,
         okCount: acc.okCount + stats.okCount,
         notOkCount: acc.notOkCount + stats.notOkCount,
-        sessionCount: acc.sessionCount + deck.sessionCount,
       };
     },
-    { cardCount: 0, okCount: 0, notOkCount: 0, sessionCount: 0 },
+    { cardCount: 0, okCount: 0, notOkCount: 0 },
   );
 
   return {
@@ -46,8 +45,91 @@ export function getGlobalStats(decks: Deck[]): DeckStats & { deckCount: number; 
     okCount: totals.okCount,
     notOkCount: totals.notOkCount,
     successRate: successRate(totals.okCount, totals.notOkCount),
-    sessionCount: totals.sessionCount,
   };
+}
+
+export function isSessionActive(session: Session): boolean {
+  return session.completedAt === null;
+}
+
+export function getSessionStats(session: Session): SessionStats {
+  let okCount = 0;
+  for (const result of session.results) {
+    if (result.answer === 'ok') {
+      okCount += 1;
+    }
+  }
+  const notOkCount = session.results.length - okCount;
+  return {
+    cardCount: session.cardIds.length,
+    answered: session.results.length,
+    okCount,
+    notOkCount,
+    successRate: successRate(okCount, notOkCount),
+    isActive: isSessionActive(session),
+  };
+}
+
+export function summarizeSessions(sessions: Session[]): SessionSummary {
+  let active = 0;
+  let lastSessionAt: number | null = null;
+  for (const session of sessions) {
+    if (isSessionActive(session)) {
+      active += 1;
+    }
+    if (lastSessionAt === null || session.startedAt > lastSessionAt) {
+      lastSessionAt = session.startedAt;
+    }
+  }
+  return {
+    total: sessions.length,
+    active,
+    completed: sessions.length - active,
+    lastSessionAt,
+  };
+}
+
+/** One pass over the sessions so a deck list can render in linear time. */
+export function summarizeSessionsByDeck(sessions: Session[]): Map<string, SessionSummary> {
+  const byDeck = new Map<string, SessionSummary>();
+  for (const session of sessions) {
+    const summary = byDeck.get(session.deckId) ?? {
+      total: 0,
+      active: 0,
+      completed: 0,
+      lastSessionAt: null,
+    };
+    summary.total += 1;
+    if (isSessionActive(session)) {
+      summary.active += 1;
+    } else {
+      summary.completed += 1;
+    }
+    if (summary.lastSessionAt === null || session.startedAt > summary.lastSessionAt) {
+      summary.lastSessionAt = session.startedAt;
+    }
+    byDeck.set(session.deckId, summary);
+  }
+  return byDeck;
+}
+
+export const EMPTY_SESSION_SUMMARY: SessionSummary = {
+  total: 0,
+  active: 0,
+  completed: 0,
+  lastSessionAt: null,
+};
+
+/** Active sessions first, most recently touched first within each group. */
+export function sortSessions(sessions: Session[]): Session[] {
+  return [...sessions].sort((a, b) => {
+    const activeA = isSessionActive(a);
+    const activeB = isSessionActive(b);
+    if (activeA !== activeB) {
+      return activeA ? -1 : 1;
+    }
+    return b.updatedAt - a.updatedAt;
+  });
 }
 
 export function formatRate(rate: number | null): string {

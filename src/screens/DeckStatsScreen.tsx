@@ -14,6 +14,7 @@ import {
   getDeckStats,
   sortCardsByDifficulty,
   successRate,
+  summarizeSessions,
 } from '../utils/stats';
 import { colors, radius, spacing } from '../theme';
 
@@ -21,7 +22,7 @@ type Props = NativeStackScreenProps<StatsStackParamList, 'DeckStats'>;
 
 export default function DeckStatsScreen({ route, navigation }: Props) {
   const { deckId } = route.params;
-  const { getDeck, resetDeckStats } = useDecks();
+  const { getDeck, sessions, resetDeckStats } = useDecks();
   const deck = getDeck(deckId);
 
   useEffect(() => {
@@ -29,6 +30,10 @@ export default function DeckStatsScreen({ route, navigation }: Props) {
   }, [navigation, deck?.name]);
 
   const cards = useMemo(() => (deck ? sortCardsByDifficulty(deck.cards) : []), [deck]);
+  const sessionSummary = useMemo(
+    () => summarizeSessions(sessions.filter(session => session.deckId === deckId)),
+    [sessions, deckId],
+  );
 
   if (!deck) {
     return (
@@ -46,10 +51,14 @@ export default function DeckStatsScreen({ route, navigation }: Props) {
   const stats = getDeckStats(deck);
 
   const confirmReset = () => {
-    Alert.alert('Reset statistics', `Clear all recorded results for "${deck.name}"?`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Reset', style: 'destructive', onPress: () => resetDeckStats(deck.id) },
-    ]);
+    Alert.alert(
+      'Reset statistics',
+      `Clear all recorded results and sessions for "${deck.name}"?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Reset', style: 'destructive', onPress: () => resetDeckStats(deck.id) },
+      ],
+    );
   };
 
   return (
@@ -66,9 +75,9 @@ export default function DeckStatsScreen({ route, navigation }: Props) {
               <Text style={styles.meta}>{stats.reviewCount} reviews</Text>
               <Text style={[styles.meta, styles.ok]}>{stats.okCount} ok</Text>
               <Text style={[styles.meta, styles.notOk]}>{stats.notOkCount} not ok</Text>
-              <Text style={styles.meta}>{deck.sessionCount} sessions</Text>
+              <Text style={styles.meta}>{sessionSummary.total} sessions</Text>
             </View>
-            <Text style={styles.meta}>Last studied {formatDate(deck.lastStudiedAt)}</Text>
+            <Text style={styles.meta}>Last session {formatDate(sessionSummary.lastSessionAt)}</Text>
             <Text style={styles.sectionTitle}>Cards, hardest first</Text>
             <Button label="Reset statistics" variant="secondary" onPress={confirmReset} />
           </View>

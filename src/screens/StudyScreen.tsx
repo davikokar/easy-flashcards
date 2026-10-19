@@ -7,57 +7,46 @@ import FlipCard from '../components/FlipCard';
 import HistoryStrip from '../components/HistoryStrip';
 import SuccessBar from '../components/SuccessBar';
 import { useDecks } from '../state/DecksContext';
-import { DecksStackParamList } from '../navigation/types';
-import { Answer, Card, SessionResult } from '../types';
+import { LearnStackParamList } from '../navigation/types';
+import { Answer } from '../types';
 import { formatRate, successRate } from '../utils/stats';
 import { colors, radius, spacing } from '../theme';
 
-type Props = NativeStackScreenProps<DecksStackParamList, 'Study'>;
+type Props = NativeStackScreenProps<LearnStackParamList, 'Study'>;
 
 const SWIPE_THRESHOLD = 60;
 
 export default function StudyScreen({ route, navigation }: Props) {
-  const { deckId } = route.params;
-  const { getDeck, commitSession } = useDecks();
-  const deck = getDeck(deckId);
+  const { sessionId } = route.params;
+  const { getSession, getDeck, startSession, recordAnswer } = useDecks();
+  const session = getSession(sessionId);
+  const deck = session ? getDeck(session.deckId) : undefined;
 
-  const [cards] = useState<Card[]>(() => deck?.cards ?? []);
-  const [queue, setQueue] = useState<string[]>(() => (deck?.cards ?? []).map(card => card.id));
+  const queue = useMemo(() => session?.cardIds ?? [], [session?.cardIds]);
+  const results = useMemo(() => session?.results ?? [], [session?.results]);
   // `index` is the frontier: the first card that has not been answered yet.
-  const [index, setIndex] = useState(0);
+  const index = results.length;
   // `viewIndex` is the card on screen, which may be an already answered one.
-  const [viewIndex, setViewIndex] = useState(0);
+  const [viewIndex, setViewIndex] = useState(index);
+  const [shownSessionId, setShownSessionId] = useState(sessionId);
   const [flipped, setFlipped] = useState(false);
-  const [results, setResults] = useState<SessionResult[]>([]);
 
-  const resultsRef = useRef<SessionResult[]>([]);
-  const committedRef = useRef(false);
-  const commitRef = useRef(commitSession);
-  const navStateRef = useRef({ viewIndex: 0, frontier: 0 });
+  // The screen can be reused for another session, so follow the new session's progress.
+  if (shownSessionId !== sessionId) {
+    setShownSessionId(sessionId);
+    setViewIndex(index);
+    setFlipped(false);
+  }
+
+  const navStateRef = useRef({ viewIndex: index, frontier: index });
   const translateX = useRef(new Animated.Value(0)).current;
   const windowWidth = Dimensions.get('window').width;
 
-  useEffect(() => {
-    commitRef.current = commitSession;
-  }, [commitSession]);
-
-  useEffect(() => {
-    resultsRef.current = results;
-  }, [results]);
-
-  const commitPending = useCallback(() => {
-    if (committedRef.current || resultsRef.current.length === 0) {
-      return;
-    }
-    committedRef.current = true;
-    commitRef.current(deckId, resultsRef.current);
-  }, [deckId]);
-
-  // Statistics are saved when the session ends, including an early exit.
-  useEffect(() => () => commitPending(), [commitPending]);
-
-  const cardsById = useMemo(() => new Map(cards.map(card => [card.id, card])), [cards]);
-  const isFinished = index >= queue.length;
+  const cardsById = useMemo(
+    () => new Map((deck?.cards ?? []).map(card => [card.id, card])),
+    [deck?.cards],
+  );
+  const isFinished = queue.length > 0 && index >= queue.length;
   const isReviewing = viewIndex < index;
   const currentCard = isFinished ? undefined : cardsById.get(queue[viewIndex]);
 
@@ -66,27 +55,20 @@ export default function StudyScreen({ route, navigation }: Props) {
   }, [viewIndex, index]);
 
   useEffect(() => {
-    if (isFinished && queue.length > 0) {
-      commitPending();
-    }
-  }, [isFinished, queue.length, commitPending]);
-
-  useEffect(() => {
-    navigation.setOptions({ title: deck?.name ?? 'Study' });
+    navigation.setOptions({ title: deck?.name ?? 'Session' });
   }, [navigation, deck?.name]);
 
   const answer = useCallback(
     (value: Answer) => {
-      const liveCard = cardsById.get(queue[index]);
-      if (!liveCard || viewIndex !== index) {
+      const cardId = queue[index];
+      if (!cardId || viewIndex !== index) {
         return;
       }
-      setResults(previous => [...previous, { cardId: liveCard.id, answer: value }]);
+      recordAnswer(sessionId, cardId, value);
       setFlipped(false);
-      setIndex(previous => previous + 1);
-      setViewIndex(previous => previous + 1);
+      setViewIndex(index + 1);
     },
-    [cardsById, queue, index, viewIndex],
+    [queue, index, viewIndex, recordAnswer, sessionId],
   );
 
   // Slides the current card out, swaps it, then slides the new one in from the other side.
@@ -148,28 +130,24 @@ export default function StudyScreen({ route, navigation }: Props) {
     [slideTo, translateX, windowWidth],
   );
 
-  const restart = useCallback(
-    (cardIds: string[]) => {
-      commitPending();
-      committedRef.current = false;
-      resultsRef.current = [];
-      setResults([]);
-      setQueue(cardIds);
-      setIndex(0);
-      setViewIndex(0);
-      setFlipped(false);
-      translateX.setValue(0);
+  const startAgain = useCallback(
+    (cardIds?: string[]) => {
+      if (!deck) {
+        return;
+      }
+      const next = startSession(deck, cardIds);
+      navigation.replace('Study', { sessionId: next.id });
     },
-    [commitPending, translateX],
+    [deck, navigation, startSession],
   );
 
-  if (!deck || cards.length === 0) {
+  if (!session || !deck || queue.length === 0) {
     return (
       <View style={styles.container}>
         <EmptyState
           title="Nothing to study"
-          message="This deck is no longer available or has no cards."
-          actionLabel="Back to decks"
+          message="This session is no longer available."
+          actionLabel="Back to sessions"
           onAction={() => navigation.goBack()}
         />
       </View>
@@ -200,15 +178,15 @@ export default function StudyScreen({ route, navigation }: Props) {
           {missedIds.length > 0 ? (
             <Button
               label={`Review the ${missedIds.length} missed`}
-              onPress={() => restart(missedIds)}
+              onPress={() => startAgain(missedIds)}
             />
           ) : null}
           <Button
             label="Study the whole deck again"
             variant="secondary"
-            onPress={() => restart(cards.map(card => card.id))}
+            onPress={() => startAgain()}
           />
-          <Button label="Back to decks" variant="secondary" onPress={() => navigation.goBack()} />
+          <Button label="Back to sessions" variant="secondary" onPress={() => navigation.goBack()} />
         </View>
       </View>
     );

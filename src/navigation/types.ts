@@ -2,7 +2,11 @@ import type { NavigatorScreenParams } from '@react-navigation/native';
 
 export type DecksStackParamList = {
   DecksList: undefined;
-  Study: { deckId: string };
+};
+
+export type LearnStackParamList = {
+  LearnList: undefined;
+  Study: { sessionId: string };
 };
 
 export type StatsStackParamList = {
@@ -12,5 +16,6 @@ export type StatsStackParamList = {
 
 export type RootTabParamList = {
   DecksTab: NavigatorScreenParams<DecksStackParamList>;
+  LearnTab: NavigatorScreenParams<LearnStackParamList>;
   StatsTab: NavigatorScreenParams<StatsStackParamList>;
 };

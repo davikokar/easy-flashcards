@@ -7,92 +7,106 @@ import React, {
   useReducer,
   useRef,
 } from 'react';
-import { Deck, SessionResult } from '../types';
+import { Answer, Deck, Session } from '../types';
 import { ParsedCard } from '../utils/csv';
 import { loadDecks, saveDecks } from '../storage/decksStorage';
+import { loadSessions, saveSessions } from '../storage/sessionsStorage';
 
 type State = {
   decks: Deck[];
+  sessions: Session[];
   isLoading: boolean;
   error: string | null;
 };
 
 type Action =
-  | { type: 'loaded'; decks: Deck[] }
+  | { type: 'loaded'; decks: Deck[]; sessions: Session[] }
   | { type: 'loadFailed'; message: string }
   | { type: 'addDeck'; deck: Deck }
   | { type: 'deleteDeck'; deckId: string }
   | { type: 'renameDeck'; deckId: string; name: string }
-  | { type: 'commitSession'; deckId: string; results: SessionResult[]; finishedAt: number }
+  | { type: 'startSession'; session: Session }
+  | { type: 'recordAnswer'; sessionId: string; cardId: string; answer: Answer; at: number }
+  | { type: 'deleteSession'; sessionId: string }
   | { type: 'resetDeckStats'; deckId: string };
 
-const initialState: State = { decks: [], isLoading: true, error: null };
+const initialState: State = { decks: [], sessions: [], isLoading: true, error: null };
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
     case 'loaded':
-      return { decks: action.decks, isLoading: false, error: null };
+      return { decks: action.decks, sessions: action.sessions, isLoading: false, error: null };
     case 'loadFailed':
       return { ...state, isLoading: false, error: action.message };
     case 'addDeck':
       return { ...state, decks: [action.deck, ...state.decks] };
     case 'deleteDeck':
-      return { ...state, decks: state.decks.filter(deck => deck.id !== action.deckId) };
+      return {
+        ...state,
+        decks: state.decks.filter(deck => deck.id !== action.deckId),
+        sessions: state.sessions.filter(session => session.deckId !== action.deckId),
+      };
     case 'renameDeck':
       return {
         ...state,
         decks: state.decks.map(deck =>
           deck.id === action.deckId ? { ...deck, name: action.name } : deck,
         ),
+        sessions: state.sessions.map(session =>
+          session.deckId === action.deckId ? { ...session, deckName: action.name } : session,
+        ),
       };
-    case 'commitSession': {
-      if (action.results.length === 0) {
+    case 'startSession':
+      return { ...state, sessions: [action.session, ...state.sessions] };
+    case 'recordAnswer': {
+      const session = state.sessions.find(item => item.id === action.sessionId);
+      if (!session || session.completedAt !== null) {
         return state;
       }
+      const results = [...session.results, { cardId: action.cardId, answer: action.answer }];
+      const updatedSession: Session = {
+        ...session,
+        results,
+        updatedAt: action.at,
+        completedAt: results.length >= session.cardIds.length ? action.at : null,
+      };
       return {
         ...state,
+        sessions: state.sessions.map(item => (item.id === session.id ? updatedSession : item)),
         decks: state.decks.map(deck => {
-          if (deck.id !== action.deckId) {
+          if (deck.id !== session.deckId) {
             return deck;
-          }
-          const byCard = new Map<string, { ok: number; notOk: number }>();
-          for (const result of action.results) {
-            const entry = byCard.get(result.cardId) ?? { ok: 0, notOk: 0 };
-            if (result.answer === 'ok') {
-              entry.ok += 1;
-            } else {
-              entry.notOk += 1;
-            }
-            byCard.set(result.cardId, entry);
           }
           return {
             ...deck,
-            sessionCount: deck.sessionCount + 1,
-            lastStudiedAt: action.finishedAt,
-            cards: deck.cards.map(card => {
-              const entry = byCard.get(card.id);
-              if (!entry) {
-                return card;
-              }
-              return {
-                ...card,
-                okCount: card.okCount + entry.ok,
-                notOkCount: card.notOkCount + entry.notOk,
-                lastReviewedAt: action.finishedAt,
-              };
-            }),
+            lastStudiedAt: action.at,
+            cards: deck.cards.map(card =>
+              card.id === action.cardId
+                ? {
+                    ...card,
+                    okCount: card.okCount + (action.answer === 'ok' ? 1 : 0),
+                    notOkCount: card.notOkCount + (action.answer === 'notOk' ? 1 : 0),
+                    lastReviewedAt: action.at,
+                  }
+                : card,
+            ),
           };
         }),
       };
     }
+    case 'deleteSession':
+      return {
+        ...state,
+        sessions: state.sessions.filter(session => session.id !== action.sessionId),
+      };
     case 'resetDeckStats':
       return {
         ...state,
+        sessions: state.sessions.filter(session => session.deckId !== action.deckId),
         decks: state.decks.map(deck =>
           deck.id === action.deckId
             ? {
                 ...deck,
-                sessionCount: 0,
                 lastStudiedAt: null,
                 cards: deck.cards.map(card => ({
                   ...card,
@@ -111,10 +125,13 @@ function reducer(state: State, action: Action): State {
 
 type DecksContextValue = State & {
   getDeck: (deckId: string) => Deck | undefined;
+  getSession: (sessionId: string) => Session | undefined;
   addDeck: (input: { name: string; sourceFileName: string | null; cards: ParsedCard[] }) => Deck;
   deleteDeck: (deckId: string) => void;
   renameDeck: (deckId: string, name: string) => void;
-  commitSession: (deckId: string, results: SessionResult[]) => void;
+  startSession: (deck: Deck, cardIds?: string[]) => Session;
+  recordAnswer: (sessionId: string, cardId: string, answer: Answer) => void;
+  deleteSession: (sessionId: string) => void;
   resetDeckStats: (deckId: string) => void;
 };
 
@@ -130,10 +147,10 @@ export function DecksProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
-    loadDecks()
-      .then(decks => {
+    Promise.all([loadDecks(), loadSessions()])
+      .then(([decks, sessions]) => {
         if (!cancelled) {
-          dispatch({ type: 'loaded', decks });
+          dispatch({ type: 'loaded', decks, sessions });
         }
       })
       .catch((error: unknown) => {
@@ -157,10 +174,10 @@ export function DecksProvider({ children }: { children: React.ReactNode }) {
       hasLoaded.current = true;
       return;
     }
-    saveDecks(state.decks).catch(() => {
+    Promise.all([saveDecks(state.decks), saveSessions(state.sessions)]).catch(() => {
       // Persistence failures must not break the running session.
     });
-  }, [state.decks, state.isLoading]);
+  }, [state.decks, state.sessions, state.isLoading]);
 
   const addDeck = useCallback<DecksContextValue['addDeck']>(input => {
     const deck: Deck = {
@@ -169,7 +186,6 @@ export function DecksProvider({ children }: { children: React.ReactNode }) {
       sourceFileName: input.sourceFileName,
       createdAt: Date.now(),
       lastStudiedAt: null,
-      sessionCount: 0,
       cards: input.cards.map(card => ({
         id: createId('card'),
         question: card.question,
@@ -183,18 +199,37 @@ export function DecksProvider({ children }: { children: React.ReactNode }) {
     return deck;
   }, []);
 
+  const startSession = useCallback<DecksContextValue['startSession']>((deck, cardIds) => {
+    const now = Date.now();
+    const session: Session = {
+      id: createId('session'),
+      deckId: deck.id,
+      deckName: deck.name,
+      cardIds: cardIds ?? deck.cards.map(card => card.id),
+      results: [],
+      startedAt: now,
+      updatedAt: now,
+      completedAt: null,
+    };
+    dispatch({ type: 'startSession', session });
+    return session;
+  }, []);
+
   const value = useMemo<DecksContextValue>(
     () => ({
       ...state,
       getDeck: deckId => state.decks.find(deck => deck.id === deckId),
+      getSession: sessionId => state.sessions.find(session => session.id === sessionId),
       addDeck,
       deleteDeck: deckId => dispatch({ type: 'deleteDeck', deckId }),
       renameDeck: (deckId, name) => dispatch({ type: 'renameDeck', deckId, name }),
-      commitSession: (deckId, results) =>
-        dispatch({ type: 'commitSession', deckId, results, finishedAt: Date.now() }),
+      startSession,
+      recordAnswer: (sessionId, cardId, answer) =>
+        dispatch({ type: 'recordAnswer', sessionId, cardId, answer, at: Date.now() }),
+      deleteSession: sessionId => dispatch({ type: 'deleteSession', sessionId }),
       resetDeckStats: deckId => dispatch({ type: 'resetDeckStats', deckId }),
     }),
-    [state, addDeck],
+    [state, addDeck, startSession],
   );
 
   return <DecksContext.Provider value={value}>{children}</DecksContext.Provider>;

@@ -12,6 +12,15 @@ export function DecksIcon({ color }: Props) {
   );
 }
 
+export function LearnIcon({ color }: Props) {
+  return (
+    <View style={styles.container}>
+      <View style={[styles.ring, { borderColor: color }]} />
+      <View style={[styles.play, { borderLeftColor: color }]} />
+    </View>
+  );
+}
+
 export function StatsIcon({ color }: Props) {
   return (
     <View style={[styles.container, styles.bars]}>
@@ -51,6 +60,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-end',
     gap: 3,
+  },
+  ring: {
+    position: 'absolute',
+    width: 20,
+    height: 20,
+    borderWidth: 1.5,
+    borderRadius: 10,
+  },
+  play: {
+    width: 0,
+    height: 0,
+    marginLeft: 3,
+    borderTopWidth: 5,
+    borderBottomWidth: 5,
+    borderLeftWidth: 8,
+    borderTopColor: 'transparent',
+    borderBottomColor: 'transparent',
+    borderRightColor: 'transparent',
   },
   bar: {
     width: 4,

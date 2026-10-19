@@ -1,13 +1,22 @@
 import React from 'react';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { DefaultTheme, NavigationContainer, Theme } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import DecksScreen from '../screens/DecksScreen';
+import LearnScreen from '../screens/LearnScreen';
 import StudyScreen from '../screens/StudyScreen';
 import StatsScreen from '../screens/StatsScreen';
 import DeckStatsScreen from '../screens/DeckStatsScreen';
-import { DecksStackParamList, RootTabParamList, StatsStackParamList } from './types';
-import { DecksIcon, StatsIcon } from './TabIcons';
+import { useDecks } from '../state/DecksContext';
+import { isSessionActive } from '../utils/stats';
+import {
+  DecksStackParamList,
+  LearnStackParamList,
+  RootTabParamList,
+  StatsStackParamList,
+} from './types';
+import { DecksIcon, LearnIcon, StatsIcon } from './TabIcons';
 import { colors } from '../theme';
 
 const navigationTheme: Theme = {
@@ -25,6 +34,7 @@ const navigationTheme: Theme = {
 };
 
 const DecksStack = createNativeStackNavigator<DecksStackParamList>();
+const LearnStack = createNativeStackNavigator<LearnStackParamList>();
 const StatsStack = createNativeStackNavigator<StatsStackParamList>();
 const Tabs = createBottomTabNavigator<RootTabParamList>();
 
@@ -39,8 +49,16 @@ function DecksNavigator() {
   return (
     <DecksStack.Navigator screenOptions={screenOptions}>
       <DecksStack.Screen name="DecksList" component={DecksScreen} options={{ title: 'Decks' }} />
-      <DecksStack.Screen name="Study" component={StudyScreen} options={{ title: 'Study' }} />
     </DecksStack.Navigator>
+  );
+}
+
+function LearnNavigator() {
+  return (
+    <LearnStack.Navigator screenOptions={screenOptions}>
+      <LearnStack.Screen name="LearnList" component={LearnScreen} options={{ title: 'Learn' }} />
+      <LearnStack.Screen name="Study" component={StudyScreen} options={{ title: 'Session' }} />
+    </LearnStack.Navigator>
   );
 }
 
@@ -62,12 +80,27 @@ function StatsNavigator() {
 }
 
 const renderDecksIcon = ({ color }: { color: string }) => <DecksIcon color={color} />;
+const renderLearnIcon = ({ color }: { color: string }) => <LearnIcon color={color} />;
 const renderStatsIcon = ({ color }: { color: string }) => <StatsIcon color={color} />;
 
 export default function RootNavigator() {
+  const { sessions, isLoading } = useDecks();
+
+  // The landing tab depends on persisted sessions, so wait for them before mounting the tabs.
+  if (isLoading) {
+    return (
+      <View style={styles.loading}>
+        <ActivityIndicator color={colors.primary} size="large" />
+      </View>
+    );
+  }
+
+  const hasActiveSession = sessions.some(isSessionActive);
+
   return (
     <NavigationContainer theme={navigationTheme}>
       <Tabs.Navigator
+        initialRouteName={hasActiveSession ? 'LearnTab' : 'DecksTab'}
         screenOptions={{
           headerShown: false,
           tabBarActiveTintColor: colors.primary,
@@ -83,6 +116,14 @@ export default function RootNavigator() {
           }}
         />
         <Tabs.Screen
+          name="LearnTab"
+          component={LearnNavigator}
+          options={{
+            title: 'Learn',
+            tabBarIcon: renderLearnIcon,
+          }}
+        />
+        <Tabs.Screen
           name="StatsTab"
           component={StatsNavigator}
           options={{
@@ -94,3 +135,12 @@ export default function RootNavigator() {
     </NavigationContainer>
   );
 }
+
+const styles = StyleSheet.create({
+  loading: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.background,
+  },
+});

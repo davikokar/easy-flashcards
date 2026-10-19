@@ -1,22 +1,35 @@
-import React, { useCallback, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useMemo, useState } from 'react';
+import { Alert, FlatList, StyleSheet, Text, View } from 'react-native';
+import type { CompositeScreenProps } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import Button from '../components/Button';
 import EmptyState from '../components/EmptyState';
+import KebabMenu from '../components/KebabMenu';
 import SuccessBar from '../components/SuccessBar';
 import { useDecks } from '../state/DecksContext';
-import { DecksStackParamList } from '../navigation/types';
+import { DecksStackParamList, RootTabParamList } from '../navigation/types';
 import { Deck } from '../types';
-import { formatDate, formatRate, getDeckStats } from '../utils/stats';
+import {
+  EMPTY_SESSION_SUMMARY,
+  formatDate,
+  formatRate,
+  getDeckStats,
+  summarizeSessionsByDeck,
+} from '../utils/stats';
 import { CsvImportError } from '../utils/csv';
 import { ImportCancelledError, pickAndParseCsv } from '../services/importDeck';
 import { colors, radius, spacing } from '../theme';
 
-type Props = NativeStackScreenProps<DecksStackParamList, 'DecksList'>;
+type Props = CompositeScreenProps<
+  NativeStackScreenProps<DecksStackParamList, 'DecksList'>,
+  BottomTabScreenProps<RootTabParamList>
+>;
 
 export default function DecksScreen({ navigation }: Props) {
-  const { decks, isLoading, error, addDeck, deleteDeck } = useDecks();
+  const { decks, sessions, error, addDeck, deleteDeck, startSession } = useDecks();
   const [isImporting, setIsImporting] = useState(false);
+  const sessionsByDeck = useMemo(() => summarizeSessionsByDeck(sessions), [sessions]);
 
   const handleImport = useCallback(async () => {
     setIsImporting(true);
@@ -52,21 +65,32 @@ export default function DecksScreen({ navigation }: Props) {
 
   const confirmDelete = useCallback(
     (deck: Deck) => {
-      Alert.alert('Delete deck', `Delete "${deck.name}" and all of its statistics?`, [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete', style: 'destructive', onPress: () => deleteDeck(deck.id) },
-      ]);
+      Alert.alert(
+        'Delete deck',
+        `Delete "${deck.name}", its sessions and all of its statistics?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Delete', style: 'destructive', onPress: () => deleteDeck(deck.id) },
+        ],
+      );
     },
     [deleteDeck],
   );
 
-  if (isLoading) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator color={colors.primary} size="large" />
-      </View>
-    );
-  }
+  const handleStartSession = useCallback(
+    (deck: Deck) => {
+      if (deck.cards.length === 0) {
+        Alert.alert('Empty deck', 'This deck has no cards to learn.');
+        return;
+      }
+      const session = startSession(deck);
+      navigation.navigate('LearnTab', {
+        screen: 'Study',
+        params: { sessionId: session.id },
+      });
+    },
+    [navigation, startSession],
+  );
 
   return (
     <View style={styles.container}>
@@ -97,38 +121,47 @@ export default function DecksScreen({ navigation }: Props) {
         }
         renderItem={({ item }) => {
           const stats = getDeckStats(item);
+          const summary = sessionsByDeck.get(item.id) ?? EMPTY_SESSION_SUMMARY;
           return (
             <View style={styles.card}>
               <View style={styles.cardHeader}>
-                <Text style={styles.deckName} numberOfLines={2}>
-                  {item.name}
-                </Text>
-                <Text style={styles.cardCount}>
-                  {stats.cardCount} card{stats.cardCount === 1 ? '' : 's'}
-                </Text>
+                <View style={styles.cardTitle}>
+                  <Text style={styles.deckName} numberOfLines={2}>
+                    {item.name}
+                  </Text>
+                  <Text style={styles.cardCount}>
+                    {stats.cardCount} card{stats.cardCount === 1 ? '' : 's'}
+                  </Text>
+                </View>
+                <KebabMenu
+                  accessibilityLabel={`Options for ${item.name}`}
+                  items={[
+                    {
+                      label: 'Edit deck',
+                      onPress: () =>
+                        Alert.alert('Edit deck', 'Editing decks is not available yet.'),
+                    },
+                    {
+                      label: 'Delete deck',
+                      destructive: true,
+                      onPress: () => confirmDelete(item),
+                    },
+                  ]}
+                />
               </View>
 
               <SuccessBar rate={stats.successRate} />
 
               <View style={styles.metaRow}>
                 <Text style={styles.meta}>Success {formatRate(stats.successRate)}</Text>
-                <Text style={styles.meta}>Reviews {stats.reviewCount}</Text>
-                <Text style={styles.meta}>Last studied {formatDate(item.lastStudiedAt)}</Text>
+                <Text style={styles.meta}>Sessions {summary.total}</Text>
+                <Text style={[styles.meta, summary.active > 0 && styles.metaActive]}>
+                  Active {summary.active}
+                </Text>
+                <Text style={styles.meta}>Last session {formatDate(summary.lastSessionAt)}</Text>
               </View>
 
-              <View style={styles.actions}>
-                <Button
-                  label="Study"
-                  onPress={() => navigation.navigate('Study', { deckId: item.id })}
-                  style={styles.flexAction}
-                />
-                <Button
-                  label="Delete"
-                  variant="secondary"
-                  onPress={() => confirmDelete(item)}
-                  style={styles.flexAction}
-                />
-              </View>
+              <Button label="Start session" onPress={() => handleStartSession(item)} />
             </View>
           );
         }}
@@ -140,12 +173,6 @@ export default function DecksScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
-  },
-  centered: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
     backgroundColor: colors.background,
   },
   listContent: {
@@ -181,8 +208,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: spacing.sm,
   },
-  deckName: {
+  cardTitle: {
     flex: 1,
+    gap: 2,
+  },
+  deckName: {
     color: colors.text,
     fontSize: 18,
     fontWeight: '700',
@@ -200,12 +230,8 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: 13,
   },
-  actions: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginTop: spacing.xs,
-  },
-  flexAction: {
-    flex: 1,
+  metaActive: {
+    color: colors.primary,
+    fontWeight: '700',
   },
 });
