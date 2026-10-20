@@ -1,11 +1,12 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { Alert, FlatList, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import type { CompositeScreenProps } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import Button from '../components/Button';
 import EmptyState from '../components/EmptyState';
 import KebabMenu from '../components/KebabMenu';
+import MenuSheet from '../components/MenuSheet';
 import SuccessBar from '../components/SuccessBar';
 import { useDecks } from '../state/DecksContext';
 import { DecksStackParamList, RootTabParamList } from '../navigation/types';
@@ -29,6 +30,7 @@ type Props = CompositeScreenProps<
 export default function DecksScreen({ navigation }: Props) {
   const { decks, sessions, error, addDeck, deleteDeck, startSession } = useDecks();
   const [isImporting, setIsImporting] = useState(false);
+  const [openMenu, setOpenMenu] = useState<'add' | 'format' | null>(null);
   const sessionsByDeck = useMemo(() => summarizeSessionsByDeck(sessions), [sessions]);
 
   const handleImport = useCallback(async () => {
@@ -92,31 +94,48 @@ export default function DecksScreen({ navigation }: Props) {
     [navigation, startSession],
   );
 
+  const notYetAvailable = useCallback((format: string) => {
+    Alert.alert(format, 'Only CSV files can be imported for now.');
+  }, []);
+
+  const addMenuItems = useMemo(
+    () => [
+      {
+        label: 'Import deck from file',
+        icon: 'import' as const,
+        onPress: () => setOpenMenu('format'),
+      },
+      {
+        label: 'Add deck manually',
+        icon: 'edit' as const,
+        onPress: () =>
+          Alert.alert('Add deck manually', 'Creating a deck by hand is not available yet.'),
+      },
+    ],
+    [],
+  );
+
+  const formatMenuItems = useMemo(
+    () => [
+      { label: 'CSV', icon: 'file' as const, onPress: handleImport },
+      { label: 'XML', icon: 'file' as const, onPress: () => notYetAvailable('XML') },
+      { label: 'JSON', icon: 'file' as const, onPress: () => notYetAvailable('JSON') },
+      { label: 'JSONL', icon: 'file' as const, onPress: () => notYetAvailable('JSONL') },
+    ],
+    [handleImport, notYetAvailable],
+  );
+
   return (
     <View style={styles.container}>
       <FlatList
         data={decks}
         keyExtractor={deck => deck.id}
         contentContainerStyle={[styles.listContent, decks.length === 0 && styles.listContentEmpty]}
-        ListHeaderComponent={
-          <View style={styles.header}>
-            <Button
-              label="Import deck from CSV"
-              onPress={handleImport}
-              loading={isImporting}
-              disabled={isImporting}
-            />
-            {error ? <Text style={styles.error}>{error}</Text> : null}
-            <Text style={styles.helper}>
-              CSV columns: Question and Answer, separated by a semicolon or a tab. Basic HTML such
-              as {'<b>'}, {'<i>'} and {'<br />'} is rendered on the cards.
-            </Text>
-          </View>
-        }
+        ListHeaderComponent={error ? <Text style={styles.error}>{error}</Text> : undefined}
         ListEmptyComponent={
           <EmptyState
             title="No decks yet"
-            message="Import a CSV file from your device to create your first deck."
+            message="Use the + button to import a deck file and create your first deck."
           />
         }
         renderItem={({ item }) => {
@@ -134,15 +153,18 @@ export default function DecksScreen({ navigation }: Props) {
                   </Text>
                 </View>
                 <KebabMenu
+                  title={item.name}
                   accessibilityLabel={`Options for ${item.name}`}
                   items={[
                     {
                       label: 'Edit deck',
+                      icon: 'edit',
                       onPress: () =>
                         Alert.alert('Edit deck', 'Editing decks is not available yet.'),
                     },
                     {
                       label: 'Delete deck',
+                      icon: 'delete',
                       destructive: true,
                       onPress: () => confirmDelete(item),
                     },
@@ -166,6 +188,29 @@ export default function DecksScreen({ navigation }: Props) {
           );
         }}
       />
+
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Add a deck"
+        disabled={isImporting}
+        onPress={() => setOpenMenu('add')}
+        style={({ pressed }) => [styles.fab, pressed && styles.fabPressed]}>
+        {isImporting ? (
+          <ActivityIndicator color="#0c1118" />
+        ) : (
+          <>
+            <View style={[styles.plusBar, styles.plusBarHorizontal]} />
+            <View style={[styles.plusBar, styles.plusBarVertical]} />
+          </>
+        )}
+      </Pressable>
+
+      <MenuSheet
+        visible={openMenu !== null}
+        title={openMenu === 'format' ? 'Import deck from file' : 'Add a deck'}
+        items={openMenu === 'format' ? formatMenuItems : addMenuItems}
+        onClose={() => setOpenMenu(null)}
+      />
     </View>
   );
 }
@@ -178,17 +223,10 @@ const styles = StyleSheet.create({
   listContent: {
     padding: spacing.md,
     gap: spacing.md,
+    paddingBottom: spacing.xl * 3,
   },
   listContentEmpty: {
     flexGrow: 1,
-  },
-  header: {
-    gap: spacing.sm,
-  },
-  helper: {
-    color: colors.textDim,
-    fontSize: 13,
-    lineHeight: 19,
   },
   error: {
     color: colors.danger,
@@ -233,5 +271,33 @@ const styles = StyleSheet.create({
   metaActive: {
     color: colors.primary,
     fontWeight: '700',
+  },
+  fab: {
+    position: 'absolute',
+    right: spacing.md,
+    bottom: spacing.lg,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 6,
+  },
+  fabPressed: {
+    opacity: 0.8,
+  },
+  plusBar: {
+    position: 'absolute',
+    backgroundColor: '#0c1118',
+    borderRadius: 2,
+  },
+  plusBarHorizontal: {
+    width: 24,
+    height: 3,
+  },
+  plusBarVertical: {
+    width: 3,
+    height: 24,
   },
 });

@@ -1,4 +1,4 @@
-import { fileUriToPath } from '../src/utils/fileUri';
+import { fileUriToPath, pathToFileUri } from '../src/utils/fileUri';
 
 describe('fileUriToPath', () => {
   it('strips the file scheme', () => {
@@ -17,5 +17,17 @@ describe('fileUriToPath', () => {
 
   it('leaves a stray percent sign untouched', () => {
     expect(fileUriToPath('/cache/100%.csv')).toBe('/cache/100%.csv');
+  });
+});
+
+describe('pathToFileUri', () => {
+  it('adds the file scheme and keeps the separators', () => {
+    expect(pathToFileUri('/data/user/0/app/cache/deck.csv')).toBe(
+      'file:///data/user/0/app/cache/deck.csv',
+    );
+  });
+
+  it('percent-encodes the segments', () => {
+    expect(pathToFileUri('/cache/german words.csv')).toBe('file:///cache/german%20words.csv');
   });
 });

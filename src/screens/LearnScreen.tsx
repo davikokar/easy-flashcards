@@ -104,11 +104,13 @@ export default function LearnScreen({ navigation }: Props) {
                   </Text>
                 </View>
                 <KebabMenu
+                  title={item.deckName}
                   accessibilityLabel={`Options for the ${item.deckName} session`}
                   items={[
-                    { label: 'Start a new session', onPress: () => restart(item) },
+                    { label: 'Start a new session', icon: 'play', onPress: () => restart(item) },
                     {
                       label: stats.isActive ? 'Discard session' : 'Delete session',
+                      icon: 'delete',
                       destructive: true,
                       onPress: () => confirmDelete(item),
                     },

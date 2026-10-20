@@ -6,3 +6,7 @@ export function fileUriToPath(uri: string): string {
   const path = uri.replace(/^file:\/\//, '');
   return path.replace(/(?:%[0-9a-fA-F]{2})+/g, escaped => decodeURIComponent(escaped));
 }
+
+export function pathToFileUri(path: string): string {
+  return `file://${path.split('/').map(encodeURIComponent).join('/')}`;
+}
