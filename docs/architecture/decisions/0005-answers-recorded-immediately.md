@@ -84,10 +84,25 @@ that needs handling; it is just navigation.
 - A partially-answered session is a durable object the user has to deal with, which is why the
   Learn screen needs a discard action at all.
 
+## Amendment 1 — 2026-10-26
+
+[ADR-0007](0007-okeish-third-answer.md) adds a third answer, **Okeish** (`'okeish'`). The decision
+above is unchanged — the answer is still written immediately, in one dispatch, with no commit step.
+One line of what that dispatch does has changed:
+
+- it increments **exactly one** of the card's `okCount`, `okeishCount` or `notOkCount`, chosen by
+  the answer, and sets its `lastReviewedAt`.
+
+An Okeish answer is an answer like the other two in every other respect: it is appended to
+`session.results`, it counts towards `results.length` and therefore towards completion, and it sets
+the deck's `lastStudiedAt`. The *no undo* consequence applies to it unchanged — a mis-tapped Okeish
+is already in the counters.
+
 ## References
 
 - [`src/state/DecksContext.tsx`](../../../src/state/DecksContext.tsx) — the `recordAnswer` case
 - [`src/screens/StudyScreen.tsx`](../../../src/screens/StudyScreen.tsx)
 - [`src/utils/stats.ts`](../../../src/utils/stats.ts) — `isSessionActive`, `getSessionStats`
 - [ADR-0002](0002-sessions-are-snapshots.md) — what is being written into
+- [ADR-0007](0007-okeish-third-answer.md) — the third answer (Amendment 1)
 - [ARCHITECTURE.md §2](../ARCHITECTURE.md)

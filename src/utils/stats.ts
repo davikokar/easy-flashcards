@@ -1,27 +1,43 @@
-import { Card, Deck, DeckStats, Session, SessionStats, SessionSummary } from '../types';
+import {
+  AnswerTally,
+  Card,
+  Deck,
+  DeckStats,
+  Session,
+  SessionStats,
+  SessionSummary,
+} from '../types';
 
 export function cardReviewCount(card: Card): number {
-  return card.okCount + card.notOkCount;
+  return card.okCount + card.okeishCount + card.notOkCount;
 }
 
-export function successRate(okCount: number, notOkCount: number): number | null {
-  const total = okCount + notOkCount;
+/** Only Ok earns credit; Okeish is a review that counts for nothing. */
+export function successRate(
+  okCount: number,
+  okeishCount: number,
+  notOkCount: number,
+): number | null {
+  const total = okCount + okeishCount + notOkCount;
   return total === 0 ? null : (okCount / total) * 100;
 }
 
 export function getDeckStats(deck: Deck): DeckStats {
   let okCount = 0;
+  let okeishCount = 0;
   let notOkCount = 0;
   for (const card of deck.cards) {
     okCount += card.okCount;
+    okeishCount += card.okeishCount;
     notOkCount += card.notOkCount;
   }
   return {
     cardCount: deck.cards.length,
-    reviewCount: okCount + notOkCount,
+    reviewCount: okCount + okeishCount + notOkCount,
     okCount,
+    okeishCount,
     notOkCount,
-    successRate: successRate(okCount, notOkCount),
+    successRate: successRate(okCount, okeishCount, notOkCount),
   };
 }
 
@@ -32,19 +48,21 @@ export function getGlobalStats(decks: Deck[]): DeckStats & { deckCount: number }
       return {
         cardCount: acc.cardCount + stats.cardCount,
         okCount: acc.okCount + stats.okCount,
+        okeishCount: acc.okeishCount + stats.okeishCount,
         notOkCount: acc.notOkCount + stats.notOkCount,
       };
     },
-    { cardCount: 0, okCount: 0, notOkCount: 0 },
+    { cardCount: 0, okCount: 0, okeishCount: 0, notOkCount: 0 },
   );
 
   return {
     deckCount: decks.length,
     cardCount: totals.cardCount,
-    reviewCount: totals.okCount + totals.notOkCount,
+    reviewCount: totals.okCount + totals.okeishCount + totals.notOkCount,
     okCount: totals.okCount,
+    okeishCount: totals.okeishCount,
     notOkCount: totals.notOkCount,
-    successRate: successRate(totals.okCount, totals.notOkCount),
+    successRate: successRate(totals.okCount, totals.okeishCount, totals.notOkCount),
   };
 }
 
@@ -52,20 +70,35 @@ export function isSessionActive(session: Session): boolean {
   return session.completedAt === null;
 }
 
-export function getSessionStats(session: Session): SessionStats {
-  let okCount = 0;
+export function getSessionTally(session: Session): AnswerTally {
+  const tally: AnswerTally = { okCount: 0, okeishCount: 0, notOkCount: 0 };
   for (const result of session.results) {
     if (result.answer === 'ok') {
-      okCount += 1;
+      tally.okCount += 1;
+    } else if (result.answer === 'okeish') {
+      tally.okeishCount += 1;
+    } else {
+      tally.notOkCount += 1;
     }
   }
-  const notOkCount = session.results.length - okCount;
+  return tally;
+}
+
+/** Cards answered Not Ok or Okeish, once each, in the order they were answered. */
+export function getMissedOrUnsureCardIds(session: Session): string[] {
+  const missed = session.results.filter(result => result.answer !== 'ok');
+  return [...new Set(missed.map(result => result.cardId))];
+}
+
+export function getSessionStats(session: Session): SessionStats {
+  const { okCount, okeishCount, notOkCount } = getSessionTally(session);
   return {
     cardCount: session.cardIds.length,
     answered: session.results.length,
     okCount,
+    okeishCount,
     notOkCount,
-    successRate: successRate(okCount, notOkCount),
+    successRate: successRate(okCount, okeishCount, notOkCount),
     isActive: isSessionActive(session),
   };
 }
@@ -143,7 +176,10 @@ export function formatDate(timestamp: number | null): string {
   return new Date(timestamp).toLocaleDateString();
 }
 
-/** Hardest first: lowest success rate, then most reviewed. Unseen cards last. */
+/**
+ * Hardest first: lowest success rate, then most reviewed, then most Not Ok.
+ * Unseen cards last. Remaining ties keep input order (Array.sort is stable).
+ */
 export function sortCardsByDifficulty(cards: Card[]): Card[] {
   return [...cards].sort((a, b) => {
     const reviewsA = cardReviewCount(a);
@@ -157,8 +193,14 @@ export function sortCardsByDifficulty(cards: Card[]): Card[] {
     if (reviewsB === 0) {
       return -1;
     }
-    const rateA = successRate(a.okCount, a.notOkCount) ?? 100;
-    const rateB = successRate(b.okCount, b.notOkCount) ?? 100;
-    return rateA === rateB ? reviewsB - reviewsA : rateA - rateB;
+    const rateA = (a.okCount / reviewsA) * 100;
+    const rateB = (b.okCount / reviewsB) * 100;
+    if (rateA !== rateB) {
+      return rateA - rateB;
+    }
+    if (reviewsA !== reviewsB) {
+      return reviewsB - reviewsA;
+    }
+    return b.notOkCount - a.notOkCount;
   });
 }

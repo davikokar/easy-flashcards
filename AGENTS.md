@@ -18,7 +18,8 @@ explain non-obvious decisions in short commit messages.
   [package.json](package.json) — read it rather than restating one here.**
 - **UI:** plain React Native primitives (`View`, `Text`, `Pressable`, `FlatList`, `Modal`,
   `Animated`). There is **no UI component library and no icon font** — every icon in the app is
-  drawn from nested `View`s in [src/components/MenuIcons.tsx](src/components/MenuIcons.tsx) and
+  drawn from nested `View`s in [src/components/MenuIcons.tsx](src/components/MenuIcons.tsx),
+  [src/components/AnswerIcons.tsx](src/components/AnswerIcons.tsx) and
   [src/navigation/TabIcons.tsx](src/navigation/TabIcons.tsx).
 - **Navigation:** React Navigation — one bottom tab navigator, one native stack per tab.
 - **State:** one React Context over `useReducer`, in
@@ -153,7 +154,9 @@ discovered.
   difficulty rankings all live as pure functions in [src/utils/stats.ts](src/utils/stats.ts) and
   are called from a `useMemo` in the screen. Putting a derived number into the stored shape means
   persisting something that can go stale; the counters on a `Card` are the only stored tallies, and
-  they are raw.
+  they are raw — one per `Answer`. Okeish is a review that earns no credit in a success rate
+  ([ADR-0007](docs/architecture/decisions/0007-okeish-third-answer.md)); count answers with the
+  three-way helpers in `stats.ts`, never as "Ok, else Not Ok".
 - **Screens are the stateful half; components are the stateless half.** A `*Screen` calls
   `useDecks()` and `useNavigation()`; a component in `src/components/` takes plain props and
   callbacks and reads neither. Keep that line — it is what would make the components testable the
@@ -182,7 +185,10 @@ writing, and normalising it.
   start after one corrupt write
   ([ADR-0004](docs/architecture/decisions/0004-versioned-defensive-storage.md)).
 - **The `/v1` suffix is the migration mechanism.** A shape change that the normaliser cannot absorb
-  takes a new key, with the old one read once and converted. Do not change what `/v1` means.
+  takes a new key, with the old one read once and converted. Do not change what `/v1` means. A new
+  field whose default is the *true* value for every older record stays under `/v1`
+  ([ADR-0004](docs/architecture/decisions/0004-versioned-defensive-storage.md) Amendment 1) — but
+  still needs an ADR and approval, and an older build reading it loses it on its first save.
 - Both keys are written together, as whole arrays, by one `useEffect` in `DecksContext`. There is
   no partial write and no write queue, and a failed write is swallowed deliberately so it cannot
   break a running session.

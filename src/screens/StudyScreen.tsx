@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Dimensions, PanResponder, StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { AnswerIcon } from '../components/AnswerIcons';
 import Button from '../components/Button';
 import EmptyState from '../components/EmptyState';
 import FlipCard from '../components/FlipCard';
@@ -9,12 +10,23 @@ import SuccessBar from '../components/SuccessBar';
 import { useDecks } from '../state/DecksContext';
 import { LearnStackParamList } from '../navigation/types';
 import { Answer } from '../types';
-import { formatRate, successRate } from '../utils/stats';
+import {
+  formatRate,
+  getMissedOrUnsureCardIds,
+  getSessionTally,
+  successRate,
+} from '../utils/stats';
 import { colors, radius, spacing } from '../theme';
 
 type Props = NativeStackScreenProps<LearnStackParamList, 'Study'>;
 
 const SWIPE_THRESHOLD = 60;
+
+const renderCrossIcon = (color: string) => <AnswerIcon name="cross" color={color} size={32} />;
+const renderQuestionIcon = (color: string) => (
+  <AnswerIcon name="question" color={color} size={32} />
+);
+const renderTickIcon = (color: string) => <AnswerIcon name="tick" color={color} size={32} />;
 
 export default function StudyScreen({ route, navigation }: Props) {
   const { sessionId } = route.params;
@@ -30,12 +42,15 @@ export default function StudyScreen({ route, navigation }: Props) {
   const [viewIndex, setViewIndex] = useState(index);
   const [shownSessionId, setShownSessionId] = useState(sessionId);
   const [flipped, setFlipped] = useState(false);
+  // The card whose answer side has been shown; keyed by id so it survives flipping back and swiping away.
+  const [revealedCardId, setRevealedCardId] = useState<string | null>(null);
 
   // The screen can be reused for another session, so follow the new session's progress.
   if (shownSessionId !== sessionId) {
     setShownSessionId(sessionId);
     setViewIndex(index);
     setFlipped(false);
+    setRevealedCardId(null);
   }
 
   const navStateRef = useRef({ viewIndex: index, frontier: index });
@@ -49,6 +64,8 @@ export default function StudyScreen({ route, navigation }: Props) {
   const isFinished = queue.length > 0 && index >= queue.length;
   const isReviewing = viewIndex < index;
   const currentCard = isFinished ? undefined : cardsById.get(queue[viewIndex]);
+  const hasSeenAnswer = currentCard !== undefined && currentCard.id === revealedCardId;
+  const answersDisabled = isReviewing || !hasSeenAnswer;
 
   useEffect(() => {
     navStateRef.current = { viewIndex, frontier: index };
@@ -61,14 +78,14 @@ export default function StudyScreen({ route, navigation }: Props) {
   const answer = useCallback(
     (value: Answer) => {
       const cardId = queue[index];
-      if (!cardId || viewIndex !== index) {
+      if (!cardId || viewIndex !== index || cardId !== revealedCardId) {
         return;
       }
       recordAnswer(sessionId, cardId, value);
       setFlipped(false);
       setViewIndex(index + 1);
     },
-    [queue, index, viewIndex, recordAnswer, sessionId],
+    [queue, index, viewIndex, revealedCardId, recordAnswer, sessionId],
   );
 
   // Slides the current card out, swaps it, then slides the new one in from the other side.
@@ -154,30 +171,30 @@ export default function StudyScreen({ route, navigation }: Props) {
     );
   }
 
+  const { okCount, okeishCount, notOkCount } = getSessionTally(session);
+
   if (isFinished) {
-    const okCount = results.filter(result => result.answer === 'ok').length;
-    const notOkCount = results.length - okCount;
-    const missedIds = [
-      ...new Set(results.filter(result => result.answer === 'notOk').map(result => result.cardId)),
-    ];
+    const missedIds = getMissedOrUnsureCardIds(session);
+    const rate = successRate(okCount, okeishCount, notOkCount);
 
     return (
       <View style={[styles.container, styles.summaryContainer]}>
         <Text style={styles.summaryTitle}>Session complete</Text>
         <View style={styles.summaryCard}>
-          <Text style={styles.summaryRate}>{formatRate(successRate(okCount, notOkCount))}</Text>
-          <SuccessBar rate={successRate(okCount, notOkCount)} height={10} />
+          <Text style={styles.summaryRate}>{formatRate(rate)}</Text>
+          <SuccessBar rate={rate} height={10} />
           <View style={styles.summaryRow}>
             <Text style={styles.summaryOk}>Ok {okCount}</Text>
+            <Text style={styles.summaryOkeish}>Okeish {okeishCount}</Text>
             <Text style={styles.summaryNotOk}>Not Ok {notOkCount}</Text>
-            <Text style={styles.summaryMeta}>Reviewed {results.length}</Text>
           </View>
+          <Text style={styles.summaryMeta}>Reviewed {results.length}</Text>
         </View>
 
         <View style={styles.summaryActions}>
           {missedIds.length > 0 ? (
             <Button
-              label={`Review the ${missedIds.length} missed`}
+              label={`Review the ${missedIds.length} missed or unsure`}
               onPress={() => startAgain(missedIds)}
             />
           ) : null}
@@ -198,9 +215,7 @@ export default function StudyScreen({ route, navigation }: Props) {
         <Text style={styles.progressText}>
           Card {viewIndex + 1} of {queue.length}
         </Text>
-        <Text style={styles.progressText}>
-          Ok {results.filter(result => result.answer === 'ok').length}
-        </Text>
+        <Text style={styles.progressText}>Ok {okCount}</Text>
       </View>
       <SuccessBar rate={(index / queue.length) * 100} height={6} />
 
@@ -214,7 +229,10 @@ export default function StudyScreen({ route, navigation }: Props) {
             question={currentCard.question}
             answer={currentCard.answer}
             flipped={flipped}
-            onFlip={() => setFlipped(previous => !previous)}
+            onFlip={() => {
+              setFlipped(previous => !previous);
+              setRevealedCardId(currentCard.id);
+            }}
           />
         ) : null}
       </Animated.View>
@@ -229,16 +247,26 @@ export default function StudyScreen({ route, navigation }: Props) {
 
       <View style={styles.feedback}>
         <Button
-          label="Not Ok"
+          accessibilityLabel="Not ok"
           variant="danger"
-          disabled={isReviewing}
+          icon={renderCrossIcon}
+          disabled={answersDisabled}
           onPress={() => answer('notOk')}
           style={styles.feedbackButton}
         />
         <Button
-          label="Ok"
+          accessibilityLabel="Okeish"
+          variant="warning"
+          icon={renderQuestionIcon}
+          disabled={answersDisabled}
+          onPress={() => answer('okeish')}
+          style={styles.feedbackButton}
+        />
+        <Button
+          accessibilityLabel="Ok"
           variant="success"
-          disabled={isReviewing}
+          icon={renderTickIcon}
+          disabled={answersDisabled}
           onPress={() => answer('ok')}
           style={styles.feedbackButton}
         />
@@ -311,6 +339,11 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
   },
+  summaryOkeish: {
+    color: colors.warning,
+    fontSize: 15,
+    fontWeight: '700',
+  },
   summaryNotOk: {
     color: colors.danger,
     fontSize: 15,
@@ -319,6 +352,7 @@ const styles = StyleSheet.create({
   summaryMeta: {
     color: colors.textMuted,
     fontSize: 15,
+    textAlign: 'center',
   },
   summaryActions: {
     gap: spacing.sm,

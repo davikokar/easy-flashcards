@@ -31,7 +31,8 @@ for the required format and status rules.
 
 > ADR-0001 to ADR-0006 were recorded **retrospectively**. Each documents a choice already visible
 > in the code and already load-bearing, written down so it stops being rediscovered. Their dates
-> are the dates they were recorded, not the dates the choices were made.
+> are the dates they were recorded, not the dates the choices were made. ADR-0007 is the first
+> recorded **ahead** of the work it governs; ADR-0004 and ADR-0005 carry amendments for it.
 
 ### Index
 
@@ -43,3 +44,4 @@ for the required format and status rules.
 | [ADR-0004](decisions/0004-versioned-defensive-storage.md) | Versioned storage keys, normalised defensively on read | Active | 2026-10-26 |
 | [ADR-0005](decisions/0005-answers-recorded-immediately.md) | An answer is recorded when it is given | Active | 2026-10-26 |
 | [ADR-0006](decisions/0006-launch-on-the-tab-with-unfinished-work.md) | The app launches on the tab with unfinished work | Active | 2026-10-26 |
+| [ADR-0007](decisions/0007-okeish-third-answer.md) | A third answer, Okeish, stored under the existing v1 keys | Active | 2026-10-26 |

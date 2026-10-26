@@ -74,17 +74,22 @@ export default function DeckStatsScreen({ route, navigation }: Props) {
             <View style={styles.metaRow}>
               <Text style={styles.meta}>{stats.reviewCount} reviews</Text>
               <Text style={[styles.meta, styles.ok]}>{stats.okCount} ok</Text>
+              <Text style={[styles.meta, styles.okeish]}>{stats.okeishCount} okeish</Text>
               <Text style={[styles.meta, styles.notOk]}>{stats.notOkCount} not ok</Text>
-              <Text style={styles.meta}>{sessionSummary.total} sessions</Text>
             </View>
-            <Text style={styles.meta}>Last session {formatDate(sessionSummary.lastSessionAt)}</Text>
+            <View style={styles.metaRow}>
+              <Text style={styles.meta}>{sessionSummary.total} sessions</Text>
+              <Text style={styles.meta}>
+                Last session {formatDate(sessionSummary.lastSessionAt)}
+              </Text>
+            </View>
             <Text style={styles.sectionTitle}>Cards, hardest first</Text>
             <Button label="Reset statistics" variant="secondary" onPress={confirmReset} />
           </View>
         }
         renderItem={({ item }) => {
           const reviews = cardReviewCount(item);
-          const rate = successRate(item.okCount, item.notOkCount);
+          const rate = successRate(item.okCount, item.okeishCount, item.notOkCount);
           return (
             <View style={styles.card}>
               <RichText html={item.question} style={styles.question} numberOfLines={2} />
@@ -94,6 +99,7 @@ export default function DeckStatsScreen({ route, navigation }: Props) {
                 <Text style={styles.cardRate}>{formatRate(rate)}</Text>
                 <Text style={styles.meta}>{reviews === 0 ? 'Never reviewed' : `${reviews} reviews`}</Text>
                 <Text style={[styles.meta, styles.ok]}>{item.okCount} ok</Text>
+                <Text style={[styles.meta, styles.okeish]}>{item.okeishCount} okeish</Text>
                 <Text style={[styles.meta, styles.notOk]}>{item.notOkCount} not ok</Text>
               </View>
             </View>
@@ -167,6 +173,9 @@ const styles = StyleSheet.create({
   },
   ok: {
     color: colors.success,
+  },
+  okeish: {
+    color: colors.warning,
   },
   notOk: {
     color: colors.danger,

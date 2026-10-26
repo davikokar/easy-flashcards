@@ -39,7 +39,7 @@ vocabulary is in
 |---|---|---|---|
 | Decks | **Decks screen** | Every imported deck, with its card count, success rate and session counts. Where a deck is imported, started, and deleted. | `DecksScreen`, route `DecksList` |
 | Learn | **Learn screen** | Every session, unfinished ones first. Where a session is resumed, restarted, or discarded. | `LearnScreen`, route `LearnList` |
-| Learn | **Study screen** | One session: the flip card, the answer buttons, the answered-so-far strip, and the end-of-session summary. | `StudyScreen`, route `Study` (param `sessionId`) |
+| Learn | **Study screen** | One session: the flip card, the icon-only answer buttons (Not Ok, Okeish, Ok — [ADR-0007](decisions/0007-okeish-third-answer.md)), the answered-so-far strip, and the end-of-session summary, which offers to replay the missed or unsure cards. | `StudyScreen`, route `Study` (param `sessionId`) |
 | Statistics | **Statistics screen** | Totals across every deck, then one row per deck. | `StatsScreen`, route `StatsOverview` |
 | Statistics | **Deck statistics screen** | One deck's totals and every card in it, hardest first. | `DeckStatsScreen`, route `DeckStats` (param `deckId`) |
 
@@ -89,7 +89,9 @@ keys back. No screen writes storage, and no storage module knows about React.
 **Nothing derived is stored.** Success rates, session progress, orderings, and difficulty rankings
 are computed from the raw counters by pure functions in
 [`src/utils/stats.ts`](../../src/utils/stats.ts), called from a `useMemo` in the screen that needs
-them. The only persisted tallies are a card's `okCount` and `notOkCount`, which are raw.
+them. The only persisted tallies are a card's per-answer counters — one for each `Answer` in
+[`src/types.ts`](../../src/types.ts) — and they are raw. Okeish counts as a review but earns no
+credit in any success rate ([ADR-0007](decisions/0007-okeish-third-answer.md)).
 
 **Decks and sessions meet only in the reducer.** A `Session` holds a `deckId`, a snapshot of
 `deckName`, and a frozen `cardIds` array; it never holds a `Card`. Resolving a session back to its
@@ -109,17 +111,23 @@ testable under Jest with no renderer and no mocks. Every file in `__tests__/` te
 |---|---|
 | [`csv.ts`](../../src/utils/csv.ts) | `parseFlashcardsCsv` — wraps PapaParse, detects the delimiter, matches the `Question` / `Answer` headers case-insensitively, skips incomplete rows and counts them, throws `CsvImportError` on a file it cannot use. Also `deckNameFromFileName`. |
 | [`html.ts`](../../src/utils/html.ts) | A tolerant HTML parser: `parseHtml` to `HtmlNode[]`, `decodeEntities`, `htmlToPlainText`, and the `BLOCK_TAGS` set. It never throws — unclosed and stray tags are absorbed. |
-| [`stats.ts`](../../src/utils/stats.ts) | Every derived number in the app: `successRate`, `getDeckStats`, `getGlobalStats`, `getSessionStats`, `summarizeSessions`, `summarizeSessionsByDeck`, `isSessionActive`, `sortSessions`, `sortCardsByDifficulty`, `cardReviewCount`, and the `formatRate` / `formatDate` display helpers. |
+| [`stats.ts`](../../src/utils/stats.ts) | Every derived number in the app: `successRate`, `getDeckStats`, `getGlobalStats`, `getSessionTally`, `getSessionStats`, `getMissedOrUnsureCardIds`, `summarizeSessions`, `summarizeSessionsByDeck`, `isSessionActive`, `sortSessions`, `sortCardsByDifficulty`, `cardReviewCount`, and the `formatRate` / `formatDate` display helpers. |
 | [`fileUri.ts`](../../src/utils/fileUri.ts) | `fileUriToPath` and `pathToFileUri` — the percent-encoding boundary between a `file://` URI and a path. |
 
 `isSessionActive` is the single definition of "active": `completedAt === null`. Do not write that
 comparison anywhere else.
 
+The same goes for counting answers. `successRate(ok, okeish, notOk)` credits only Ok, so a card
+answered only Okeish is 0%, not `--`. `getSessionTally` is the one three-way count of a session's
+results, and `getMissedOrUnsureCardIds` (every card not answered Ok, once each) is what the replay
+starts from. Code that computes Not Ok as "everything that is not Ok" silently counts Okeish as
+Not Ok — [ADR-0007](decisions/0007-okeish-third-answer.md).
+
 ### `src/types.ts` — the shapes
 
-`Card`, `Deck`, `Answer`, `SessionResult`, `Session`, and the derived `DeckStats`,
-`SessionSummary`, `SessionStats`. The first five are what is persisted; the last three are what
-`stats.ts` returns and are never stored.
+`Card`, `Deck`, `Answer`, `SessionResult` and `Session` are what is persisted. The derived
+`DeckStats`, `SessionSummary`, `SessionStats` and `AnswerTally` are what `stats.ts` returns and are
+never stored.
 
 ### `src/storage/` — the AsyncStorage boundary
 
@@ -154,15 +162,16 @@ the flip and the viewed card index for the second.
 
 | File | Role |
 |---|---|
-| [`Button.tsx`](../../src/components/Button.tsx) | The only button. Variants `primary`, `secondary`, `success`, `danger`; handles `disabled` and `loading`. |
+| [`Button.tsx`](../../src/components/Button.tsx) | The only button. Variants `primary`, `secondary`, `success`, `danger`, `warning`; handles `disabled` and `loading`. Takes an optional `icon` render function, passed the foreground colour for the variant; with no `label` it is icon-only, and its type then requires an `accessibilityLabel`. |
 | [`FlipCard.tsx`](../../src/components/FlipCard.tsx) | The study card. Two faces, a `rotateY` interpolation, and a scrollable body. Owns the animation, not the flip state. |
 | [`RichText.tsx`](../../src/components/RichText.tsx) | Renders `parseHtml` output as nested `<Text>`. See §6. |
 | [`SuccessBar.tsx`](../../src/components/SuccessBar.tsx) | The one visual encoding of a success rate, used on every screen. |
-| [`HistoryStrip.tsx`](../../src/components/HistoryStrip.tsx) | The answered-so-far tiles on the Study screen; auto-scrolls to the current card. |
+| [`HistoryStrip.tsx`](../../src/components/HistoryStrip.tsx) | The answered-so-far tiles on the Study screen, coloured per answer; auto-scrolls to the current card. |
 | [`EmptyState.tsx`](../../src/components/EmptyState.tsx) | Every list's `ListEmptyComponent`. |
 | [`KebabMenu.tsx`](../../src/components/KebabMenu.tsx) | The three-dot control; opens a `MenuSheet`. Owns the open/closed state. |
 | [`MenuSheet.tsx`](../../src/components/MenuSheet.tsx) | The bottom sheet, in a `Modal`. Defines the shared `MenuItem` type. |
 | [`MenuIcons.tsx`](../../src/components/MenuIcons.tsx) | `MenuIcon` — every menu icon, drawn from nested `View`s. |
+| [`AnswerIcons.tsx`](../../src/components/AnswerIcons.tsx) | `AnswerIcon` — the tick, cross and question-mark glyphs on the Study screen's answer buttons, drawn from rotated `View`s. Hidden from accessibility; the button carries the name. |
 | [`AppMenu.tsx`](../../src/components/AppMenu.tsx) | The header kebab menu. The one component that calls a service. |
 
 `AppMenu` is the exception to "components take plain props": it calls `exportSampleDeck` directly
@@ -229,12 +238,17 @@ take down a session in progress.
 
 **Reads normalise and never throw.** Each loader drops malformed rows — a card with no `id`,
 `question` or `answer`; a session whose `cardIds` is not an array — defaults missing timestamps to
-now, clamps `results` to `cardIds.length`, and coerces an answer to `'ok'` or `'notOk'`. The cost
-is silent data loss on a corrupt record; the alternative is an app that cannot start
+now, clamps `results` to `cardIds.length`, reads a missing or non-numeric card counter as `0`,
+preserves an answer of `'ok'`, `'okeish'` or `'notOk'`, and coerces any other answer to `'ok'`. The
+cost is silent data loss on a corrupt record; the alternative is an app that cannot start
 ([ADR-0004](decisions/0004-versioned-defensive-storage.md)).
 
 **The `/v1` suffix is the migration mechanism.** A shape change the normaliser cannot absorb takes
-a new key and converts from the old one on first read. Nothing rewrites what `/v1` means.
+a new key and converts from the old one on first read. Nothing rewrites what `/v1` means. A new
+field whose default is the *true* value for every older record is absorbed under `/v1` instead —
+[ADR-0004 Amendment 1](decisions/0004-versioned-defensive-storage.md); a card's Okeish counter is
+the first such field ([ADR-0007](decisions/0007-okeish-third-answer.md)). The opposite direction is
+not covered: an older build reading data this one wrote loses the Okeish data on its first save.
 
 **Ids are generated, not derived**: `createId(prefix)` in `DecksContext` returns
 `` `${prefix}_${Date.now().toString(36)}_${random}` ``. Deck ids, card ids and session ids all come
@@ -308,7 +322,13 @@ proposing a change:
   it means rendering. Extracting the reducer into a `.ts` file would make it testable today; that
   has not been done.
 - **The storage normalisers are untested**, and they are the code that runs against data the app
-  did not write.
+  did not write. Since [ADR-0007](decisions/0007-okeish-third-answer.md) that includes the Okeish
+  paths: a sessions loader that coerced `'okeish'` to `'ok'` would still type-check, and would
+  silently rewrite every Okeish answer on the next launch.
+- **A downgrade silently loses Okeish data.** An older APK drops the card's Okeish counter and
+  reads every `'okeish'` answer as `'ok'`, and its first save makes that permanent. Nothing blocks
+  it: `versionCode` in [`android/app/build.gradle`](../../android/app/build.gradle) has never been
+  bumped and release builds share the debug keystore. Accepted in ADR-0007, not mitigated.
 - **`renameDeck` is dead code.** The store exposes it, the reducer implements it including the
   rename of every session's `deckName` snapshot, and nothing calls it. The *Edit deck* menu item
   alerts instead.

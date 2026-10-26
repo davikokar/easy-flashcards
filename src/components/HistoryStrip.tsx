@@ -32,7 +32,11 @@ export default function HistoryStrip({ results, currentIndex }: Props) {
             key={position}
             style={[
               styles.tile,
-              result.answer === 'ok' ? styles.ok : styles.notOk,
+              result.answer === 'ok'
+                ? styles.ok
+                : result.answer === 'okeish'
+                ? styles.okeish
+                : styles.notOk,
               position === currentIndex && styles.current,
             ]}
           />
@@ -60,6 +64,9 @@ const styles = StyleSheet.create({
   },
   ok: {
     backgroundColor: colors.success,
+  },
+  okeish: {
+    backgroundColor: colors.warning,
   },
   notOk: {
     backgroundColor: colors.danger,

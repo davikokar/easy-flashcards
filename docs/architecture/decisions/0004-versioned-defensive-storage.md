@@ -87,11 +87,38 @@ else calls AsyncStorage.
 - A write failure is caught and discarded so it cannot interrupt a session, which means the user is
   told nothing and finds out at the next launch.
 
+## Amendment 1 — 2026-10-26
+
+[ADR-0007](0007-okeish-third-answer.md) adds a third answer, `'okeish'`, and is the first shape
+change since this record. The decision above still stands; two details of it moved.
+
+**An additive field stays under `/v1`.** The boundary between *wrong in detail* and *wrong in kind*
+is now stated rather than implied: a new field whose default is the **true** value for every
+record written before it — not merely a plausible one — is absorbed by the normaliser under the
+existing key, with no new key and no conversion. Card `okeishCount` qualifies, because no record
+written before ADR-0007 can contain an Okeish answer, so a missing count is exactly zero. A field
+whose missing value would have to be guessed still takes a new key.
+
+**The normaliser rules change accordingly:**
+
+- a missing or non-numeric `okeishCount` on a card is read as `0`;
+- an `answer` of `'okeish'` is preserved; any value that is not `'ok'`, `'okeish'` or `'notOk'` is
+  still coerced to `'ok'`.
+
+**A consequence this record did not consider: downgrades.** Everything above assumes a newer app
+reading data an older app wrote. ADR-0007 creates the opposite case — an older APK reading `/v1`
+data that a newer one wrote — and the result is silent, permanent loss: the older decks loader
+drops `okeishCount`, the older sessions loader turns every `'okeish'` into `'ok'`, and the first
+save the older app makes writes that back. Versioning the key does not prevent this; it only
+changes what is lost. The owner accepted it for ADR-0007, and nothing blocks a downgrade today,
+because `versionCode` has never been bumped. The details are in ADR-0007's *Consequences*.
+
 ## References
 
 - [`src/storage/decksStorage.ts`](../../../src/storage/decksStorage.ts),
   [`src/storage/sessionsStorage.ts`](../../../src/storage/sessionsStorage.ts)
 - [`src/types.ts`](../../../src/types.ts)
 - [ADR-0003](0003-single-context-reducer-store.md) — the store that drives these writes
+- [ADR-0007](0007-okeish-third-answer.md) — the first shape change under `/v1` (Amendment 1)
 - [ARCHITECTURE.md §5](../ARCHITECTURE.md)
 - [AGENTS.md](../../../AGENTS.md) — *Storage keys*, and *What to ask before doing*

@@ -35,12 +35,25 @@ export default function StatsScreen({ navigation }: Props) {
               <Text style={styles.summaryValue}>{formatRate(global.successRate)}</Text>
               <SuccessBar rate={global.successRate} height={10} />
               <View style={styles.summaryGrid}>
-                <Stat label="Decks" value={String(global.deckCount)} />
-                <Stat label="Cards" value={String(global.cardCount)} />
-                <Stat label="Reviews" value={String(global.reviewCount)} />
-                <Stat label="Sessions" value={String(sessions.length)} />
-                <Stat label="Ok" value={String(global.okCount)} tint={colors.success} />
-                <Stat label="Not Ok" value={String(global.notOkCount)} tint={colors.danger} />
+                <Stat label="Decks" value={String(global.deckCount)} columns={3} />
+                <Stat label="Cards" value={String(global.cardCount)} columns={3} />
+                <Stat label="Sessions" value={String(sessions.length)} columns={3} />
+              </View>
+              <View style={styles.summaryGrid}>
+                <Stat label="Reviews" value={String(global.reviewCount)} columns={4} />
+                <Stat label="Ok" value={String(global.okCount)} columns={4} tint={colors.success} />
+                <Stat
+                  label="Okeish"
+                  value={String(global.okeishCount)}
+                  columns={4}
+                  tint={colors.warning}
+                />
+                <Stat
+                  label="Not Ok"
+                  value={String(global.notOkCount)}
+                  columns={4}
+                  tint={colors.danger}
+                />
               </View>
             </View>
           )
@@ -81,9 +94,19 @@ export default function StatsScreen({ navigation }: Props) {
   );
 }
 
-function Stat({ label, value, tint }: { label: string; value: string; tint?: string }) {
+function Stat({
+  label,
+  value,
+  tint,
+  columns,
+}: {
+  label: string;
+  value: string;
+  tint?: string;
+  columns: 3 | 4;
+}) {
   return (
-    <View style={styles.statCell}>
+    <View style={[styles.statCell, columns === 4 && styles.statCellQuarter]}>
       <Text style={[styles.statValue, tint ? { color: tint } : null]}>{value}</Text>
       <Text style={styles.statLabel}>{label}</Text>
     </View>
@@ -122,11 +145,13 @@ const styles = StyleSheet.create({
   summaryGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginTop: spacing.xs,
   },
   statCell: {
     width: '33.33%',
     paddingVertical: spacing.sm,
+  },
+  statCellQuarter: {
+    width: '25%',
   },
   statValue: {
     color: colors.text,

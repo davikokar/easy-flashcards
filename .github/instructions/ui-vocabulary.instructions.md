@@ -117,7 +117,8 @@ Everything else that interrupts the user is a native `Alert` — confirmations, 
 - **Session status line**: ``In progress — {answered}/{total} cards`` or
   ``Completed — {n} cards``. "In progress" and "Completed" are the user-facing words; **active** is
   the word used in code and in prose about state.
-- **Session meta row**: `Success`, `{n} ok`, `{n} not ok`, `Started`.
+- **Session meta row**: `Success`, `{n} ok`, `{n} okeish`, `{n} not ok`, `Started`. The three
+  counts are tinted success, warning, and danger.
 - **Resume button**: labelled `Resume session` on an active session and `Study this deck again` on
   a completed one — one control, two labels, two behaviours.
 - **Session options menu**: the Kebab menu on a Session card, labelled
@@ -131,19 +132,30 @@ Everything else that interrupts the user is a native `Alert` — confirmations, 
 
 The densest screen in the app, and the one with vocabulary worth being precise about.
 
-- **Progress header**: `Card {n} of {total}` on the left, `Ok {n}` on the right.
+- **Progress header**: `Card {n} of {total}` on the left, `Ok {n}` on the right. Only plain ok
+  answers are counted there, not okeish.
 - **Session progress bar**: the thin **Success bar** under the progress header. It shows **how far
   through the session the user is**, not how well they are doing — the same component, a different
   meaning. Say which you mean.
 - **History strip** (`HistoryStrip`, labelled `Answers so far`): the horizontal row of small tiles,
-  one per answer, green for ok and red for not ok. Auto-scrolls to keep the current card in view.
+  one per answer — green for ok, yellow (warning) for okeish, red for not ok. The tile for the
+  card on screen is taller and outlined. Auto-scrolls to keep the current card in view.
   Aliases: **the answer tiles**
 - **Flip card** (`FlipCard`): the card itself. Two faces, **Question** and **Answer**, rotated with
   a `rotateY` animation. Its accessibility label is the **action**, not the state — `Show answer`
   while the question is up, `Show question` while the answer is. Each face scrolls independently.
-  Aliases: **the card**
-- **Answer buttons**: **Ok** (success) and **Not Ok** (danger), side by side at the bottom. They are
-  **disabled while reviewing**.
+  Flipping it is what unlocks the **Answer buttons**. Aliases: **the card**
+- **Answer buttons**: three **icon-only** Buttons side by side at the bottom, in this order: **Not
+  ok** (danger, cross), **Okeish** (warning, question mark), **Ok** (success, tick). They have no
+  visible text; the accessibility labels are `Not ok`, `Okeish`, and `Ok`. They are **disabled
+  until the user has flipped the current card at least once**, so the answer is read before it is
+  graded; the requirement starts over for each new card. They are also **disabled while
+  reviewing**.
+- **Okeish**: the third answer — half-remembered, or got with effort. It is stored as `okeish`,
+  counts as a review but **earns no credit** in the success rate (`ok / (ok + okeish + not ok)`, so
+  an okeish-only card is 0%, not `--`), and the **Session summary** replays it along with the
+  missed cards ([ADR-0007](../../docs/architecture/decisions/0007-okeish-third-answer.md)). The UI
+  word is always "okeish"; "unsure" appears only in the replay action's label.
 - **Swipe hint**: the dim line between the card and the buttons. Swipe right reviews already
   answered cards; swipe left returns toward the current one.
 - **Reviewing**: looking back at a card that was already answered. It is read-only —
@@ -151,23 +163,28 @@ The densest screen in the app, and the one with vocabulary worth being precise a
   ([ADR-0005](../../docs/architecture/decisions/0005-answers-recorded-immediately.md)). The card
   the user is actually on is the **frontier**. Do not call reviewing "going back" — that is
   navigation.
-- **Session summary**: what the screen becomes once every card is answered. A large success rate,
-  the ok / not ok split, and up to three actions: ``Review the {n} missed`` (absent at 100%),
+- **Session summary**: what the screen becomes once every card is answered. A large success rate
+  and a **Success bar**, then one row of `Ok {n}`, `Okeish {n}`, `Not Ok {n}` (tinted success,
+  warning, danger), then `Reviewed {n}` on its own line. Up to three actions:
+  ``Review the {n} missed or unsure`` (the not ok and okeish cards; absent when there are none),
   **Study the whole deck again**, and **Back to sessions**. Aliases: **end-of-session summary**
 - **Study empty state**: `Nothing to study`, with a **Back to sessions** action.
 
 ## Statistics screens
 
 - **Global summary**: the block at the top of the Statistics screen — a large success rate above a
-  **Stat grid** of six **Stat tiles**: `Decks`, `Cards`, `Reviews`, `Sessions`, `Ok` (tinted
-  success), `Not Ok` (tinted danger).
+  **Stat grid** of seven **Stat tiles** in two rows: `Decks`, `Cards`, `Sessions` (three columns),
+  then `Reviews`, `Ok` (tinted success), `Okeish` (tinted warning), `Not Ok` (tinted danger) (four
+  columns). `Stat` takes a `columns` prop, `3` or `4`, that sets the tile width.
 - **Deck stats row**: one deck on the Statistics screen. Pressable; opens the Deck statistics
   screen.
-- **Deck summary**: the header of the Deck statistics screen — success rate, session counts, and
-  the **Reset statistics button** (`Reset statistics`, secondary, confirmed by an `Alert`).
+- **Deck summary**: the header of the Deck statistics screen — success rate, a line of
+  `{n} reviews`, `{n} ok`, `{n} okeish`, `{n} not ok`, a line of `{n} sessions` and
+  `Last session {date}`, and the **Reset statistics button** (`Reset statistics`, secondary, confirmed by an `Alert`).
   Resetting zeroes every card counter **and deletes every session for that deck**; say both.
 - **Card stats row**: one card on the Deck statistics screen — its question and answer as
-  two-line **Rich text** previews, a **Success bar**, and its counters.
+  two-line **Rich text** previews, a **Success bar**, and its counters: the rate, `{n} reviews` (or
+  `Never reviewed`), `{n} ok`, `{n} okeish`, `{n} not ok`.
 - **Hardest first**: the order of the Card stats rows — lowest success rate first, ties broken by
   review count, never-reviewed cards last. It is `sortCardsByDifficulty`. Do not call it "sorted by
   score".
@@ -176,10 +193,20 @@ The densest screen in the app, and the one with vocabulary worth being precise a
 
 ## Shared components
 
-- **Button** (`Button`): the only button in the app. Variants **primary** (filled blue, the
-  default), **secondary** (outlined), **success** (green), **danger** (red). Handles `disabled` and
-  `loading`, and a loading button shows a spinner in place of its label. There is no icon button
-  and no text button — if you need one, that is a vocabulary change.
+- **Button** (`Button`): the only button in the app. Five variants: **primary** (filled blue, the
+  default), **secondary** (filled `surfaceAlt`, light text — not outlined), **success** (green),
+  **danger** (red), **warning** (amber). Handles `disabled` and `loading`, and a loading button
+  shows a spinner beside its label. An optional `icon` renders a glyph before the label. With no
+  `label` it is **icon-only**: `accessibilityLabel` is then required, there is no visible text, and
+  it has a 48-point minimum size; while loading, an icon-only button shows the spinner in place of
+  its icon. Icon-only is a mode of Button, not a second component. There is still no text button
+  and no separate icon button — if you need one, that is a vocabulary change.
+- **Answer icon** (`AnswerIcon`, in `AnswerIcons.tsx`): the glyph on an Answer button — `tick`,
+  `cross`, or `question`, drawn from nested `View`s and hidden from accessibility. It is separate
+  from the **Menu icon** vocabulary; do not add an answer glyph to `MenuIcon` or the reverse.
+- **Not ok / Not Ok**: capitalisation differs by place. The Answer button's label is `Not ok`
+  (sentence case); the tiles and the summary say `Not Ok`; the meta rows say `not ok` in running
+  text. Match the place you are in.
 - **Success bar** (`SuccessBar`): the horizontal rate bar, used on every screen. **Colour carries
   meaning and is fixed**: border grey for *no data*, success green at 70% and above, warning amber
   from 40%, danger red below. Grey and 0% are different states and the app distinguishes them.
@@ -196,8 +223,10 @@ The densest screen in the app, and the one with vocabulary worth being precise a
 These are constraints, not suggestions. Each one is load-bearing somewhere.
 
 - **There is no icon library.** Every glyph in the app is composed from nested `View`s with
-  borders and radii. A design that needs a new icon is asking for one to be drawn. Check `MenuIcon`
-  first — reusing an existing glyph for a related idea is nearly always better than a new one.
+  borders and radii — `MenuIcons.tsx`, `TabIcons.tsx`, and `AnswerIcons.tsx` are the three files of
+  them. A design that needs a new icon is asking for one to be drawn. Check `MenuIcon` and
+  `AnswerIcon` first — reusing an existing glyph for a related idea is nearly always better than a
+  new one.
 - **Every token comes from [`src/theme.ts`](../../src/theme.ts).** `colors`, `spacing`, `radius` —
   twelve colours, five spacings, three radii, and no second source of styling. A raw hex or a
   magic number in a `StyleSheet` is a finding, with two existing exceptions: `mark`'s foreground in

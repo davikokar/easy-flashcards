@@ -30,6 +30,7 @@ function normalizeDeck(value: unknown): Deck | null {
         question: card.question as string,
         answer: card.answer as string,
         okCount: typeof card.okCount === 'number' ? card.okCount : 0,
+        okeishCount: typeof card.okeishCount === 'number' ? card.okeishCount : 0,
         notOkCount: typeof card.notOkCount === 'number' ? card.notOkCount : 0,
         lastReviewedAt: typeof card.lastReviewedAt === 'number' ? card.lastReviewedAt : null,
       };

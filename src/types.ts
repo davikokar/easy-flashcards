@@ -3,6 +3,7 @@ export type Card = {
   question: string;
   answer: string;
   okCount: number;
+  okeishCount: number;
   notOkCount: number;
   lastReviewedAt: number | null;
 };
@@ -16,7 +17,7 @@ export type Deck = {
   cards: Card[];
 };
 
-export type Answer = 'ok' | 'notOk';
+export type Answer = 'ok' | 'okeish' | 'notOk';
 
 export type SessionResult = {
   cardId: string;
@@ -39,6 +40,7 @@ export type DeckStats = {
   cardCount: number;
   reviewCount: number;
   okCount: number;
+  okeishCount: number;
   notOkCount: number;
   successRate: number | null;
 };
@@ -54,7 +56,15 @@ export type SessionStats = {
   cardCount: number;
   answered: number;
   okCount: number;
+  okeishCount: number;
   notOkCount: number;
   successRate: number | null;
   isActive: boolean;
+};
+
+/** Per-answer counts for one session's results. */
+export type AnswerTally = {
+  okCount: number;
+  okeishCount: number;
+  notOkCount: number;
 };

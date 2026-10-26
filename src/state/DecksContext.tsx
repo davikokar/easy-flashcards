@@ -85,6 +85,7 @@ function reducer(state: State, action: Action): State {
                 ? {
                     ...card,
                     okCount: card.okCount + (action.answer === 'ok' ? 1 : 0),
+                    okeishCount: card.okeishCount + (action.answer === 'okeish' ? 1 : 0),
                     notOkCount: card.notOkCount + (action.answer === 'notOk' ? 1 : 0),
                     lastReviewedAt: action.at,
                   }
@@ -111,6 +112,7 @@ function reducer(state: State, action: Action): State {
                 cards: deck.cards.map(card => ({
                   ...card,
                   okCount: 0,
+                  okeishCount: 0,
                   notOkCount: 0,
                   lastReviewedAt: null,
                 })),
@@ -191,6 +193,7 @@ export function DecksProvider({ children }: { children: React.ReactNode }) {
         question: card.question,
         answer: card.answer,
         okCount: 0,
+        okeishCount: 0,
         notOkCount: 0,
         lastReviewedAt: null,
       })),

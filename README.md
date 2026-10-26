@@ -10,8 +10,10 @@ card by card, and track how well you know each card.
   - Columns `Question` and `Answer` (header matching is case-insensitive).
   - Delimiters: semicolon (`;`) or tab (`\t`).
   - BOM and CRLF tolerant; incomplete rows are skipped and reported.
-- **Study sessions** with an animated card flip, `Ok` / `Not Ok` feedback, progress indicator and
-  an end-of-session summary that offers to replay only the missed cards.
+- **Study sessions** with an animated card flip, three icon feedback buttons — *Not Ok* (cross),
+  *Okeish* (question mark) and *Ok* (tick) — a progress indicator, and an end-of-session summary
+  that offers to replay the cards you missed or were unsure of. Okeish counts as a review but not
+  as a success.
 - **HTML formatting** on both sides of a card: `<b>`, `<i>`, `<u>`, `<s>`, `<br />`, `<p>`,
   `<ul>`/`<ol>`/`<li>`, `<h1>`-`<h6>`, `<code>`, `<mark>`, `<font color="...">`, HTML entities.
 - **Statistics** persisted locally: per-deck review counts, success rate and session counts, plus a

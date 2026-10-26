@@ -10,7 +10,7 @@ function normalizeResult(value: unknown): SessionResult | null {
   }
   return {
     cardId: result.cardId,
-    answer: result.answer === 'notOk' ? 'notOk' : 'ok',
+    answer: result.answer === 'notOk' || result.answer === 'okeish' ? result.answer : 'ok',
   };
 }
 

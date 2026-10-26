@@ -123,6 +123,7 @@ export default function LearnScreen({ navigation }: Props) {
               <View style={styles.metaRow}>
                 <Text style={styles.meta}>Success {formatRate(stats.successRate)}</Text>
                 <Text style={[styles.meta, styles.ok]}>{stats.okCount} ok</Text>
+                <Text style={[styles.meta, styles.okeish]}>{stats.okeishCount} okeish</Text>
                 <Text style={[styles.meta, styles.notOk]}>{stats.notOkCount} not ok</Text>
                 <Text style={styles.meta}>Started {formatDate(item.startedAt)}</Text>
               </View>
@@ -203,6 +204,9 @@ const styles = StyleSheet.create({
   },
   ok: {
     color: colors.success,
+  },
+  okeish: {
+    color: colors.warning,
   },
   notOk: {
     color: colors.danger,
