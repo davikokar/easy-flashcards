@@ -1,37 +1,39 @@
 import React, { useCallback, useLayoutEffect, useMemo } from 'react';
-import { Alert, FlatList, StyleSheet, Text, View } from 'react-native';
+import { Alert, FlatList, StyleSheet, View } from 'react-native';
 import type { CompositeScreenProps } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
-import AppMenu from '../components/AppMenu';
-import Button from '../components/Button';
 import EmptyState from '../components/EmptyState';
-import KebabMenu from '../components/KebabMenu';
-import SuccessBar from '../components/SuccessBar';
+import HeaderToolbar from '../components/HeaderToolbar';
+import SessionCard from '../components/SessionCard';
 import { useDecks } from '../state/DecksContext';
 import { LearnStackParamList, RootTabParamList } from '../navigation/types';
-import { Session } from '../types';
+import { Deck, Session } from '../types';
 import {
   clearableSessionCount,
   formatDate,
-  formatRate,
-  getSessionStats,
+  getMissedOrUnsureCardIds,
+  getSessionTally,
   isSessionActive,
   listedSessions,
+  resolvableCardIds,
+  sessionProgressShares,
   sortSessions,
 } from '../utils/stats';
-import { colors, radius, spacing } from '../theme';
+import { colors, spacing } from '../theme';
 
 type Props = CompositeScreenProps<
   NativeStackScreenProps<LearnStackParamList, 'LearnList'>,
   BottomTabScreenProps<RootTabParamList>
 >;
 
+const showSearchStub = () => Alert.alert('Search', 'Searching sessions is not available yet.');
+const showFilterStub = () => Alert.alert('Filter', 'Filtering sessions is not available yet.');
+
 export default function LearnScreen({ navigation }: Props) {
   const { sessions, getDeck, startSession, deleteSession, clearSession, clearCompletedSessions } =
     useDecks();
   const ordered = useMemo(() => sortSessions(listedSessions(sessions)), [sessions]);
-  const activeCount = useMemo(() => sessions.filter(isSessionActive).length, [sessions]);
   const clearableCount = useMemo(() => clearableSessionCount(sessions), [sessions]);
 
   const confirmClearCompleted = useCallback(() => {
@@ -51,10 +53,14 @@ export default function LearnScreen({ navigation }: Props) {
     );
   }, [clearableCount, clearCompletedSessions]);
 
-  const appMenu = useMemo(
+  const toolbar = useMemo(
     () => (
-      <AppMenu
-        extraItems={[
+      <HeaderToolbar
+        onSearch={showSearchStub}
+        onFilter={showFilterStub}
+        searchLabel="Search sessions"
+        filterLabel="Filter sessions"
+        menuItems={[
           {
             label: 'Clear completed sessions',
             icon: 'delete',
@@ -68,8 +74,12 @@ export default function LearnScreen({ navigation }: Props) {
   );
 
   useLayoutEffect(() => {
-    navigation.setOptions({ headerRight: () => appMenu });
-  }, [navigation, appMenu]);
+    navigation.setOptions({
+      headerStyle: { backgroundColor: colors.background },
+      headerTitleStyle: { color: colors.text, fontSize: 24, fontWeight: '700' },
+      headerRight: () => toolbar,
+    });
+  }, [navigation, toolbar]);
 
   const confirmDelete = useCallback(
     (session: Session) => {
@@ -92,14 +102,16 @@ export default function LearnScreen({ navigation }: Props) {
     [clearSession, deleteSession],
   );
 
-  const restart = useCallback(
-    (session: Session) => {
+  // Always starts a new session; the original is never cleared or deleted.
+  const startFrom = useCallback(
+    (session: Session, pickCardIds: (deck: Deck) => string[]) => {
       const deck = getDeck(session.deckId);
-      if (!deck || deck.cards.length === 0) {
+      const cardIds = deck ? resolvableCardIds(pickCardIds(deck), deck) : [];
+      if (!deck || cardIds.length === 0) {
         Alert.alert('Deck unavailable', 'This deck no longer exists or has no cards.');
         return;
       }
-      const next = startSession(deck);
+      const next = startSession(deck, cardIds);
       navigation.navigate('Study', { sessionId: next.id });
     },
     [getDeck, navigation, startSession],
@@ -114,15 +126,6 @@ export default function LearnScreen({ navigation }: Props) {
           styles.listContent,
           ordered.length === 0 && styles.listContentEmpty,
         ]}
-        ListHeaderComponent={
-          ordered.length === 0 ? undefined : (
-            <Text style={styles.headerText}>
-              {activeCount === 0
-                ? 'No session in progress'
-                : `${activeCount} session${activeCount === 1 ? '' : 's'} in progress`}
-            </Text>
-          )
-        }
         ListEmptyComponent={
           <EmptyState
             title={sessions.length === 0 ? 'No sessions yet' : 'No sessions to show'}
@@ -136,55 +139,43 @@ export default function LearnScreen({ navigation }: Props) {
           />
         }
         renderItem={({ item }) => {
-          const stats = getSessionStats(item);
+          const isActive = isSessionActive(item);
+          const tally = getSessionTally(item);
+          const cardCount = item.cardIds.length;
+          const missedCount = isActive ? 0 : getMissedOrUnsureCardIds(item).length;
           return (
-            <View style={[styles.card, stats.isActive && styles.cardActive]}>
-              <View style={styles.cardHeader}>
-                <View style={styles.cardTitle}>
-                  <Text style={styles.deckName} numberOfLines={2}>
-                    {item.deckName}
-                  </Text>
-                  <Text style={[styles.status, stats.isActive && styles.statusActive]}>
-                    {stats.isActive
-                      ? `In progress \u2014 ${stats.answered}/${stats.cardCount} cards`
-                      : `Completed \u2014 ${stats.cardCount} card${
-                          stats.cardCount === 1 ? '' : 's'
-                        }`}
-                  </Text>
-                </View>
-                <KebabMenu
-                  title={item.deckName}
-                  accessibilityLabel={`Options for the ${item.deckName} session`}
-                  items={[
-                    { label: 'Start a new session', icon: 'play', onPress: () => restart(item) },
-                    {
-                      label: stats.isActive ? 'Discard session' : 'Clear session',
-                      icon: 'delete',
-                      destructive: true,
-                      onPress: () => confirmDelete(item),
-                    },
-                  ]}
-                />
-              </View>
-
-              <SuccessBar rate={stats.successRate} />
-
-              <View style={styles.metaRow}>
-                <Text style={styles.meta}>Success {formatRate(stats.successRate)}</Text>
-                <Text style={[styles.meta, styles.ok]}>{stats.okCount} ok</Text>
-                <Text style={[styles.meta, styles.okeish]}>{stats.okeishCount} okeish</Text>
-                <Text style={[styles.meta, styles.notOk]}>{stats.notOkCount} not ok</Text>
-                <Text style={styles.meta}>Started {formatDate(item.startedAt)}</Text>
-              </View>
-
-              <Button
-                label={stats.isActive ? 'Resume session' : 'Study this deck again'}
-                variant={stats.isActive ? 'primary' : 'secondary'}
-                onPress={() =>
-                  stats.isActive ? navigation.navigate('Study', { sessionId: item.id }) : restart(item)
-                }
-              />
-            </View>
+            <SessionCard
+              deckName={item.deckName}
+              isActive={isActive}
+              answeredCount={item.results.length}
+              cardCount={cardCount}
+              tally={tally}
+              shares={sessionProgressShares(tally, cardCount)}
+              startedLabel={formatDate(item.startedAt)}
+              missedCount={missedCount}
+              menuItems={[
+                {
+                  label: 'Start a new session',
+                  icon: 'play',
+                  onPress: () => startFrom(item, deck => deck.cards.map(card => card.id)),
+                },
+                {
+                  label: isActive ? 'Discard session' : 'Clear session',
+                  icon: 'delete',
+                  destructive: true,
+                  onPress: () => confirmDelete(item),
+                },
+              ]}
+              onResume={
+                isActive ? () => navigation.navigate('Study', { sessionId: item.id }) : undefined
+              }
+              onReplay={isActive ? undefined : () => startFrom(item, () => item.cardIds)}
+              onReplayMissed={
+                missedCount > 0
+                  ? () => startFrom(item, () => getMissedOrUnsureCardIds(item))
+                  : undefined
+              }
+            />
           );
         }}
       />
@@ -203,61 +194,5 @@ const styles = StyleSheet.create({
   },
   listContentEmpty: {
     flexGrow: 1,
-  },
-  headerText: {
-    color: colors.textMuted,
-    fontSize: 13,
-  },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
-    gap: spacing.sm,
-  },
-  cardActive: {
-    borderColor: colors.primary,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-  },
-  cardTitle: {
-    flex: 1,
-    gap: 2,
-  },
-  deckName: {
-    color: colors.text,
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  status: {
-    color: colors.textMuted,
-    fontSize: 13,
-  },
-  statusActive: {
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  metaRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.md,
-  },
-  meta: {
-    color: colors.textMuted,
-    fontSize: 13,
-  },
-  ok: {
-    color: colors.success,
-  },
-  okeish: {
-    color: colors.warning,
-  },
-  notOk: {
-    color: colors.danger,
   },
 });

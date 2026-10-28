@@ -68,28 +68,30 @@ The split here is by **folder, not by suffix** — there is no `*Screen` / `*Con
   and no navigator.
 
 `AppMenu` is the one exception and a deliberate one: it calls `exportSampleDeck` directly because
-it has no screen to belong to — the navigator mounts it as `headerRight` on the Learn and
-Statistics screens, and the Decks toolbar mounts it on the Decks screen. It takes optional
-`extraItems` so a screen can add items without `AppMenu` gaining store knowledge: the Learn screen
-overrides `headerRight` itself (via `navigation.setOptions`, as the Decks screen does) to supply
-**Clear completed sessions**.
+it has no screen to belong to — the navigator mounts it as `headerRight` on the Statistics
+screen, and the **Header toolbar** mounts it (boxed) on the Decks and Learn screens. It takes
+optional `extraItems` so a screen can add items without `AppMenu` gaining store knowledge: the
+Learn screen overrides `headerRight` itself (via `navigation.setOptions`, as the Decks screen does)
+with a Header toolbar whose `menuItems` supply **Clear completed sessions**.
 
 ## Header and menus
 
 - **App menu** (`AppMenu`, labelled `App menu`): the three-dot control at the right of the header
-  on the three root screens. Holds **Export sample deck** and **Settings**; on the Learn screen it
-  also holds **Clear completed sessions**, first. Detail screens do not show it. Aliases: **the
+  on the three root screens (inside the **Header toolbar** on Decks and Learn). Holds **Export
+  sample deck** and **Settings**; on the Learn screen it also holds **Clear completed sessions**,
+  first. Detail screens do not show it. Aliases: **the
   header menu**, **the overflow menu**
 - **Kebab menu** (`KebabMenu`): the reusable three-dot control. Default label `More options`;
   callers override it. Opens a **Menu sheet**. Has a `plain` variant (bare dots) and a `boxed`
-  variant (a bordered rounded square, used by the **Decks toolbar**). Aliases: **three-dot menu**,
+  variant (a bordered rounded square, used by the **Header toolbar**). Aliases: **three-dot menu**,
   **options button**
 - **Menu sheet** (`MenuSheet`): the bottom sheet a Kebab menu opens — a dimmed backdrop and a list
   of **Menu items**, each with an optional **Menu icon** and an optional `destructive` flag that
   colours it danger. This is the app's only menu surface. Aliases: **bottom sheet**, **action
   sheet**
 - **Menu icon** (`MenuIcon`): the small glyph on a menu item, and also used outside menus (the
-  **Decks toolbar** and the **Deck meta row**). The available names are the `MenuIconName` type in
+  **Header toolbar**, the **Deck meta row**, and the **Session card footer**). The available names
+  are the `MenuIconName` type in
   [src/components/MenuIcons.tsx](../../src/components/MenuIcons.tsx), and every glyph is drawn from
   nested `View`s. An optional `size` scales a glyph from its 20-point grid. **Reuse an existing
   name rather than adding a second glyph for an existing idea**, and remember that adding one means
@@ -100,14 +102,21 @@ overrides `headerRight` itself (via `navigation.setOptions`, as the Decks screen
 Everything else that interrupts the user is a native `Alert` — confirmations, failures, and the
 "not available yet" stubs.
 
+## Header toolbar
+
+- **Header toolbar** (`HeaderToolbar`): the three rounded-square buttons at the right of the header
+  on the Decks and Learn screens, in this order: **Search button**, **Filter button**, and the
+  **App menu** (the Kebab menu in its `boxed` variant). Each screen sets it as `headerRight`
+  itself, supplying the two button labels and, optionally, `menuItems` for the App menu; both
+  screens' header titles are larger and bolder than the other screens'. It was the **Decks
+  toolbar** before the Learn screen used it.
+- **Search button**: labelled `Search decks` on the Decks screen and `Search sessions` on the Learn
+  screen. **A stub** — shows a "not available yet" alert.
+- **Filter button**: labelled `Filter decks` on the Decks screen and `Filter sessions` on the Learn
+  screen. **A stub** — shows a "not available yet" alert.
+
 ## Decks screen
 
-- **Decks toolbar** (`DecksToolbar`): the three rounded-square buttons at the right of the Decks
-  screen's header, in this order: **Search button**, **Filter button**, and the **App menu** (the
-  Kebab menu in its `boxed` variant). The Decks screen sets it as `headerRight` itself, and its
-  header title is larger and bolder than the other screens'.
-- **Search button**: labelled `Search decks`. **A stub** — shows a "not available yet" alert.
-- **Filter button**: labelled `Filter decks`. **A stub** — shows a "not available yet" alert.
 - **Deck card** (`DeckCard`): one deck's row — a header (its name on one truncated line, its card
   count, and the **Deck options menu**), a **Mastery bar**, and a **Deck meta row**.
 - **Mastery bar** (`MasteryBar`): the darker inset panel on a Deck card — a segmented track with one
@@ -143,9 +152,38 @@ Everything else that interrupts the user is a native `Alert` — confirmations, 
 
 ## Learn screen
 
-- **Session card**: one session's row. Carries a **primary border when the session is active**,
-  which is the main visual signal on this screen. Only **listed** sessions get one — active, or
-  completed and not cleared.
+- **Session card** (`SessionCard`): one session's row — a header (the deck name on one truncated
+  line over the **Session status pill**, and the **Session options menu**), a **Session results
+  bar**, and a **Session card footer**. Active and completed cards share this structure and the
+  same neutral border; the pill and the footer buttons are what differ. Only **listed** sessions
+  get one — active, or completed and not cleared.
+- **Session status pill**: the small rounded pill under the deck name, whose text is
+  ``In progress — {answered}/{total} cards`` on an active session and ``Completed — {n} cards`` on a
+  completed one. Active is tinted primary with a dot; completed is tinted success with a tick
+  (**Answer icon**). "In progress" and "Completed" are the user-facing words; **active** is the
+  word used in code and in prose about state.
+- **Session results bar** (`SessionResultsBar`): the segmented track and legend on a Session card,
+  labelled ``Progress: {answered} of {total} answered — {n} ok, {n} okeish, {n} not ok``. One
+  segment per answer — green ok, amber okeish, red not ok — each sized by its share of **all the
+  session's cards** (`sessionProgressShares`), so the unfilled remainder of the track is the
+  unanswered part. Below it, a **legend** of three **Answer icons** (tick, question mark, cross),
+  each with its count; the icons are grey while nothing is answered. Not the **Session progress
+  bar** on the Study screen, which shows position through the session as one white bar, and not the
+  **Success bar** or the **Mastery bar**, which are sized by answers as a share of *reviews* or a
+  single rate.
+- **Session card footer**: the bottom row of a Session card, under a divider — on the left a clock
+  glyph and `Started {date}`, on the right the replay and resume buttons below, vertically centred.
+- **Resume button**: the primary icon-only Button with a play glyph, shown **only on an active
+  session**, labelled ``Resume session for {deck name}``. Continues that session in the Study
+  screen.
+- **Replay button**: the secondary icon-only Button with a `replay` glyph, shown **only on a
+  completed session**, labelled ``Replay session for {deck name}``. Creates a **new** session over
+  the same cards; the original is never cleared or deleted.
+- **Replay missed button**: the warning icon-only Button with a `replay` glyph, shown **only on a
+  completed session that has missed or unsure cards**, to the left of the Replay button, labelled
+  ``Replay the {n} missed or unsure card(s) for {deck name}``. Creates a **new** session over the
+  not ok and okeish cards. "Unsure" appears in this label as it does in the Study summary's.
+- **Search button** and **Filter button** on this screen belong to the **Header toolbar**.
 - **Cleared session**: a completed session the user removed from the Learn list
   ([ADR-0008](../../docs/architecture/decisions/0008-clear-completed-sessions.md)). It is hidden
   from the Learn screen but kept and **still counted everywhere** (Sessions tile, Deck meta row,
@@ -155,21 +193,11 @@ Everything else that interrupts the user is a native `Alert` — confirmations, 
   screen (delete glyph). With nothing to clear it alerts `No completed sessions to clear.`;
   otherwise an `Alert` says how many completed sessions will be removed from the list and that
   their results stay in Statistics, with **Cancel** and a destructive **Clear**.
-- **Session status line**: ``In progress — {answered}/{total} cards`` or
-  ``Completed — {n} cards``. "In progress" and "Completed" are the user-facing words; **active** is
-  the word used in code and in prose about state.
-- **Session meta row**: `Success`, `{n} ok`, `{n} okeish`, `{n} not ok`, `Started`. The three
-  counts are tinted success, warning, and danger.
-- **Resume button**: labelled `Resume session` on an active session and `Study this deck again` on
-  a completed one — one control, two labels, two behaviours.
 - **Session options menu**: the Kebab menu on a Session card, labelled
   ``Options for the {deck name} session``. Holds **Start a new session** and a destructive item
   labelled **Discard session** when active (a real delete) and **Clear session** when completed
   (archives it as a **Cleared session**; the confirmation says its results stay in Statistics).
   **Clear session** was **Delete session** before ADR-0008.
-- **Sessions header**: the muted line above the list — `No session in progress` or
-  ``{n} session(s) in progress``. Counts and hides over the listed sessions; hidden when the list
-  is empty.
 - **Sessions empty state**: `No sessions yet` when no session exists at all, and `No sessions to
   show` when sessions exist but every one is cleared (its message says cleared sessions still count
   in Statistics). Both carry a **Go to decks** action.
@@ -182,8 +210,9 @@ The densest screen in the app, and the one with vocabulary worth being precise a
   answers are counted there, not okeish.
 - **Session progress bar**: the thin **Success bar** under the progress header. It shows **how far
   through the session the user is**, not how well they are doing — the same component, a different
-  meaning. Say which you mean. It is drawn in fixed white (`colors.text`, via `SuccessBar`'s `color`
-  prop), **not** the success/warning/danger rate colours, so it cannot be read as a rate.
+  meaning. Say which you mean. Not the **Session results bar** on the Learn screen's Session cards.
+  It is drawn in fixed white (`colors.text`, via `SuccessBar`'s `color` prop), **not** the
+  success/warning/danger rate colours, so it cannot be read as a rate.
 - **History strip** (`HistoryStrip`, labelled `Answers so far`): the horizontal row of small tiles,
   one per answer — green for ok, yellow (warning) for okeish, red for not ok. The tile for the
   card on screen is taller and outlined. Auto-scrolls to keep the current card in view.
@@ -202,7 +231,8 @@ The densest screen in the app, and the one with vocabulary worth being precise a
   counts as a review but **earns no credit** in the success rate (`ok / (ok + okeish + not ok)`, so
   an okeish-only card is 0%, not `--`), and the **Session summary** replays it along with the
   missed cards ([ADR-0007](../../docs/architecture/decisions/0007-okeish-third-answer.md)). The UI
-  word is always "okeish"; "unsure" appears only in the replay action's label.
+  word is always "okeish"; "unsure" appears only in two labels, the Study summary's replay action
+  and the Learn screen's **Replay missed button**.
 - **Swipe hint**: the dim line between the card and the buttons. It is **empty except while
   reviewing**, when it reads `Reviewing an answered card — swipe left to get back to where you were`.
   Nothing on screen advertises swiping right; the gesture is undiscoverable until tried.
@@ -252,15 +282,16 @@ The densest screen in the app, and the one with vocabulary worth being precise a
   it has a 48-point minimum size; while loading, an icon-only button shows the spinner in place of
   its icon. Icon-only is a mode of Button, not a second component. There is still no text button
   and no separate icon button — if you need one, that is a vocabulary change.
-- **Answer icon** (`AnswerIcon`, in `AnswerIcons.tsx`): the glyph on an Answer button and in the
-  **Mastery bar** legend — `tick`, `cross`, or `question`, drawn from nested `View`s and hidden from
+- **Answer icon** (`AnswerIcon`, in `AnswerIcons.tsx`): the glyph on an Answer button, in the
+  **Mastery bar** and **Session results bar** legends, and in the **Session status pill** (tick) — `tick`, `cross`, or `question`, drawn from nested `View`s and hidden from
   accessibility. It is separate
   from the **Menu icon** vocabulary; do not add an answer glyph to `MenuIcon` or the reverse.
 - **Not ok / Not Ok**: capitalisation differs by place. The Answer button's label is `Not ok`
   (sentence case); the tiles and the summary say `Not Ok`; the meta rows say `not ok` in running
   text. Match the place you are in.
-- **Success bar** (`SuccessBar`): the horizontal rate bar, used on the Learn, Study, Statistics and
-  Deck statistics screens — not the Decks screen, which uses the **Mastery bar**. **Colour carries
+- **Success bar** (`SuccessBar`): the horizontal rate bar, used on the Study, Statistics and Deck
+  statistics screens — not the Decks screen, which uses the **Mastery bar**, nor the Learn screen,
+  which uses the **Session results bar**. **Colour carries
   meaning and is fixed by the rate**: border grey for *no data*, success green at 70% and above,
   warning amber from 40%, danger red below. Grey and 0% are different states and the app
   distinguishes them. The one override is the optional `color` prop, which replaces the rate colour

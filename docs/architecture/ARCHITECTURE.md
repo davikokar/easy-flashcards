@@ -38,7 +38,7 @@ vocabulary is in
 | Tab | Canonical name | What it shows | Implementation |
 |---|---|---|---|
 | Decks | **Decks screen** | Every imported deck as a **Deck card**: its card count, a **Mastery bar** splitting its reviews into Ok / Okeish / Not ok, its session and active-session counts, and its last session date. Where a deck is imported, started (in deck order or shuffled), and deleted. | `DecksScreen`, route `DecksList` |
-| Learn | **Learn screen** | Every listed session — active, or completed and not cleared — unfinished ones first. Where a session is resumed or restarted, an active one discarded (a real delete), and a completed one cleared, singly or all at once (hidden from the list but still counted — [ADR-0008](decisions/0008-clear-completed-sessions.md)). | `LearnScreen`, route `LearnList` |
+| Learn | **Learn screen** | Every listed session — active, or completed and not cleared — as a **Session card**, active ones first and most recently touched first within each group. A card shows a **Session status pill**, a **Session results bar** splitting the session's cards into answered Ok / Okeish / Not ok and unanswered, and a footer with the start date and icon-only buttons: **Resume** on an active session; **Replay** (the session's own cards, in its order) and, when it has any, **Replay missed** (its Not ok and Okeish cards) on a completed one. Where a session is resumed, replayed, or restarted over the whole deck — each start a new session, leaving the original untouched — an active one discarded (a real delete), and a completed one cleared, singly or all at once (hidden from the list but still counted — [ADR-0008](decisions/0008-clear-completed-sessions.md)). | `LearnScreen`, route `LearnList` |
 | Learn | **Study screen** | One session: the flip card, the icon-only answer buttons (Not Ok, Okeish, Ok — [ADR-0007](decisions/0007-okeish-third-answer.md)), the answered-so-far strip, and the end-of-session summary, which offers to replay the missed or unsure cards. | `StudyScreen`, route `Study` (param `sessionId`) |
 | Statistics | **Statistics screen** | Totals across every deck, then one row per deck. | `StatsScreen`, route `StatsOverview` |
 | Statistics | **Deck statistics screen** | One deck's totals and every card in it, hardest first. | `DeckStatsScreen`, route `DeckStats` (param `deckId`) |
@@ -50,9 +50,9 @@ three are the roots of their tabs and are reached only by switching tab.
 There are no modal screens. Transient UI is either an `Alert` or the **Menu sheet**
 (`MenuSheet`), a bottom sheet rendered in a `Modal` and opened from a **Kebab menu**
 (`KebabMenu`). The **App menu** (`AppMenu`) in the header is one of those kebab menus; on the
-Decks screen it sits at the end of the **Decks toolbar** (`DecksToolbar`), after the **Search
-button** and **Filter button**, and on the Learn screen it carries **Clear completed sessions**
-ahead of its common items.
+Decks and Learn screens it sits at the end of the **Header toolbar** (`HeaderToolbar`), after the
+**Search button** and **Filter button**, and on the Learn screen it carries **Clear completed
+sessions** ahead of its common items.
 
 ---
 
@@ -81,7 +81,8 @@ AsyncStorage                              Device (SAF)
                         │   (derive with utils/stats.ts inside useMemo)
                         │
               Components (Button, FlipCard, RichText, SuccessBar,
-                          MasteryBar, DeckCard, DecksToolbar,
+                          MasteryBar, DeckCard, HeaderToolbar,
+                          SessionCard, SessionResultsBar,
                           HistoryStrip, EmptyState, KebabMenu, MenuSheet)
                         ← plain props + callbacks, no store access
 ```
@@ -99,7 +100,8 @@ credit in any success rate ([ADR-0007](decisions/0007-okeish-third-answer.md)).
 
 **Decks and sessions meet only in the reducer.** A `Session` holds a `deckId`, a snapshot of
 `deckName`, and a frozen `cardIds` array; it never holds a `Card`. Resolving a session back to its
-deck is the Study screen's job, through `getDeck(session.deckId)` —
+deck is the job of the screen that needs the cards — the Study screen, and the Learn screen when it
+starts a new session from an old one — through `getDeck(session.deckId)` —
 [ADR-0002](decisions/0002-sessions-are-snapshots.md).
 
 **Clearing a session archives it; it does not delete it.** `clearCompletedSessions` and
@@ -121,7 +123,7 @@ testable under Jest with no renderer and no mocks. Every file in `__tests__/` te
 |---|---|
 | [`csv.ts`](../../src/utils/csv.ts) | `parseFlashcardsCsv` — wraps PapaParse, detects the delimiter, matches the `Question` / `Answer` headers case-insensitively, skips incomplete rows and counts them, throws `CsvImportError` on a file it cannot use. Also `deckNameFromFileName`. |
 | [`html.ts`](../../src/utils/html.ts) | A tolerant HTML parser: `parseHtml` to `HtmlNode[]`, `decodeEntities`, `htmlToPlainText`, and the `BLOCK_TAGS` set. It never throws — unclosed and stray tags are absorbed. |
-| [`stats.ts`](../../src/utils/stats.ts) | Every derived number in the app: `successRate`, `answerShares`, `getDeckStats`, `getGlobalStats`, `getSessionTally`, `getSessionStats`, `getMissedOrUnsureCardIds`, `summarizeSessions`, `summarizeSessionsByDeck` (with `EMPTY_SESSION_SUMMARY` for a deck that has none), `isSessionActive`, `isSessionCleared`, `listedSessions` (the sessions the Learn screen shows), `clearableSessionCount` (completed sessions not yet cleared), `clearCompletedSessionsAt` and `clearSessionAt` (the transforms the reducer applies to clear sessions, returning the same array when nothing qualifies), `previousReviewIndex` (where a review swipe right on the Study screen lands — one answered card back, wrapping from the oldest round to the frontier), `sortSessions`, `sortCardsByDifficulty`, `cardReviewCount`, and the `formatRate` / `formatDate` display helpers. |
+| [`stats.ts`](../../src/utils/stats.ts) | Every derived number in the app: `successRate`, `answerShares`, `sessionProgressShares` (each answer's share of a session's cards rather than of its reviews, scaled down together if the results ever outnumber the cards), `resolvableCardIds` (the given card ids that still exist in a deck, in the given order — what the Learn screen passes to `startSession`), `getDeckStats`, `getGlobalStats`, `getSessionTally`, `getSessionStats`, `getMissedOrUnsureCardIds`, `summarizeSessions`, `summarizeSessionsByDeck` (with `EMPTY_SESSION_SUMMARY` for a deck that has none), `isSessionActive`, `isSessionCleared`, `listedSessions` (the sessions the Learn screen shows), `clearableSessionCount` (completed sessions not yet cleared), `clearCompletedSessionsAt` and `clearSessionAt` (the transforms the reducer applies to clear sessions, returning the same array when nothing qualifies), `previousReviewIndex` (where a review swipe right on the Study screen lands — one answered card back, wrapping from the oldest round to the frontier), `sortSessions`, `sortCardsByDifficulty`, `cardReviewCount`, and the `formatRate` / `formatDate` display helpers. |
 | [`fileUri.ts`](../../src/utils/fileUri.ts) | `fileUriToPath` and `pathToFileUri` — the percent-encoding boundary between a `file://` URI and a path. |
 | [`shuffle.ts`](../../src/utils/shuffle.ts) | `shuffle(items, random = Math.random)` — Fisher-Yates over a copy; the input is never mutated. `random` is injectable so tests are deterministic. The Decks screen uses it to order the `cardIds` it passes to `startSession`. |
 
@@ -134,10 +136,13 @@ count cleared sessions deliberately, and a test pins it
 
 The same goes for counting answers. `successRate(ok, okeish, notOk)` credits only Ok, so a card
 answered only Okeish is 0%, not `--`. `getSessionTally` is the one three-way count of a session's
-results, and `getMissedOrUnsureCardIds` (every card not answered Ok, once each) is what the replay
-starts from. `answerShares(tally)` is the display split — each answer's percentage of all
-reviews, or `null` when nothing has been reviewed — and is what the Mastery bar draws; it is not a
-success rate and does not replace one. Code that computes Not Ok as "everything that is not Ok" silently counts Okeish as
+results, and `getMissedOrUnsureCardIds` (every card not answered Ok, once each) is what both
+replays of missed cards start from — the Study screen's end-of-session summary and the Learn
+screen's **Replay missed** button. `answerShares(tally)` is the display split — each answer's
+percentage of all reviews, or `null` when nothing has been reviewed — and is what the Mastery bar
+draws. `sessionProgressShares(tally, cardCount)` is the same split over a session's cards instead,
+so its shares sum to the answered fraction, and is what the Session results bar draws. Neither is a
+success rate and neither replaces one. Code that computes Not Ok as "everything that is not Ok" silently counts Okeish as
 Not Ok — [ADR-0007](decisions/0007-okeish-third-answer.md).
 
 ### `src/types.ts` — the shapes
@@ -184,24 +189,26 @@ the flip and the viewed card index for the second.
 | [`Button.tsx`](../../src/components/Button.tsx) | The only button. Variants `primary`, `secondary`, `success`, `danger`, `warning`; handles `disabled` and `loading`. Takes an optional `icon` render function, passed the foreground colour for the variant; with no `label` it is icon-only, and its type then requires an `accessibilityLabel`. |
 | [`FlipCard.tsx`](../../src/components/FlipCard.tsx) | The study card. Two faces, a `rotateY` interpolation, and a scrollable body. Owns the animation, not the flip state. |
 | [`RichText.tsx`](../../src/components/RichText.tsx) | Renders `parseHtml` output as nested `<Text>`. See §6. |
-| [`SuccessBar.tsx`](../../src/components/SuccessBar.tsx) | The one visual encoding of a success rate. Used on every screen except the Decks screen, which shows a `MasteryBar` instead. An optional `color` overrides the rate-based colours for a bar that is not a success rate — the Study screen's session progress bar passes `colors.text`. |
+| [`SuccessBar.tsx`](../../src/components/SuccessBar.tsx) | The one visual encoding of a success rate. Used on the Study, Statistics and Deck statistics screens; the Decks screen shows a `MasteryBar` and the Learn screen a `SessionResultsBar` instead. An optional `color` overrides the rate-based colours for a bar that is not a success rate — the Study screen's session progress bar passes `colors.text`. |
 | [`MasteryBar.tsx`](../../src/components/MasteryBar.tsx) | The Ok / Okeish / Not ok split of a deck's reviews: a segmented track plus a legend giving each answer's `AnswerIcon` (tick, question mark, cross, in the answer's colour) followed by its percentage. Takes the output of `answerShares`; with `null` it draws an empty track, grey icons, and `--` for each share. The panel carries one accessibility label summarising all three shares. |
 | [`DeckCard.tsx`](../../src/components/DeckCard.tsx) | One deck on the Decks screen: a header with the name, card count and the **Deck options menu** (a `KebabMenu`), a `MasteryBar`, and a footer with the session counts, the last-session date and the **Start session button**. Takes display-ready values and callbacks; derives nothing. |
-| [`DecksToolbar.tsx`](../../src/components/DecksToolbar.tsx) | The Decks screen's `headerRight`: the **Search button** and **Filter button**, then the `AppMenu` in its `boxed` variant. The two buttons only call the callbacks they are given. |
+| [`HeaderToolbar.tsx`](../../src/components/HeaderToolbar.tsx) | The `headerRight` of the Decks and Learn screens: the **Search button** and **Filter button**, then the `AppMenu` in its `boxed` variant. Takes the two buttons' accessibility labels, and optional `menuItems` that it passes to `AppMenu` as `extraItems`. The two buttons only call the callbacks they are given. It was `DecksToolbar` until the Learn screen used it. |
+| [`SessionCard.tsx`](../../src/components/SessionCard.tsx) | One session on the Learn screen: a header with the deck name, the **Session status pill** and the **Session options menu** (a `KebabMenu`), a `SessionResultsBar`, and a footer with the start date and the icon-only **Resume**, **Replay missed** and **Replay** buttons. Resume shows only on an active session and the two replays only on a completed one, each only when its callback is given. Takes display-ready values and callbacks; derives nothing. |
+| [`SessionResultsBar.tsx`](../../src/components/SessionResultsBar.tsx) | A session's answered part: a segmented track whose Ok / Okeish / Not ok segments are each sized by their share of the session's cards, so the unfilled remainder is the unanswered part, plus a legend giving each answer's `AnswerIcon` and count, the icons grey while nothing is answered. Takes the output of `sessionProgressShares`, the tally and the card count. The panel carries one accessibility label. Not a success rate. |
 | [`HistoryStrip.tsx`](../../src/components/HistoryStrip.tsx) | The answered-so-far tiles on the Study screen, coloured per answer; auto-scrolls to the current card. |
 | [`EmptyState.tsx`](../../src/components/EmptyState.tsx) | Every list's `ListEmptyComponent`. |
-| [`KebabMenu.tsx`](../../src/components/KebabMenu.tsx) | The three-dot control; opens a `MenuSheet`. Owns the open/closed state. An optional `variant="boxed"` draws the trigger as a bordered rounded square, matching the Decks toolbar's buttons; the default is `plain`. |
+| [`KebabMenu.tsx`](../../src/components/KebabMenu.tsx) | The three-dot control; opens a `MenuSheet`. Owns the open/closed state. An optional `variant="boxed"` draws the trigger as a bordered rounded square, matching the Header toolbar's buttons; the default is `plain`. |
 | [`MenuSheet.tsx`](../../src/components/MenuSheet.tsx) | The bottom sheet, in a `Modal`. Defines the shared `MenuItem` type. |
-| [`MenuIcons.tsx`](../../src/components/MenuIcons.tsx) | `MenuIcon` — every menu icon, drawn from nested `View`s on a 20-point grid. Also carries the `search`, `filter` and `clock` glyphs, which are used outside menus (the Decks toolbar and the Deck card). An optional `size` scales the grid about its centre. |
-| [`AnswerIcons.tsx`](../../src/components/AnswerIcons.tsx) | `AnswerIcon` — the tick, cross and question-mark glyphs for Ok, Not Ok and Okeish, drawn from rotated `View`s. Used on the Study screen's answer buttons and in the `MasteryBar` legend. Hidden from accessibility; the containing button or panel carries the name. |
+| [`MenuIcons.tsx`](../../src/components/MenuIcons.tsx) | `MenuIcon` — every menu icon, drawn from nested `View`s on a 20-point grid. Also carries glyphs used outside menus: `search` and `filter` in the Header toolbar, `clock` in the Deck card and Session card footers, and `replay` on the Session card's two replay buttons. An optional `size` scales the grid about its centre. |
+| [`AnswerIcons.tsx`](../../src/components/AnswerIcons.tsx) | `AnswerIcon` — the tick, cross and question-mark glyphs for Ok, Not Ok and Okeish, drawn from rotated `View`s. Used on the Study screen's answer buttons, in the `MasteryBar` and `SessionResultsBar` legends, and as the tick in a completed session's status pill. Hidden from accessibility; the containing button or panel carries the name. |
 | [`AppMenu.tsx`](../../src/components/AppMenu.tsx) | The header kebab menu. The one component that calls a service. Passes an optional `variant` through to its `KebabMenu`, and takes optional `extraItems` — screen-specific `MenuItem`s shown before Export sample deck and Settings — so a screen can add an item without `AppMenu` reading the store. |
 
 `AppMenu` is the exception to "components take plain props": it calls `exportSampleDeck` directly
-because it has no screen to belong to — it is mounted by the navigator as `headerRight`, or, on the
-Decks screen, inside `DecksToolbar`. `DecksToolbar` therefore reaches a service too, but only
-through `AppMenu`. The Learn screen mounts its own `AppMenu` with an `extraItems` entry for
-**Clear completed sessions**, whose callback is the screen's; `AppMenu` itself still knows nothing
-of the store.
+because it has no screen to belong to — it is mounted by the navigator as the Statistics screen's
+`headerRight`, or, on the Decks and Learn screens, inside `HeaderToolbar`. `HeaderToolbar`
+therefore reaches a service too, but only through `AppMenu`. The Learn screen passes **Clear
+completed sessions** to `HeaderToolbar` as a `menuItems` entry, which reaches `AppMenu` as
+`extraItems`; the callback is the screen's, so neither component knows anything of the store.
 
 ### App entry points
 
@@ -243,9 +250,9 @@ the back stack.
 
 Each root screen carries the **App menu** as `headerRight`, set in `RootNavigator`. Two root
 screens override their own `headerRight` with `navigation.setOptions` in a `useLayoutEffect`: the
-Decks screen replaces it with the **Decks toolbar**, which renders the App menu after the Search
-and Filter buttons, and the Learn screen replaces it with an App menu carrying **Clear completed
-sessions** as an extra item. Only the Statistics screen uses the navigator's default. Detail
+Decks and Learn screens both replace it with the **Header toolbar**, which renders the App menu
+after the Search and Filter buttons; the Learn screen's also passes **Clear completed sessions** to
+that App menu as an extra item. Only the Statistics screen uses the navigator's default. Detail
 screens carry no App menu.
 
 ---
@@ -384,10 +391,9 @@ proposing a change:
   rename of every session's `deckName` snapshot, and nothing calls it. The *Edit deck* menu item
   alerts instead.
 - **Several menu entries and buttons are placeholders.** *Edit deck*, *Add deck manually*, the
-  XML / JSON / JSONL import formats, *Settings*, and the Decks toolbar's **Search button** and
-  **Filter button** all show a "not available yet" alert. They are deliberate stubs, not bugs.
-- **`README.md` describes two tabs.** The app has had three since the Learn tab landed, and the
-  README's feature list and project-structure table were not updated with it.
+  XML / JSON / JSONL import formats, *Settings*, and the Header toolbar's **Search button** and
+  **Filter button** — on both the Decks screen and the Learn screen — all show a "not available
+  yet" alert. They are deliberate stubs, not bugs.
 - **The whole store is written on every change.** Two full arrays are serialised and written for a
   single answer. At the volumes a hand-imported CSV produces this costs nothing; it does not scale
   to a large library, and nothing currently bounds deck size or the number of kept sessions,

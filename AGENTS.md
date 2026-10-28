@@ -297,9 +297,9 @@ Recorded here so they are not rediscovered as surprises. The full list, with rea
 - **`renameDeck` is exposed by the store and called by nothing.** The deck kebab menu's *Edit deck*
   item shows a "not available yet" alert.
 - **Several menu entries and buttons are placeholders** that alert rather than act: *Edit deck*,
-  *Add deck manually*, the XML / JSON / JSONL import formats, *Settings*, and the Decks toolbar's
-  **Search button** and **Filter button**. They are intentional stubs, not bugs — do not "fix" one
-  into existence without being asked.
+  *Add deck manually*, the XML / JSON / JSONL import formats, *Settings*, and the Header toolbar's
+  **Search button** and **Filter button** on both the Decks and Learn screens. They are intentional
+  stubs, not bugs — do not "fix" one into existence without being asked.
 
 ## What to ask before doing
 

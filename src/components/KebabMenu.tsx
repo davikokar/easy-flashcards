@@ -7,7 +7,7 @@ type Props = {
   items: MenuItem[];
   title?: string;
   accessibilityLabel?: string;
-  /** `boxed` is the rounded-square trigger used in the Decks toolbar. */
+  /** `boxed` is the rounded-square trigger used in the Header toolbar. */
   variant?: 'plain' | 'boxed';
 };
 

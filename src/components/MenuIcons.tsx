@@ -12,7 +12,8 @@ export type MenuIconName =
   | 'search'
   | 'filter'
   | 'clock'
-  | 'shuffle';
+  | 'shuffle'
+  | 'replay';
 
 type Props = { name: MenuIconName; color: string; size?: number };
 
@@ -123,6 +124,19 @@ function Glyph({ name, color }: { name: MenuIconName; color: string }) {
           <View style={[styles.shuffleLine, styles.shuffleFalling, { backgroundColor: color }]} />
           <View style={[styles.shuffleHead, styles.shuffleHeadTop, { borderLeftColor: color }]} />
           <View style={[styles.shuffleHead, styles.shuffleHeadBottom, { borderLeftColor: color }]} />
+        </View>
+      );
+    case 'replay':
+      return (
+        <View style={styles.container}>
+          <View
+            style={[
+              styles.replayRing,
+              { borderTopColor: color, borderBottomColor: color },
+            ]}
+          />
+          <View style={[styles.replayHead, styles.replayHeadTop, { borderLeftColor: color }]} />
+          <View style={[styles.replayHead, styles.replayHeadBottom, { borderLeftColor: color }]} />
         </View>
       );
   }
@@ -363,5 +377,38 @@ const styles = StyleSheet.create({
   },
   shuffleHeadBottom: {
     bottom: 2,
+  },
+  // Top and bottom quarter-turn arcs of a ring; the left and right gaps hold the arrowheads.
+  replayRing: {
+    position: 'absolute',
+    top: 3,
+    left: 3,
+    width: 14,
+    height: 14,
+    borderWidth: 2,
+    borderRadius: 7,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+  },
+  // Each head is a right-pointing triangle rotated onto the clockwise tangent at its arc's end.
+  replayHead: {
+    position: 'absolute',
+    width: 0,
+    height: 0,
+    borderTopWidth: 3.5,
+    borderBottomWidth: 3.5,
+    borderLeftWidth: 5,
+    borderTopColor: 'transparent',
+    borderBottomColor: 'transparent',
+  },
+  replayHeadTop: {
+    top: 4,
+    left: 13.5,
+    transform: [{ rotate: '45deg' }],
+  },
+  replayHeadBottom: {
+    top: 9,
+    left: 1.5,
+    transform: [{ rotate: '225deg' }],
   },
 });

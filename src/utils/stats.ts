@@ -36,6 +36,26 @@ export function answerShares(tally: AnswerTally): AnswerShares | null {
   };
 }
 
+/** Each answer's percentage of the session's cards (0-100); the shares sum to the progress filled. */
+export function sessionProgressShares(tally: AnswerTally, cardCount: number): AnswerShares {
+  if (cardCount <= 0) {
+    return { ok: 0, okeish: 0, notOk: 0 };
+  }
+  const ok = (tally.okCount / cardCount) * 100;
+  const okeish = (tally.okeishCount / cardCount) * 100;
+  const notOk = (tally.notOkCount / cardCount) * 100;
+  const sum = ok + okeish + notOk;
+  // Scale down together so the proportions survive when the tally overshoots the card count.
+  const scale = sum > 100 ? 100 / sum : 1;
+  return { ok: ok * scale, okeish: okeish * scale, notOk: notOk * scale };
+}
+
+/** The ids that still exist in the deck, in the given order. */
+export function resolvableCardIds(cardIds: string[], deck: Deck): string[] {
+  const existing = new Set(deck.cards.map(card => card.id));
+  return cardIds.filter(id => existing.has(id));
+}
+
 export function getDeckStats(deck: Deck): DeckStats {
   let okCount = 0;
   let okeishCount = 0;

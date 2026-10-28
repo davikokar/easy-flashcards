@@ -5,7 +5,8 @@ card by card, and track how well you know each card.
 
 ## Features
 
-- **Bottom tab navigation** with a *Decks* tab (import and study) and a *Statistics* tab.
+- **Bottom tab navigation** with a *Decks* tab (import decks and start sessions), a *Learn* tab
+  (your sessions, and where you study them) and a *Statistics* tab.
 - **CSV import** from any local file through the Android system file picker.
   - Columns `Question` and `Answer` (header matching is case-insensitive).
   - Delimiters: semicolon (`;`) or tab (`\t`).
@@ -14,12 +15,18 @@ card by card, and track how well you know each card.
   *Okeish* (question mark) and *Ok* (tick) — a progress indicator, and an end-of-session summary
   that offers to replay the cards you missed or were unsure of. Okeish counts as a review but not
   as a success.
+- **Session list** on the *Learn* tab: every session in progress and every completed one you have
+  not cleared, unfinished first, each with its progress split into ok / okeish / not ok. Resume a
+  session in progress; replay a completed one over the same cards, or replay only the cards you
+  missed or were unsure of. A replay is a new session and leaves the original as it was. Completed
+  sessions can be cleared from the list, one at a time or all at once; they still count in
+  Statistics.
 - **HTML formatting** on both sides of a card: `<b>`, `<i>`, `<u>`, `<s>`, `<br />`, `<p>`,
   `<ul>`/`<ol>`/`<li>`, `<h1>`-`<h6>`, `<code>`, `<mark>`, `<font color="...">`, HTML entities.
 - **Statistics** persisted locally: per-deck review counts, success rate and session counts, plus a
   per-card drill-down sorted hardest first.
-- Everything is stored on-device with AsyncStorage; results are saved when a session ends,
-  including when you leave the session early.
+- Everything is stored on-device with AsyncStorage. Each answer is saved the moment you give it,
+  so leaving a session early loses nothing and you can resume it later from the *Learn* tab.
 
 ## CSV format
 
@@ -58,7 +65,7 @@ npm test
 | Path | Purpose |
 | --- | --- |
 | [src/navigation](src/navigation) | Bottom tabs + per-tab native stacks |
-| [src/screens](src/screens) | Decks, Study, Statistics and per-deck statistics screens |
+| [src/screens](src/screens) | Decks, Learn, Study, Statistics and per-deck statistics screens |
 | [src/components](src/components) | Flip card, HTML renderer, buttons, progress bars |
 | [src/state/DecksContext.tsx](src/state/DecksContext.tsx) | Context + reducer store, auto-persisting |
 | [src/storage/decksStorage.ts](src/storage/decksStorage.ts) | AsyncStorage read/write with defensive normalisation |

@@ -4,8 +4,8 @@ import type { CompositeScreenProps } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import DeckCard from '../components/DeckCard';
-import DecksToolbar from '../components/DecksToolbar';
 import EmptyState from '../components/EmptyState';
+import HeaderToolbar from '../components/HeaderToolbar';
 import MenuSheet from '../components/MenuSheet';
 import { useDecks } from '../state/DecksContext';
 import { DecksStackParamList, RootTabParamList } from '../navigation/types';
@@ -29,7 +29,14 @@ type Props = CompositeScreenProps<
 
 const showSearchStub = () => Alert.alert('Search', 'Searching decks is not available yet.');
 const showFilterStub = () => Alert.alert('Filter', 'Filtering decks is not available yet.');
-const renderToolbar = () => <DecksToolbar onSearch={showSearchStub} onFilter={showFilterStub} />;
+const renderToolbar = () => (
+  <HeaderToolbar
+    onSearch={showSearchStub}
+    onFilter={showFilterStub}
+    searchLabel="Search decks"
+    filterLabel="Filter decks"
+  />
+);
 
 export default function DecksScreen({ navigation }: Props) {
   const { decks, sessions, error, addDeck, deleteDeck, startSession } = useDecks();

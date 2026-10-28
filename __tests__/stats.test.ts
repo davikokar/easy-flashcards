@@ -13,6 +13,8 @@ import {
   isSessionCleared,
   listedSessions,
   previousReviewIndex,
+  resolvableCardIds,
+  sessionProgressShares,
   sortCardsByDifficulty,
   sortSessions,
   successRate,
@@ -415,5 +417,69 @@ describe('sortCardsByDifficulty', () => {
 
     expect(sortCardsByDifficulty(cards).map(c => c.id)).toEqual(expected);
     expect(sortCardsByDifficulty([...cards].reverse()).map(c => c.id)).toEqual(expected);
+  });
+});
+
+describe('sessionProgressShares', () => {
+  it('sums to the answered fraction of the session while it is partly done', () => {
+    const tally = { okCount: 5, okeishCount: 2, notOkCount: 2 };
+
+    const shares = sessionProgressShares(tally, 56);
+
+    expect(shares.ok + shares.okeish + shares.notOk).toBeCloseTo((9 / 56) * 100, 6);
+    expect(shares.ok).toBeCloseTo((5 / 56) * 100, 6);
+  });
+
+  it('sums to 100 once every card is answered', () => {
+    const tally = { okCount: 2, okeishCount: 1, notOkCount: 1 };
+
+    const shares = sessionProgressShares(tally, 4);
+
+    expect(shares).toEqual({ ok: 50, okeish: 25, notOk: 25 });
+    expect(shares.ok + shares.okeish + shares.notOk).toBe(100);
+  });
+
+  it('keeps okeish as its own share instead of folding it into not ok', () => {
+    const tally = { okCount: 0, okeishCount: 3, notOkCount: 1 };
+
+    const shares = sessionProgressShares(tally, 4);
+
+    expect(shares.okeish).toBe(75);
+    expect(shares.notOk).toBe(25);
+  });
+
+  it('caps the sum at 100 when the tally exceeds the card count', () => {
+    const tally = { okCount: 3, okeishCount: 0, notOkCount: 3 };
+
+    const shares = sessionProgressShares(tally, 4);
+
+    expect(shares.ok + shares.okeish + shares.notOk).toBeCloseTo(100, 6);
+    expect(shares.ok).toBeCloseTo(50, 6);
+  });
+
+  it('returns zeros, not NaN, for a session with no cards', () => {
+    const tally = { okCount: 0, okeishCount: 0, notOkCount: 0 };
+
+    expect(sessionProgressShares(tally, 0)).toEqual({ ok: 0, okeish: 0, notOk: 0 });
+  });
+});
+
+describe('resolvableCardIds', () => {
+  it('keeps the given order rather than the deck order', () => {
+    const d = deck('d', [card('a', 0, 0), card('b', 0, 0), card('c', 0, 0)]);
+
+    expect(resolvableCardIds(['c', 'a', 'b'], d)).toEqual(['c', 'a', 'b']);
+  });
+
+  it('drops ids that are no longer in the deck', () => {
+    const d = deck('d', [card('a', 0, 0), card('c', 0, 0)]);
+
+    expect(resolvableCardIds(['a', 'b', 'c'], d)).toEqual(['a', 'c']);
+  });
+
+  it('returns an empty list when nothing resolves', () => {
+    const d = deck('d', [card('a', 0, 0)]);
+
+    expect(resolvableCardIds(['x', 'y'], d)).toEqual([]);
   });
 });
