@@ -1,8 +1,9 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useLayoutEffect, useMemo } from 'react';
 import { Alert, FlatList, StyleSheet, Text, View } from 'react-native';
 import type { CompositeScreenProps } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
+import AppMenu from '../components/AppMenu';
 import Button from '../components/Button';
 import EmptyState from '../components/EmptyState';
 import KebabMenu from '../components/KebabMenu';
@@ -10,7 +11,15 @@ import SuccessBar from '../components/SuccessBar';
 import { useDecks } from '../state/DecksContext';
 import { LearnStackParamList, RootTabParamList } from '../navigation/types';
 import { Session } from '../types';
-import { formatDate, formatRate, getSessionStats, sortSessions } from '../utils/stats';
+import {
+  clearableSessionCount,
+  formatDate,
+  formatRate,
+  getSessionStats,
+  isSessionActive,
+  listedSessions,
+  sortSessions,
+} from '../utils/stats';
 import { colors, radius, spacing } from '../theme';
 
 type Props = CompositeScreenProps<
@@ -19,32 +28,68 @@ type Props = CompositeScreenProps<
 >;
 
 export default function LearnScreen({ navigation }: Props) {
-  const { sessions, getDeck, startSession, deleteSession } = useDecks();
-  const ordered = useMemo(() => sortSessions(sessions), [sessions]);
-  const activeCount = useMemo(
-    () => sessions.filter(session => session.completedAt === null).length,
-    [sessions],
+  const { sessions, getDeck, startSession, deleteSession, clearSession, clearCompletedSessions } =
+    useDecks();
+  const ordered = useMemo(() => sortSessions(listedSessions(sessions)), [sessions]);
+  const activeCount = useMemo(() => sessions.filter(isSessionActive).length, [sessions]);
+  const clearableCount = useMemo(() => clearableSessionCount(sessions), [sessions]);
+
+  const confirmClearCompleted = useCallback(() => {
+    if (clearableCount === 0) {
+      Alert.alert('Clear completed sessions', 'No completed sessions to clear.');
+      return;
+    }
+    Alert.alert(
+      'Clear completed sessions',
+      `Remove ${clearableCount} completed session${
+        clearableCount === 1 ? '' : 's'
+      } from this list? Their results stay in Statistics.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Clear', style: 'destructive', onPress: clearCompletedSessions },
+      ],
+    );
+  }, [clearableCount, clearCompletedSessions]);
+
+  const appMenu = useMemo(
+    () => (
+      <AppMenu
+        extraItems={[
+          {
+            label: 'Clear completed sessions',
+            icon: 'delete',
+            destructive: true,
+            onPress: confirmClearCompleted,
+          },
+        ]}
+      />
+    ),
+    [confirmClearCompleted],
   );
+
+  useLayoutEffect(() => {
+    navigation.setOptions({ headerRight: () => appMenu });
+  }, [navigation, appMenu]);
 
   const confirmDelete = useCallback(
     (session: Session) => {
-      const isActive = session.completedAt === null;
+      if (isSessionActive(session)) {
+        Alert.alert('Discard session', `Discard the unfinished session for "${session.deckName}"?`, [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Discard', style: 'destructive', onPress: () => deleteSession(session.id) },
+        ]);
+        return;
+      }
       Alert.alert(
-        isActive ? 'Discard session' : 'Delete session',
-        isActive
-          ? `Discard the unfinished session for "${session.deckName}"?`
-          : `Delete the session for "${session.deckName}"?`,
+        'Clear session',
+        `Remove the completed session for "${session.deckName}" from this list? Its results stay in Statistics.`,
         [
           { text: 'Cancel', style: 'cancel' },
-          {
-            text: isActive ? 'Discard' : 'Delete',
-            style: 'destructive',
-            onPress: () => deleteSession(session.id),
-          },
+          { text: 'Clear', style: 'destructive', onPress: () => clearSession(session.id) },
         ],
       );
     },
-    [deleteSession],
+    [clearSession, deleteSession],
   );
 
   const restart = useCallback(
@@ -80,8 +125,12 @@ export default function LearnScreen({ navigation }: Props) {
         }
         ListEmptyComponent={
           <EmptyState
-            title="No sessions yet"
-            message="Pick a deck and start a learning session; it will show up here until you finish it."
+            title={sessions.length === 0 ? 'No sessions yet' : 'No sessions to show'}
+            message={
+              sessions.length === 0
+                ? 'Pick a deck and start a learning session; it will show up here until you finish it.'
+                : 'Cleared sessions still count in Statistics. Start a new session from a deck to see it here.'
+            }
             actionLabel="Go to decks"
             onAction={() => navigation.navigate('DecksTab', { screen: 'DecksList' })}
           />
@@ -109,7 +158,7 @@ export default function LearnScreen({ navigation }: Props) {
                   items={[
                     { label: 'Start a new session', icon: 'play', onPress: () => restart(item) },
                     {
-                      label: stats.isActive ? 'Discard session' : 'Delete session',
+                      label: stats.isActive ? 'Discard session' : 'Clear session',
                       icon: 'delete',
                       destructive: true,
                       onPress: () => confirmDelete(item),

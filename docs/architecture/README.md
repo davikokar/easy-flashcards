@@ -33,6 +33,8 @@ for the required format and status rules.
 > in the code and already load-bearing, written down so it stops being rediscovered. Their dates
 > are the dates they were recorded, not the dates the choices were made. ADR-0007 is the first
 > recorded **ahead** of the work it governs; ADR-0004 and ADR-0005 carry amendments for it.
+> ADR-0008 was also recorded ahead of its work; ADR-0002 carries an amendment for it, and
+> ARCHITECTURE.md links to it now that the work has landed.
 
 ### Index
 
@@ -45,3 +47,4 @@ for the required format and status rules.
 | [ADR-0005](decisions/0005-answers-recorded-immediately.md) | An answer is recorded when it is given | Active | 2026-10-26 |
 | [ADR-0006](decisions/0006-launch-on-the-tab-with-unfinished-work.md) | The app launches on the tab with unfinished work | Active | 2026-10-26 |
 | [ADR-0007](decisions/0007-okeish-third-answer.md) | A third answer, Okeish, stored under the existing v1 keys | Active | 2026-10-26 |
+| [ADR-0008](decisions/0008-clear-completed-sessions.md) | Clearing a completed session archives it under the existing v1 key | Active | 2026-10-27 |

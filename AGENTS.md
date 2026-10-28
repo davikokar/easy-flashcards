@@ -165,6 +165,16 @@ discovered.
   `cardIds` array, so changing the deck afterwards does not rewrite history
   ([ADR-0002](docs/architecture/decisions/0002-sessions-are-snapshots.md)). A session is **active**
   while `completedAt === null`; nothing else means active.
+- **Clearing a session hides it; it does not delete it.** A completed session is **cleared** while
+  `clearedAt !== null` (`isSessionCleared` in `stats.ts`): it drops off the Learn screen but stays
+  in storage and is still counted by every session statistic. Only a completed session can be
+  cleared. **Clear session** on a completed session and **Clear completed sessions** call
+  `clearSession` / `clearCompletedSessions`; **Discard session** on an active session is the only
+  UI path that deletes one, through `deleteSession`. *Delete deck* and *Reset statistics* still
+  remove that deck's sessions, cleared ones included
+  ([ADR-0008](docs/architecture/decisions/0008-clear-completed-sessions.md)). Do not call
+  `deleteSession` on a completed session — nothing in the reducer stops it, and it changes the
+  statistics.
 - **An answer is recorded the moment it is given**, not at the end of a session: `recordAnswer`
   appends to `session.results` and bumps the card's counters in one dispatch
   ([ADR-0005](docs/architecture/decisions/0005-answers-recorded-immediately.md)). Leaving the Study
@@ -178,7 +188,7 @@ writing, and normalising it.
 | Key | Holds | Module |
 |---|---|---|
 | `@easy-flashcards/decks/v1` | every `Deck`, each with its `Card[]` and their counters | [src/storage/decksStorage.ts](src/storage/decksStorage.ts) |
-| `@easy-flashcards/sessions/v1` | every `Session`, active and completed | [src/storage/sessionsStorage.ts](src/storage/sessionsStorage.ts) |
+| `@easy-flashcards/sessions/v1` | every `Session` — active, completed, and cleared | [src/storage/sessionsStorage.ts](src/storage/sessionsStorage.ts) |
 
 - **Reads are defensive and never throw on bad data.** Each loader drops rows it cannot make sense
   of and fills in defaults for missing timestamps, because the alternative is an app that will not
@@ -286,9 +296,10 @@ Recorded here so they are not rediscovered as surprises. The full list, with rea
   the provider, so testing it means rendering.
 - **`renameDeck` is exposed by the store and called by nothing.** The deck kebab menu's *Edit deck*
   item shows a "not available yet" alert.
-- **Several menu entries are placeholders** that alert rather than act: *Edit deck*, *Add deck
-  manually*, the XML / JSON / JSONL import formats, and *Settings*. They are intentional stubs, not
-  bugs — do not "fix" one into existence without being asked.
+- **Several menu entries and buttons are placeholders** that alert rather than act: *Edit deck*,
+  *Add deck manually*, the XML / JSON / JSONL import formats, *Settings*, and the Decks toolbar's
+  **Search button** and **Filter button**. They are intentional stubs, not bugs — do not "fix" one
+  into existence without being asked.
 
 ## What to ask before doing
 
@@ -307,7 +318,8 @@ These do not need approval, but do need to be called out in your report because 
 is wider than the diff looks:
 
 - Changing the `DecksContextValue` shape. Every screen consumes it.
-- Changing a `src/utils/stats.ts` signature. It is imported by four screens and the tests.
+- Changing a `src/utils/stats.ts` signature. Every screen imports it, as do the navigator, some
+  components, and the tests — search for its importers before changing one.
 - Changing `theme.ts`. Nearly every component and screen imports it, and there is no second source
   of styling.
 

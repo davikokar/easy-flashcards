@@ -47,8 +47,10 @@ You are a subagent and start with no memory of earlier phases. Spend the time to
 
 - **There is no icon library.** Every glyph — the tab icons, the menu icons, the kebab dots, the
   FAB's plus — is composed from nested `View`s with borders and radii. A design that needs a new
-  icon is asking for one to be *drawn*, and the vocabulary is deliberately small: `edit`, `delete`,
-  `play`, `export`, `import`, `file`, `settings`. Reuse one before adding another.
+  icon is asking for one to be *drawn*, and the set is deliberately small. The glyphs that exist
+  are whatever `MenuIconName` in [`src/components/MenuIcons.tsx`](../../src/components/MenuIcons.tsx)
+  lists — read it rather than trusting a copy — and `MenuIcon` takes an optional `size` that
+  scales its 20-point grid. Reuse one before adding another.
 - **There is one button component and four variants** — primary, secondary, success, danger. No
   icon button, no text button, no segmented control. Adding a kind of button is a vocabulary
   change, not a styling detail.

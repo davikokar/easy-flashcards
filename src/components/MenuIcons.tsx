@@ -1,11 +1,43 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 
-export type MenuIconName = 'edit' | 'delete' | 'play' | 'export' | 'import' | 'file' | 'settings';
+export type MenuIconName =
+  | 'edit'
+  | 'delete'
+  | 'play'
+  | 'export'
+  | 'import'
+  | 'file'
+  | 'settings'
+  | 'search'
+  | 'filter'
+  | 'clock'
+  | 'shuffle';
 
-type Props = { name: MenuIconName; color: string };
+type Props = { name: MenuIconName; color: string; size?: number };
 
-export default function MenuIcon({ name, color }: Props) {
+const BASE_SIZE = 20;
+
+// Glyphs are drawn on a 20-point grid; a different size scales that grid about its centre.
+export default function MenuIcon({ name, color, size = BASE_SIZE }: Props) {
+  if (size === BASE_SIZE) {
+    return <Glyph name={name} color={color} />;
+  }
+  const offset = (size - BASE_SIZE) / 2;
+  return (
+    <View style={{ width: size, height: size }}>
+      <View
+        style={[
+          styles.scaled,
+          { left: offset, top: offset, transform: [{ scale: size / BASE_SIZE }] },
+        ]}>
+        <Glyph name={name} color={color} />
+      </View>
+    </View>
+  );
+}
+
+function Glyph({ name, color }: { name: MenuIconName; color: string }) {
   switch (name) {
     case 'edit':
       return (
@@ -61,10 +93,45 @@ export default function MenuIcon({ name, color }: Props) {
           <View style={[styles.sliderKnob, styles.sliderKnobBottom, { backgroundColor: color }]} />
         </View>
       );
+    case 'search':
+      return (
+        <View style={styles.container}>
+          <View style={[styles.searchLens, { borderColor: color }]} />
+          <View style={[styles.searchHandle, { backgroundColor: color }]} />
+        </View>
+      );
+    case 'filter':
+      return (
+        <View style={styles.container}>
+          <View style={[styles.filterBar, styles.filterTop, { backgroundColor: color }]} />
+          <View style={[styles.filterBar, styles.filterMiddle, { backgroundColor: color }]} />
+          <View style={[styles.filterBar, styles.filterBottom, { backgroundColor: color }]} />
+        </View>
+      );
+    case 'clock':
+      return (
+        <View style={styles.container}>
+          <View style={[styles.clockFace, { borderColor: color }]} />
+          <View style={[styles.clockHandUp, { backgroundColor: color }]} />
+          <View style={[styles.clockHandRight, { backgroundColor: color }]} />
+        </View>
+      );
+    case 'shuffle':
+      return (
+        <View style={styles.container}>
+          <View style={[styles.shuffleLine, styles.shuffleRising, { backgroundColor: color }]} />
+          <View style={[styles.shuffleLine, styles.shuffleFalling, { backgroundColor: color }]} />
+          <View style={[styles.shuffleHead, styles.shuffleHeadTop, { borderLeftColor: color }]} />
+          <View style={[styles.shuffleHead, styles.shuffleHeadBottom, { borderLeftColor: color }]} />
+        </View>
+      );
   }
 }
 
 const styles = StyleSheet.create({
+  scaled: {
+    position: 'absolute',
+  },
   container: {
     width: 20,
     height: 20,
@@ -209,5 +276,92 @@ const styles = StyleSheet.create({
   sliderKnobBottom: {
     bottom: 4,
     left: 3,
+  },
+  searchLens: {
+    position: 'absolute',
+    top: 2,
+    left: 2,
+    width: 11,
+    height: 11,
+    borderWidth: 2,
+    borderRadius: 6,
+  },
+  searchHandle: {
+    position: 'absolute',
+    top: 14.5,
+    left: 12,
+    width: 7,
+    height: 2,
+    borderRadius: 1,
+    transform: [{ rotate: '45deg' }],
+  },
+  filterBar: {
+    position: 'absolute',
+    height: 2,
+    borderRadius: 1,
+  },
+  filterTop: {
+    top: 4,
+    width: 16,
+  },
+  filterMiddle: {
+    top: 9,
+    width: 11,
+  },
+  filterBottom: {
+    top: 14,
+    width: 6,
+  },
+  clockFace: {
+    position: 'absolute',
+    width: 16,
+    height: 16,
+    borderWidth: 1.5,
+    borderRadius: 8,
+  },
+  clockHandUp: {
+    position: 'absolute',
+    top: 5.5,
+    left: 9.25,
+    width: 1.5,
+    height: 5,
+  },
+  clockHandRight: {
+    position: 'absolute',
+    top: 9.25,
+    left: 10,
+    width: 4,
+    height: 1.5,
+  },
+  shuffleLine: {
+    position: 'absolute',
+    top: 9,
+    left: 2,
+    width: 13,
+    height: 2,
+    borderRadius: 1,
+  },
+  shuffleRising: {
+    transform: [{ rotate: '-35deg' }],
+  },
+  shuffleFalling: {
+    transform: [{ rotate: '35deg' }],
+  },
+  shuffleHead: {
+    position: 'absolute',
+    right: 1,
+    width: 0,
+    height: 0,
+    borderTopWidth: 4,
+    borderBottomWidth: 4,
+    borderLeftWidth: 6,
+    borderTopColor: 'transparent',
+    borderBottomColor: 'transparent',
+  },
+  shuffleHeadTop: {
+    top: 2,
+  },
+  shuffleHeadBottom: {
+    bottom: 2,
   },
 });

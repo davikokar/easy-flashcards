@@ -11,6 +11,7 @@ import { Answer, Deck, Session } from '../types';
 import { ParsedCard } from '../utils/csv';
 import { loadDecks, saveDecks } from '../storage/decksStorage';
 import { loadSessions, saveSessions } from '../storage/sessionsStorage';
+import { clearCompletedSessionsAt, clearSessionAt } from '../utils/stats';
 
 type State = {
   decks: Deck[];
@@ -28,6 +29,8 @@ type Action =
   | { type: 'startSession'; session: Session }
   | { type: 'recordAnswer'; sessionId: string; cardId: string; answer: Answer; at: number }
   | { type: 'deleteSession'; sessionId: string }
+  | { type: 'clearCompletedSessions'; at: number }
+  | { type: 'clearSession'; sessionId: string; at: number }
   | { type: 'resetDeckStats'; deckId: string };
 
 const initialState: State = { decks: [], sessions: [], isLoading: true, error: null };
@@ -100,6 +103,14 @@ function reducer(state: State, action: Action): State {
         ...state,
         sessions: state.sessions.filter(session => session.id !== action.sessionId),
       };
+    case 'clearCompletedSessions': {
+      const sessions = clearCompletedSessionsAt(state.sessions, action.at);
+      return sessions === state.sessions ? state : { ...state, sessions };
+    }
+    case 'clearSession': {
+      const sessions = clearSessionAt(state.sessions, action.sessionId, action.at);
+      return sessions === state.sessions ? state : { ...state, sessions };
+    }
     case 'resetDeckStats':
       return {
         ...state,
@@ -134,6 +145,8 @@ type DecksContextValue = State & {
   startSession: (deck: Deck, cardIds?: string[]) => Session;
   recordAnswer: (sessionId: string, cardId: string, answer: Answer) => void;
   deleteSession: (sessionId: string) => void;
+  clearCompletedSessions: () => void;
+  clearSession: (sessionId: string) => void;
   resetDeckStats: (deckId: string) => void;
 };
 
@@ -213,6 +226,7 @@ export function DecksProvider({ children }: { children: React.ReactNode }) {
       startedAt: now,
       updatedAt: now,
       completedAt: null,
+      clearedAt: null,
     };
     dispatch({ type: 'startSession', session });
     return session;
@@ -230,6 +244,8 @@ export function DecksProvider({ children }: { children: React.ReactNode }) {
       recordAnswer: (sessionId, cardId, answer) =>
         dispatch({ type: 'recordAnswer', sessionId, cardId, answer, at: Date.now() }),
       deleteSession: sessionId => dispatch({ type: 'deleteSession', sessionId }),
+      clearCompletedSessions: () => dispatch({ type: 'clearCompletedSessions', at: Date.now() }),
+      clearSession: sessionId => dispatch({ type: 'clearSession', sessionId, at: Date.now() }),
       resetDeckStats: deckId => dispatch({ type: 'resetDeckStats', deckId }),
     }),
     [state, addDeck, startSession],

@@ -63,8 +63,8 @@ npm test
 | [src/state/DecksContext.tsx](src/state/DecksContext.tsx) | Context + reducer store, auto-persisting |
 | [src/storage/decksStorage.ts](src/storage/decksStorage.ts) | AsyncStorage read/write with defensive normalisation |
 | [src/services/importDeck.ts](src/services/importDeck.ts) | Document picker + file read + CSV parsing |
-| [src/utils](src/utils) | CSV parsing, HTML parsing, statistics helpers |
-| [\_\_tests\_\_](__tests__) | Unit tests for the CSV, HTML and statistics logic |
+| [src/utils](src/utils) | CSV parsing, HTML parsing, statistics helpers, file URI conversion, shuffling |
+| [\_\_tests\_\_](__tests__) | Unit tests for the CSV, HTML, statistics, file URI and shuffle logic |
 
 ## Notes on dependencies
 

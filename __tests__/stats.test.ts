@@ -1,14 +1,22 @@
 import { Card, Deck, Session } from '../src/types';
 import {
+  answerShares,
+  clearableSessionCount,
+  clearCompletedSessionsAt,
+  clearSessionAt,
   getDeckStats,
   getGlobalStats,
   getMissedOrUnsureCardIds,
   getSessionStats,
   getSessionTally,
   formatRate,
+  isSessionCleared,
+  listedSessions,
+  previousReviewIndex,
   sortCardsByDifficulty,
   sortSessions,
   successRate,
+  summarizeSessions,
   summarizeSessionsByDeck,
 } from '../src/utils/stats';
 
@@ -27,7 +35,13 @@ function deck(id: string, cards: Card[]): Deck {
   };
 }
 
-function session(id: string, deckId: string, startedAt: number, completedAt: number | null): Session {
+function session(
+  id: string,
+  deckId: string,
+  startedAt: number,
+  completedAt: number | null,
+  clearedAt: number | null = null,
+): Session {
   return {
     id,
     deckId,
@@ -40,8 +54,27 @@ function session(id: string, deckId: string, startedAt: number, completedAt: num
     startedAt,
     updatedAt: completedAt ?? startedAt,
     completedAt,
+    clearedAt,
   };
 }
+
+describe('answerShares', () => {
+  it('returns null when nothing was reviewed', () => {
+    expect(answerShares({ okCount: 0, okeishCount: 0, notOkCount: 0 })).toBeNull();
+  });
+
+  it('splits reviews three ways without folding okeish into not ok', () => {
+    const shares = answerShares({ okCount: 2, okeishCount: 1, notOkCount: 1 });
+
+    expect(shares).toEqual({ ok: 50, okeish: 25, notOk: 25 });
+  });
+
+  it('reports an okeish-only deck as 100% okeish and 0% ok', () => {
+    const shares = answerShares({ okCount: 0, okeishCount: 3, notOkCount: 0 });
+
+    expect(shares).toEqual({ ok: 0, okeish: 100, notOk: 0 });
+  });
+});
 
 describe('successRate', () => {
   it('returns null when nothing was reviewed', () => {
@@ -181,6 +214,25 @@ describe('getMissedOrUnsureCardIds', () => {
   });
 });
 
+describe('previousReviewIndex', () => {
+  it('steps back one answered card', () => {
+    expect(previousReviewIndex(3, 3)).toBe(2);
+    expect(previousReviewIndex(1, 3)).toBe(0);
+  });
+
+  it('wraps from the oldest answered card to the frontier', () => {
+    expect(previousReviewIndex(0, 3)).toBe(3);
+  });
+
+  it('wraps a single answered card to the frontier', () => {
+    expect(previousReviewIndex(0, 1)).toBe(1);
+  });
+
+  it('has nowhere to go when nothing is answered', () => {
+    expect(previousReviewIndex(0, 0)).toBeNull();
+  });
+});
+
 describe('summarizeSessionsByDeck', () => {
   it('counts total and active sessions and keeps the latest start date', () => {
     const byDeck = summarizeSessionsByDeck([
@@ -196,6 +248,126 @@ describe('summarizeSessionsByDeck', () => {
       lastSessionAt: 30,
     });
     expect(byDeck.get('d2')?.active).toBe(0);
+  });
+
+  it('still counts cleared sessions', () => {
+    const byDeck = summarizeSessionsByDeck([
+      session('s1', 'd1', 10, 20, 50),
+      session('s2', 'd1', 30, 40, 50),
+    ]);
+
+    expect(byDeck.get('d1')).toEqual({ total: 2, active: 0, completed: 2, lastSessionAt: 30 });
+  });
+});
+
+describe('summarizeSessions', () => {
+  it('still counts cleared sessions and their start dates', () => {
+    const summary = summarizeSessions([
+      session('s1', 'd1', 10, 20, 50),
+      session('s2', 'd1', 30, 40, 50),
+      session('s3', 'd1', 5, null),
+    ]);
+
+    expect(summary).toEqual({ total: 3, active: 1, completed: 2, lastSessionAt: 30 });
+  });
+});
+
+describe('isSessionCleared', () => {
+  it('is true only when clearedAt is set', () => {
+    expect(isSessionCleared(session('a', 'd1', 1, 2, 3))).toBe(true);
+    expect(isSessionCleared(session('b', 'd1', 1, 2))).toBe(false);
+  });
+});
+
+describe('listedSessions', () => {
+  it('excludes cleared sessions and keeps completed and active ones', () => {
+    const listed = listedSessions([
+      session('cleared', 'd1', 1, 2, 9),
+      session('done', 'd1', 3, 4),
+      session('active', 'd1', 5, null),
+    ]);
+
+    expect(listed.map(s => s.id)).toEqual(['done', 'active']);
+  });
+
+  it('lists an active session even if it carries a clearedAt', () => {
+    const listed = listedSessions([session('active', 'd1', 1, null, 9)]);
+
+    expect(listed.map(s => s.id)).toEqual(['active']);
+  });
+});
+
+describe('clearableSessionCount', () => {
+  it('counts completed sessions that are not yet cleared', () => {
+    const count = clearableSessionCount([
+      session('cleared', 'd1', 1, 2, 9),
+      session('done1', 'd1', 3, 4),
+      session('done2', 'd1', 5, 6),
+      session('active', 'd1', 7, null),
+    ]);
+
+    expect(count).toBe(2);
+  });
+
+  it('is zero when there are no sessions', () => {
+    expect(clearableSessionCount([])).toBe(0);
+  });
+});
+
+describe('clearCompletedSessionsAt', () => {
+  it('stamps completed sessions with one timestamp and never an active one', () => {
+    const result = clearCompletedSessionsAt(
+      [session('done1', 'd1', 1, 2), session('done2', 'd2', 3, 4), session('active', 'd1', 5, null)],
+      100,
+    );
+
+    expect(result.map(s => s.clearedAt)).toEqual([100, 100, null]);
+  });
+
+  it('keeps an earlier clearedAt', () => {
+    const result = clearCompletedSessionsAt([session('old', 'd1', 1, 2, 50), session('new', 'd1', 3, 4)], 100);
+
+    expect(result.map(s => s.clearedAt)).toEqual([50, 100]);
+  });
+
+  it('returns the same array when nothing qualifies', () => {
+    const sessions = [session('old', 'd1', 1, 2, 50), session('active', 'd1', 3, null)];
+
+    expect(clearCompletedSessionsAt(sessions, 100)).toBe(sessions);
+  });
+
+  it('does not mutate its input', () => {
+    const sessions = [session('done', 'd1', 1, 2)];
+
+    clearCompletedSessionsAt(sessions, 100);
+
+    expect(sessions[0].clearedAt).toBeNull();
+  });
+});
+
+describe('clearSessionAt', () => {
+  it('stamps only the named completed session', () => {
+    const result = clearSessionAt([session('a', 'd1', 1, 2), session('b', 'd1', 3, 4)], 'b', 100);
+
+    expect(result.map(s => s.clearedAt)).toEqual([null, 100]);
+  });
+
+  it('leaves an active session unchanged', () => {
+    const sessions = [session('active', 'd1', 1, null)];
+
+    expect(clearSessionAt(sessions, 'active', 100)).toBe(sessions);
+  });
+
+  it('keeps an earlier clearedAt', () => {
+    const sessions = [session('done', 'd1', 1, 2, 50)];
+
+    expect(clearSessionAt(sessions, 'done', 100)).toBe(sessions);
+  });
+
+  it('leaves the sessions unchanged for an unknown id', () => {
+    const sessions = [session('done', 'd1', 1, 2)];
+
+    expect(clearSessionAt(sessions, 'missing', 100)).toBe(sessions);
   });
 });
 

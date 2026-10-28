@@ -2,10 +2,17 @@ import React, { useCallback, useState } from 'react';
 import { Alert, Modal, Pressable, StyleSheet, Text } from 'react-native';
 import Button from './Button';
 import KebabMenu from './KebabMenu';
+import type { MenuItem } from './MenuSheet';
 import { ExportCancelledError, exportSampleDeck } from '../services/exportSampleDeck';
 import { colors, radius, spacing } from '../theme';
 
-export default function AppMenu() {
+type Props = {
+  variant?: 'plain' | 'boxed';
+  /** Screen-specific items, shown before the common ones. */
+  extraItems?: MenuItem[];
+};
+
+export default function AppMenu({ variant, extraItems = [] }: Props) {
   const [isExportVisible, setIsExportVisible] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
 
@@ -32,7 +39,9 @@ export default function AppMenu() {
     <>
       <KebabMenu
         accessibilityLabel="App menu"
+        variant={variant}
         items={[
+          ...extraItems,
           {
             label: 'Export sample deck',
             icon: 'export',

@@ -1,4 +1,5 @@
 import {
+  AnswerShares,
   AnswerTally,
   Card,
   Deck,
@@ -20,6 +21,19 @@ export function successRate(
 ): number | null {
   const total = okCount + okeishCount + notOkCount;
   return total === 0 ? null : (okCount / total) * 100;
+}
+
+/** Each answer's percentage of all reviews (0-100), or null when nothing was reviewed. */
+export function answerShares(tally: AnswerTally): AnswerShares | null {
+  const total = tally.okCount + tally.okeishCount + tally.notOkCount;
+  if (total === 0) {
+    return null;
+  }
+  return {
+    ok: (tally.okCount / total) * 100,
+    okeish: (tally.okeishCount / total) * 100,
+    notOk: (tally.notOkCount / total) * 100,
+  };
 }
 
 export function getDeckStats(deck: Deck): DeckStats {
@@ -70,6 +84,47 @@ export function isSessionActive(session: Session): boolean {
   return session.completedAt === null;
 }
 
+export function isSessionCleared(session: Session): boolean {
+  return session.clearedAt !== null;
+}
+
+/** The sessions the Learn screen shows: everything not cleared; an active session is always listed. */
+export function listedSessions(sessions: Session[]): Session[] {
+  return sessions.filter(session => isSessionActive(session) || !isSessionCleared(session));
+}
+
+/** Completed sessions not yet cleared. */
+export function clearableSessionCount(sessions: Session[]): number {
+  return sessions.filter(session => !isSessionActive(session) && !isSessionCleared(session))
+    .length;
+}
+
+/** Stamps every completed, uncleared session with `at`; returns the same array when none qualify. */
+export function clearCompletedSessionsAt(sessions: Session[], at: number): Session[] {
+  return markCleared(sessions, () => true, at);
+}
+
+/** Stamps one completed, uncleared session; returns the same array when nothing qualifies. */
+export function clearSessionAt(sessions: Session[], sessionId: string, at: number): Session[] {
+  return markCleared(sessions, session => session.id === sessionId, at);
+}
+
+function markCleared(
+  sessions: Session[],
+  isTarget: (session: Session) => boolean,
+  at: number,
+): Session[] {
+  let changed = false;
+  const next = sessions.map(session => {
+    if (isSessionActive(session) || isSessionCleared(session) || !isTarget(session)) {
+      return session;
+    }
+    changed = true;
+    return { ...session, clearedAt: at };
+  });
+  return changed ? next : sessions;
+}
+
 export function getSessionTally(session: Session): AnswerTally {
   const tally: AnswerTally = { okCount: 0, okeishCount: 0, notOkCount: 0 };
   for (const result of session.results) {
@@ -82,6 +137,17 @@ export function getSessionTally(session: Session): AnswerTally {
     }
   }
   return tally;
+}
+
+/**
+ * Where a swipe right from `viewIndex` lands: one answered card back, and from the oldest answered
+ * card (index 0) round to the frontier. Null when nothing has been answered yet.
+ */
+export function previousReviewIndex(viewIndex: number, frontier: number): number | null {
+  if (frontier <= 0) {
+    return null;
+  }
+  return viewIndex > 0 ? viewIndex - 1 : frontier;
 }
 
 /** Cards answered Not Ok or Okeish, once each, in the order they were answered. */

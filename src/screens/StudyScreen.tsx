@@ -14,6 +14,7 @@ import {
   formatRate,
   getMissedOrUnsureCardIds,
   getSessionTally,
+  previousReviewIndex,
   successRate,
 } from '../utils/stats';
 import { colors, radius, spacing } from '../theme';
@@ -117,13 +118,15 @@ export default function StudyScreen({ route, navigation }: Props) {
         onPanResponderMove: (_event, gesture) => {
           const { viewIndex: from, frontier } = navStateRef.current;
           const blocked =
-            (gesture.dx > 0 && from === 0) || (gesture.dx < 0 && from >= frontier);
+            (gesture.dx > 0 && previousReviewIndex(from, frontier) === null) ||
+            (gesture.dx < 0 && from >= frontier);
           translateX.setValue(blocked ? gesture.dx * 0.15 : gesture.dx);
         },
         onPanResponderRelease: (_event, gesture) => {
           const { viewIndex: from, frontier } = navStateRef.current;
-          if (gesture.dx > SWIPE_THRESHOLD && from > 0) {
-            slideTo(from - 1, windowWidth);
+          const previous = previousReviewIndex(from, frontier);
+          if (gesture.dx > SWIPE_THRESHOLD && previous !== null) {
+            slideTo(previous, windowWidth);
             return;
           }
           if (gesture.dx < -SWIPE_THRESHOLD && from < frontier) {
@@ -217,7 +220,7 @@ export default function StudyScreen({ route, navigation }: Props) {
         </Text>
         <Text style={styles.progressText}>Ok {okCount}</Text>
       </View>
-      <SuccessBar rate={(index / queue.length) * 100} height={6} />
+      <SuccessBar rate={(index / queue.length) * 100} height={6} color={colors.text} />
 
       <HistoryStrip results={results} currentIndex={viewIndex} />
 
@@ -226,6 +229,8 @@ export default function StudyScreen({ route, navigation }: Props) {
         {...panResponder.panHandlers}>
         {currentCard ? (
           <FlipCard
+            // A fresh mount starts face-up; reusing one would show the old card's flip state on the new card.
+            key={`${sessionId}-${viewIndex}`}
             question={currentCard.question}
             answer={currentCard.answer}
             flipped={flipped}
@@ -240,8 +245,6 @@ export default function StudyScreen({ route, navigation }: Props) {
       <Text style={styles.swipeHint}>
         {isReviewing
           ? 'Reviewing an answered card \u2014 swipe left to get back to where you were'
-          : index > 0
-          ? 'Swipe right to review the cards you already answered'
           : ' '}
       </Text>
 

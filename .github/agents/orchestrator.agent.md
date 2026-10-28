@@ -265,7 +265,7 @@ These are touched by many otherwise-unrelated changes. Two tasks that both need 
 be sequential:
 
 - `src/state/DecksContext.tsx` — almost any change to what is stored or how it changes
-- `src/utils/stats.ts` — every derived number in the app; four screens import it
+- `src/utils/stats.ts` — every derived number in the app; every screen imports it
 - `src/theme.ts` — every component imports it, and there is no second source of styling
 - `src/navigation/RootNavigator.tsx` and `src/navigation/types.ts` — any new route or param
 - `src/components/MenuSheet.tsx` — defines the shared `MenuItem` type; a change breaks every menu

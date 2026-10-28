@@ -79,6 +79,22 @@ renaming a deck rewrites the `deckName` snapshot on every session that points at
 - A session can reference a card id that no longer exists, if the deck was re-imported. Nothing
   currently prunes that.
 
+## Amendment 1 — 2026-10-27
+
+[ADR-0008](0008-clear-completed-sessions.md) lets the user clear completed sessions from the Learn
+screen. The decision above is unchanged — a session is still a snapshot, in its own key, and
+*active* still means exactly `completedAt === null`. One detail is added: a session now has a
+**second state**, independent of the first in storage.
+
+- A session is **cleared** while `clearedAt !== null`. That is the only definition, and it is
+  written once, in `isSessionCleared` in [`src/utils/stats.ts`](../../../src/utils/stats.ts),
+  beside `isSessionActive`.
+- Only a completed session can be cleared. The sessions loader forces `clearedAt` to `null`
+  whenever `completedAt` is `null`, so *active and cleared* cannot be read back.
+- A cleared session is hidden from the Learn screen's list and is otherwise an ordinary session: it
+  is still counted by every statistic that counts sessions, still renamed by `renameDeck`, and
+  still removed by `deleteDeck` and *Reset statistics*.
+
 ## References
 
 - [`src/types.ts`](../../../src/types.ts) — `Session`, `SessionResult`
@@ -86,4 +102,5 @@ renaming a deck rewrites the `deckName` snapshot on every session that points at
   `deleteDeck`, `renameDeck`
 - [`src/storage/sessionsStorage.ts`](../../../src/storage/sessionsStorage.ts)
 - [ADR-0005](0005-answers-recorded-immediately.md) — what writing into a session looks like
+- [ADR-0008](0008-clear-completed-sessions.md) — the cleared state (Amendment 1)
 - [ARCHITECTURE.md §2, §5](../ARCHITECTURE.md)

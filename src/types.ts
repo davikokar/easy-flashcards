@@ -34,6 +34,8 @@ export type Session = {
   startedAt: number;
   updatedAt: number;
   completedAt: number | null;
+  /** When a completed session was hidden from the Learn list; null while listed. Never set on an active session. */
+  clearedAt: number | null;
 };
 
 export type DeckStats = {
@@ -67,4 +69,11 @@ export type AnswerTally = {
   okCount: number;
   okeishCount: number;
   notOkCount: number;
+};
+
+/** Each answer's percentage of all reviews (0-100). */
+export type AnswerShares = {
+  ok: number;
+  okeish: number;
+  notOk: number;
 };

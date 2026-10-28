@@ -32,6 +32,13 @@ function normalizeSession(value: unknown): Session | null {
     ? session.results.map(normalizeResult).filter((r): r is SessionResult => r !== null)
     : [];
 
+  const completedAt = typeof session.completedAt === 'number' ? session.completedAt : null;
+  // An active session can never be hidden, whatever was written.
+  const clearedAt =
+    completedAt !== null && typeof session.clearedAt === 'number' && Number.isFinite(session.clearedAt)
+      ? session.clearedAt
+      : null;
+
   return {
     id: session.id,
     deckId: session.deckId,
@@ -40,7 +47,8 @@ function normalizeSession(value: unknown): Session | null {
     results: results.slice(0, cardIds.length),
     startedAt,
     updatedAt: typeof session.updatedAt === 'number' ? session.updatedAt : startedAt,
-    completedAt: typeof session.completedAt === 'number' ? session.completedAt : null,
+    completedAt,
+    clearedAt,
   };
 }
 

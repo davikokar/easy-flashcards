@@ -37,8 +37,8 @@ vocabulary is in
 
 | Tab | Canonical name | What it shows | Implementation |
 |---|---|---|---|
-| Decks | **Decks screen** | Every imported deck, with its card count, success rate and session counts. Where a deck is imported, started, and deleted. | `DecksScreen`, route `DecksList` |
-| Learn | **Learn screen** | Every session, unfinished ones first. Where a session is resumed, restarted, or discarded. | `LearnScreen`, route `LearnList` |
+| Decks | **Decks screen** | Every imported deck as a **Deck card**: its card count, a **Mastery bar** splitting its reviews into Ok / Okeish / Not ok, its session and active-session counts, and its last session date. Where a deck is imported, started (in deck order or shuffled), and deleted. | `DecksScreen`, route `DecksList` |
+| Learn | **Learn screen** | Every listed session — active, or completed and not cleared — unfinished ones first. Where a session is resumed or restarted, an active one discarded (a real delete), and a completed one cleared, singly or all at once (hidden from the list but still counted — [ADR-0008](decisions/0008-clear-completed-sessions.md)). | `LearnScreen`, route `LearnList` |
 | Learn | **Study screen** | One session: the flip card, the icon-only answer buttons (Not Ok, Okeish, Ok — [ADR-0007](decisions/0007-okeish-third-answer.md)), the answered-so-far strip, and the end-of-session summary, which offers to replay the missed or unsure cards. | `StudyScreen`, route `Study` (param `sessionId`) |
 | Statistics | **Statistics screen** | Totals across every deck, then one row per deck. | `StatsScreen`, route `StatsOverview` |
 | Statistics | **Deck statistics screen** | One deck's totals and every card in it, hardest first. | `DeckStatsScreen`, route `DeckStats` (param `deckId`) |
@@ -49,7 +49,10 @@ three are the roots of their tabs and are reached only by switching tab.
 
 There are no modal screens. Transient UI is either an `Alert` or the **Menu sheet**
 (`MenuSheet`), a bottom sheet rendered in a `Modal` and opened from a **Kebab menu**
-(`KebabMenu`). The **App menu** (`AppMenu`) in the header is one of those kebab menus.
+(`KebabMenu`). The **App menu** (`AppMenu`) in the header is one of those kebab menus; on the
+Decks screen it sits at the end of the **Decks toolbar** (`DecksToolbar`), after the **Search
+button** and **Filter button**, and on the Learn screen it carries **Clear completed sessions**
+ahead of its common items.
 
 ---
 
@@ -69,8 +72,8 @@ AsyncStorage                              Device (SAF)
               DecksContext  (useReducer)
               state: decks, sessions, isLoading, error
               api:   addDeck, deleteDeck, renameDeck, startSession,
-                     recordAnswer, deleteSession, resetDeckStats,
-                     getDeck, getSession
+                     recordAnswer, deleteSession, clearCompletedSessions,
+                     clearSession, resetDeckStats, getDeck, getSession
                         │
                    useDecks()
                         │
@@ -78,6 +81,7 @@ AsyncStorage                              Device (SAF)
                         │   (derive with utils/stats.ts inside useMemo)
                         │
               Components (Button, FlipCard, RichText, SuccessBar,
+                          MasteryBar, DeckCard, DecksToolbar,
                           HistoryStrip, EmptyState, KebabMenu, MenuSheet)
                         ← plain props + callbacks, no store access
 ```
@@ -98,6 +102,12 @@ credit in any success rate ([ADR-0007](decisions/0007-okeish-third-answer.md)).
 deck is the Study screen's job, through `getDeck(session.deckId)` —
 [ADR-0002](decisions/0002-sessions-are-snapshots.md).
 
+**Clearing a session archives it; it does not delete it.** `clearCompletedSessions` and
+`clearSession` stamp `clearedAt` on completed sessions, which hides them from the Learn screen and
+leaves every session statistic unchanged. `deleteSession` still removes a record outright and is
+used only to discard an active session; `deleteDeck` and `resetDeckStats` remove a deck's sessions,
+cleared ones included — [ADR-0008](decisions/0008-clear-completed-sessions.md).
+
 ---
 
 ## 3. Layers
@@ -111,16 +121,23 @@ testable under Jest with no renderer and no mocks. Every file in `__tests__/` te
 |---|---|
 | [`csv.ts`](../../src/utils/csv.ts) | `parseFlashcardsCsv` — wraps PapaParse, detects the delimiter, matches the `Question` / `Answer` headers case-insensitively, skips incomplete rows and counts them, throws `CsvImportError` on a file it cannot use. Also `deckNameFromFileName`. |
 | [`html.ts`](../../src/utils/html.ts) | A tolerant HTML parser: `parseHtml` to `HtmlNode[]`, `decodeEntities`, `htmlToPlainText`, and the `BLOCK_TAGS` set. It never throws — unclosed and stray tags are absorbed. |
-| [`stats.ts`](../../src/utils/stats.ts) | Every derived number in the app: `successRate`, `getDeckStats`, `getGlobalStats`, `getSessionTally`, `getSessionStats`, `getMissedOrUnsureCardIds`, `summarizeSessions`, `summarizeSessionsByDeck`, `isSessionActive`, `sortSessions`, `sortCardsByDifficulty`, `cardReviewCount`, and the `formatRate` / `formatDate` display helpers. |
+| [`stats.ts`](../../src/utils/stats.ts) | Every derived number in the app: `successRate`, `answerShares`, `getDeckStats`, `getGlobalStats`, `getSessionTally`, `getSessionStats`, `getMissedOrUnsureCardIds`, `summarizeSessions`, `summarizeSessionsByDeck` (with `EMPTY_SESSION_SUMMARY` for a deck that has none), `isSessionActive`, `isSessionCleared`, `listedSessions` (the sessions the Learn screen shows), `clearableSessionCount` (completed sessions not yet cleared), `clearCompletedSessionsAt` and `clearSessionAt` (the transforms the reducer applies to clear sessions, returning the same array when nothing qualifies), `previousReviewIndex` (where a review swipe right on the Study screen lands — one answered card back, wrapping from the oldest round to the frontier), `sortSessions`, `sortCardsByDifficulty`, `cardReviewCount`, and the `formatRate` / `formatDate` display helpers. |
 | [`fileUri.ts`](../../src/utils/fileUri.ts) | `fileUriToPath` and `pathToFileUri` — the percent-encoding boundary between a `file://` URI and a path. |
+| [`shuffle.ts`](../../src/utils/shuffle.ts) | `shuffle(items, random = Math.random)` — Fisher-Yates over a copy; the input is never mutated. `random` is injectable so tests are deterministic. The Decks screen uses it to order the `cardIds` it passes to `startSession`. |
 
 `isSessionActive` is the single definition of "active": `completedAt === null`. Do not write that
-comparison anywhere else.
+comparison anywhere else. `isSessionCleared` is the same for "cleared": `clearedAt !== null`. Only
+a completed session can be cleared, so a session is active, completed and listed, or completed and
+cleared. `summarizeSessions`, `summarizeSessionsByDeck` and the Statistics screen's Sessions tile
+count cleared sessions deliberately, and a test pins it
+([ADR-0008](decisions/0008-clear-completed-sessions.md)).
 
 The same goes for counting answers. `successRate(ok, okeish, notOk)` credits only Ok, so a card
 answered only Okeish is 0%, not `--`. `getSessionTally` is the one three-way count of a session's
 results, and `getMissedOrUnsureCardIds` (every card not answered Ok, once each) is what the replay
-starts from. Code that computes Not Ok as "everything that is not Ok" silently counts Okeish as
+starts from. `answerShares(tally)` is the display split — each answer's percentage of all
+reviews, or `null` when nothing has been reviewed — and is what the Mastery bar draws; it is not a
+success rate and does not replace one. Code that computes Not Ok as "everything that is not Ok" silently counts Okeish as
 Not Ok — [ADR-0007](decisions/0007-okeish-third-answer.md).
 
 ### `src/types.ts` — the shapes
@@ -137,8 +154,10 @@ See §5.
 ### `src/state/` — the store
 
 [`DecksContext.tsx`](../../src/state/DecksContext.tsx) holds the whole store: the `State` shape,
-the reducer and its nine actions, the `DecksProvider` with the load and save effects, the `createId`
-helper, and the `useDecks()` hook that throws if used outside the provider.
+the reducer and its actions, the `DecksProvider` with the load and save effects, the `createId`
+helper, and the `useDecks()` hook that throws if used outside the provider. The two clear actions
+delegate to `clearCompletedSessionsAt` and `clearSessionAt` in `stats.ts`, so their guard rules are
+tested even though the reducer is not.
 [ADR-0003](decisions/0003-single-context-reducer-store.md) keeps it the only store.
 
 ### `src/services/` — the device boundary
@@ -165,17 +184,24 @@ the flip and the viewed card index for the second.
 | [`Button.tsx`](../../src/components/Button.tsx) | The only button. Variants `primary`, `secondary`, `success`, `danger`, `warning`; handles `disabled` and `loading`. Takes an optional `icon` render function, passed the foreground colour for the variant; with no `label` it is icon-only, and its type then requires an `accessibilityLabel`. |
 | [`FlipCard.tsx`](../../src/components/FlipCard.tsx) | The study card. Two faces, a `rotateY` interpolation, and a scrollable body. Owns the animation, not the flip state. |
 | [`RichText.tsx`](../../src/components/RichText.tsx) | Renders `parseHtml` output as nested `<Text>`. See §6. |
-| [`SuccessBar.tsx`](../../src/components/SuccessBar.tsx) | The one visual encoding of a success rate, used on every screen. |
+| [`SuccessBar.tsx`](../../src/components/SuccessBar.tsx) | The one visual encoding of a success rate. Used on every screen except the Decks screen, which shows a `MasteryBar` instead. An optional `color` overrides the rate-based colours for a bar that is not a success rate — the Study screen's session progress bar passes `colors.text`. |
+| [`MasteryBar.tsx`](../../src/components/MasteryBar.tsx) | The Ok / Okeish / Not ok split of a deck's reviews: a segmented track plus a legend giving each answer's `AnswerIcon` (tick, question mark, cross, in the answer's colour) followed by its percentage. Takes the output of `answerShares`; with `null` it draws an empty track, grey icons, and `--` for each share. The panel carries one accessibility label summarising all three shares. |
+| [`DeckCard.tsx`](../../src/components/DeckCard.tsx) | One deck on the Decks screen: a header with the name, card count and the **Deck options menu** (a `KebabMenu`), a `MasteryBar`, and a footer with the session counts, the last-session date and the **Start session button**. Takes display-ready values and callbacks; derives nothing. |
+| [`DecksToolbar.tsx`](../../src/components/DecksToolbar.tsx) | The Decks screen's `headerRight`: the **Search button** and **Filter button**, then the `AppMenu` in its `boxed` variant. The two buttons only call the callbacks they are given. |
 | [`HistoryStrip.tsx`](../../src/components/HistoryStrip.tsx) | The answered-so-far tiles on the Study screen, coloured per answer; auto-scrolls to the current card. |
 | [`EmptyState.tsx`](../../src/components/EmptyState.tsx) | Every list's `ListEmptyComponent`. |
-| [`KebabMenu.tsx`](../../src/components/KebabMenu.tsx) | The three-dot control; opens a `MenuSheet`. Owns the open/closed state. |
+| [`KebabMenu.tsx`](../../src/components/KebabMenu.tsx) | The three-dot control; opens a `MenuSheet`. Owns the open/closed state. An optional `variant="boxed"` draws the trigger as a bordered rounded square, matching the Decks toolbar's buttons; the default is `plain`. |
 | [`MenuSheet.tsx`](../../src/components/MenuSheet.tsx) | The bottom sheet, in a `Modal`. Defines the shared `MenuItem` type. |
-| [`MenuIcons.tsx`](../../src/components/MenuIcons.tsx) | `MenuIcon` — every menu icon, drawn from nested `View`s. |
-| [`AnswerIcons.tsx`](../../src/components/AnswerIcons.tsx) | `AnswerIcon` — the tick, cross and question-mark glyphs on the Study screen's answer buttons, drawn from rotated `View`s. Hidden from accessibility; the button carries the name. |
-| [`AppMenu.tsx`](../../src/components/AppMenu.tsx) | The header kebab menu. The one component that calls a service. |
+| [`MenuIcons.tsx`](../../src/components/MenuIcons.tsx) | `MenuIcon` — every menu icon, drawn from nested `View`s on a 20-point grid. Also carries the `search`, `filter` and `clock` glyphs, which are used outside menus (the Decks toolbar and the Deck card). An optional `size` scales the grid about its centre. |
+| [`AnswerIcons.tsx`](../../src/components/AnswerIcons.tsx) | `AnswerIcon` — the tick, cross and question-mark glyphs for Ok, Not Ok and Okeish, drawn from rotated `View`s. Used on the Study screen's answer buttons and in the `MasteryBar` legend. Hidden from accessibility; the containing button or panel carries the name. |
+| [`AppMenu.tsx`](../../src/components/AppMenu.tsx) | The header kebab menu. The one component that calls a service. Passes an optional `variant` through to its `KebabMenu`, and takes optional `extraItems` — screen-specific `MenuItem`s shown before Export sample deck and Settings — so a screen can add an item without `AppMenu` reading the store. |
 
 `AppMenu` is the exception to "components take plain props": it calls `exportSampleDeck` directly
-because it has no screen to belong to — it is mounted by the navigator as `headerRight`.
+because it has no screen to belong to — it is mounted by the navigator as `headerRight`, or, on the
+Decks screen, inside `DecksToolbar`. `DecksToolbar` therefore reaches a service too, but only
+through `AppMenu`. The Learn screen mounts its own `AppMenu` with an `extraItems` entry for
+**Clear completed sessions**, whose callback is the screen's; `AppMenu` itself still knows nothing
+of the store.
 
 ### App entry points
 
@@ -215,7 +241,12 @@ screen therefore navigates across tabs:
 session from the end-of-session summary uses `replace`, so the finished session does not pile up on
 the back stack.
 
-Each root screen carries the **App menu** as `headerRight`. Detail screens do not.
+Each root screen carries the **App menu** as `headerRight`, set in `RootNavigator`. Two root
+screens override their own `headerRight` with `navigation.setOptions` in a `useLayoutEffect`: the
+Decks screen replaces it with the **Decks toolbar**, which renders the App menu after the Search
+and Filter buttons, and the Learn screen replaces it with an App menu carrying **Clear completed
+sessions** as an extra item. Only the Statistics screen uses the navigator's default. Detail
+screens carry no App menu.
 
 ---
 
@@ -226,7 +257,7 @@ Two AsyncStorage keys, each owned by one module. Nothing else writes storage.
 | Key | Holds | Module |
 |---|---|---|
 | `@easy-flashcards/decks/v1` | `Deck[]`, each with its `Card[]` and their counters | [`decksStorage.ts`](../../src/storage/decksStorage.ts) |
-| `@easy-flashcards/sessions/v1` | `Session[]`, active and completed | [`sessionsStorage.ts`](../../src/storage/sessionsStorage.ts) |
+| `@easy-flashcards/sessions/v1` | `Session[]` — active, completed, and cleared ([ADR-0008](decisions/0008-clear-completed-sessions.md)) | [`sessionsStorage.ts`](../../src/storage/sessionsStorage.ts) |
 
 **Both are loaded once**, in parallel, by a mount effect in `DecksProvider`. A failure of either
 sets `error` and clears `isLoading`; the app starts empty rather than not at all.
@@ -239,7 +270,9 @@ take down a session in progress.
 **Reads normalise and never throw.** Each loader drops malformed rows — a card with no `id`,
 `question` or `answer`; a session whose `cardIds` is not an array — defaults missing timestamps to
 now, clamps `results` to `cardIds.length`, reads a missing or non-numeric card counter as `0`,
-preserves an answer of `'ok'`, `'okeish'` or `'notOk'`, and coerces any other answer to `'ok'`. The
+preserves an answer of `'ok'`, `'okeish'` or `'notOk'`, and coerces any other answer to `'ok'`. A
+session's `clearedAt` is kept only when it is a finite number **and** the session is completed;
+otherwise it is read as `null`, so an active session can never be hidden. The
 cost is silent data loss on a corrupt record; the alternative is an app that cannot start
 ([ADR-0004](decisions/0004-versioned-defensive-storage.md)).
 
@@ -247,8 +280,11 @@ cost is silent data loss on a corrupt record; the alternative is an app that can
 a new key and converts from the old one on first read. Nothing rewrites what `/v1` means. A new
 field whose default is the *true* value for every older record is absorbed under `/v1` instead —
 [ADR-0004 Amendment 1](decisions/0004-versioned-defensive-storage.md); a card's Okeish counter is
-the first such field ([ADR-0007](decisions/0007-okeish-third-answer.md)). The opposite direction is
-not covered: an older build reading data this one wrote loses the Okeish data on its first save.
+the first such field ([ADR-0007](decisions/0007-okeish-third-answer.md)) and a session's
+`clearedAt` the second ([ADR-0008](decisions/0008-clear-completed-sessions.md)). The opposite
+direction is not covered: an older build reading data this one wrote loses the Okeish data, and
+drops `clearedAt` so every cleared session reappears in its Learn list, on its first save. Both
+losses are permanent; reinstalling the newer build does not restore them.
 
 **Ids are generated, not derived**: `createId(prefix)` in `DecksContext` returns
 `` `${prefix}_${Date.now().toString(36)}_${random}` ``. Deck ids, card ids and session ids all come
@@ -320,26 +356,42 @@ proposing a change:
 - **The reducer is untested.** It is the most behaviour-dense code in the app — cascading deletes,
   auto-completion, counter updates — and it lives in a `.tsx` file next to the provider, so testing
   it means rendering. Extracting the reducer into a `.ts` file would make it testable today; that
-  has not been done.
+  has not been done. The clear actions are the partial exception: their transforms live in
+  `stats.ts` and are tested, but the dispatch wiring around them is not.
+- **`deleteSession` deletes whatever it is given.** The rule that it is only for discarding an
+  active session lives in the Learn screen, not the reducer; a future caller that deletes a
+  completed session silently changes the session statistics
+  ([ADR-0008](decisions/0008-clear-completed-sessions.md)).
 - **The storage normalisers are untested**, and they are the code that runs against data the app
   did not write. Since [ADR-0007](decisions/0007-okeish-third-answer.md) that includes the Okeish
   paths: a sessions loader that coerced `'okeish'` to `'ok'` would still type-check, and would
-  silently rewrite every Okeish answer on the next launch.
-- **A downgrade silently loses Okeish data.** An older APK drops the card's Okeish counter and
-  reads every `'okeish'` answer as `'ok'`, and its first save makes that permanent. Nothing blocks
-  it: `versionCode` in [`android/app/build.gradle`](../../android/app/build.gradle) has never been
-  bumped and release builds share the debug keystore. Accepted in ADR-0007, not mitigated.
+  silently rewrite every Okeish answer on the next launch. Since
+  [ADR-0008](decisions/0008-clear-completed-sessions.md) it includes the `clearedAt` rule: dropping
+  the "completed only" check also type-checks, and would let a corrupt record hide an active
+  session.
+- **A downgrade silently loses Okeish data and un-clears every cleared session.** An older APK
+  drops the card's Okeish counter, reads every `'okeish'` answer as `'ok'`, and drops each session's
+  `clearedAt`, and its first save makes all of that permanent. No session statistic is lost — the
+  cleared sessions were still counted — but they return to the Learn list and stay there. Nothing
+  blocks it: `versionCode` in [`android/app/build.gradle`](../../android/app/build.gradle) has never
+  been bumped and release builds share the debug keystore. Accepted in ADR-0007 and ADR-0008, not
+  mitigated.
+- **Cleared sessions are kept forever and cannot be restored from the UI.** Clearing removes
+  nothing, so the sessions key only grows; only *Delete deck* and *Reset statistics* shrink it.
+  There is no *restore* and no *show cleared*: a session cleared by mistake stays hidden though its
+  data is intact. Accepted in [ADR-0008](decisions/0008-clear-completed-sessions.md).
 - **`renameDeck` is dead code.** The store exposes it, the reducer implements it including the
   rename of every session's `deckName` snapshot, and nothing calls it. The *Edit deck* menu item
   alerts instead.
-- **Several menu entries are placeholders.** *Edit deck*, *Add deck manually*, the XML / JSON /
-  JSONL import formats, and *Settings* all show a "not available yet" alert. They are deliberate
-  stubs, not bugs.
+- **Several menu entries and buttons are placeholders.** *Edit deck*, *Add deck manually*, the
+  XML / JSON / JSONL import formats, *Settings*, and the Decks toolbar's **Search button** and
+  **Filter button** all show a "not available yet" alert. They are deliberate stubs, not bugs.
 - **`README.md` describes two tabs.** The app has had three since the Learn tab landed, and the
   README's feature list and project-structure table were not updated with it.
 - **The whole store is written on every change.** Two full arrays are serialised and written for a
   single answer. At the volumes a hand-imported CSV produces this costs nothing; it does not scale
-  to a large library, and nothing currently bounds deck size.
+  to a large library, and nothing currently bounds deck size or the number of kept sessions,
+  cleared ones included.
 - **A re-import is always a new deck.** Card ids are minted at import, so importing an updated
   version of a file produces a second deck and a second set of counters rather than updating the
   first. There is no identity for a card beyond its generated id.

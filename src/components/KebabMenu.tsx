@@ -1,15 +1,22 @@
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import MenuSheet, { MenuItem } from './MenuSheet';
-import { colors } from '../theme';
+import { colors, radius } from '../theme';
 
 type Props = {
   items: MenuItem[];
   title?: string;
   accessibilityLabel?: string;
+  /** `boxed` is the rounded-square trigger used in the Decks toolbar. */
+  variant?: 'plain' | 'boxed';
 };
 
-export default function KebabMenu({ items, title, accessibilityLabel = 'More options' }: Props) {
+export default function KebabMenu({
+  items,
+  title,
+  accessibilityLabel = 'More options',
+  variant = 'plain',
+}: Props) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -17,9 +24,13 @@ export default function KebabMenu({ items, title, accessibilityLabel = 'More opt
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={accessibilityLabel}
-        hitSlop={10}
+        hitSlop={variant === 'boxed' ? 6 : 10}
         onPress={() => setIsOpen(true)}
-        style={({ pressed }) => [styles.trigger, pressed && styles.pressed]}>
+        style={({ pressed }) => [
+          styles.trigger,
+          variant === 'boxed' && styles.boxed,
+          pressed && styles.pressed,
+        ]}>
         <View style={styles.dot} />
         <View style={styles.dot} />
         <View style={styles.dot} />
@@ -37,6 +48,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 3,
+  },
+  boxed: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
   },
   pressed: {
     opacity: 0.5,
