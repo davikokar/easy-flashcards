@@ -165,6 +165,13 @@ discovered.
   `cardIds` array, so changing the deck afterwards does not rewrite history
   ([ADR-0002](docs/architecture/decisions/0002-sessions-are-snapshots.md)). A session is **active**
   while `completedAt === null`; nothing else means active.
+- **A `Session` snapshots its direction too.** `inverted` is set from the required
+  `{ inverted }` argument of `startSession` / `replaySession` when the session is created, and
+  nothing changes it afterwards. A session created from an existing one passes the source's
+  `inverted`; only the Decks screen chooses one. Which face shows first comes only from `cardFaces`
+  in [src/utils/cardFaces.ts](src/utils/cardFaces.ts); answers, counters and every `stats.ts`
+  function ignore direction
+  ([ADR-0010](docs/architecture/decisions/0010-inverted-sessions.md)).
 - **Clearing a session hides it; it does not delete it.** A completed session is **cleared** while
   `clearedAt !== null` (`isSessionCleared` in `stats.ts`): it drops off the Learn screen but stays
   in storage and is still counted by every session statistic. Only a completed session can be
@@ -188,7 +195,7 @@ writing, and normalising it.
 | Key | Holds | Module |
 |---|---|---|
 | `@easy-flashcards/decks/v1` | every `Deck`, each with its `Card[]` and their counters | [src/storage/decksStorage.ts](src/storage/decksStorage.ts) |
-| `@easy-flashcards/sessions/v1` | every `Session` — active, completed, and cleared | [src/storage/sessionsStorage.ts](src/storage/sessionsStorage.ts) |
+| `@easy-flashcards/sessions/v1` | every `Session` — active, completed, and cleared — with its direction (`inverted`) | [src/storage/sessionsStorage.ts](src/storage/sessionsStorage.ts) |
 
 - **Reads are defensive and never throw on bad data.** Each loader drops rows it cannot make sense
   of and fills in defaults for missing timestamps, because the alternative is an app that will not

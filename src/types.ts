@@ -38,6 +38,8 @@ export type Session = {
   clearedAt: number | null;
   /** Missed or unsure cards since answered Ok in a review of this session; always [] while active. */
   fixedCardIds: string[];
+  /** Show each card's answer first; fixed when the session is created. */
+  inverted: boolean;
 };
 
 /** A completed session's error review: hidden, still has cards to go over, or finished. */

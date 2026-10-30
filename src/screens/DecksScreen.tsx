@@ -8,6 +8,7 @@ import EmptyState from '../components/EmptyState';
 import HeaderToolbar from '../components/HeaderToolbar';
 import MenuSheet from '../components/MenuSheet';
 import SearchBar from '../components/SearchBar';
+import SessionSetupDialog from '../components/SessionSetupDialog';
 import { useDecks } from '../state/DecksContext';
 import { DecksStackParamList, RootTabParamList } from '../navigation/types';
 import { Deck } from '../types';
@@ -37,6 +38,11 @@ export default function DecksScreen({ navigation }: Props) {
   const [openMenu, setOpenMenu] = useState<'add' | 'format' | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState('');
+  // The deck id stays set after the dialog closes so its title does not blank during the fade-out.
+  const [setupDeckId, setSetupDeckId] = useState<string | null>(null);
+  const [setupVisible, setSetupVisible] = useState(false);
+  const [setupInverted, setSetupInverted] = useState(false);
+  const [setupShuffled, setSetupShuffled] = useState(false);
   const sessionsByDeck = useMemo(() => summarizeSessionsByDeck(sessions), [sessions]);
   const visibleDecks = useMemo(() => filterByTitle(decks, query, deck => deck.name), [decks, query]);
 
@@ -120,14 +126,16 @@ export default function DecksScreen({ navigation }: Props) {
   );
 
   const handleStartSession = useCallback(
-    (deck: Deck, shuffled = false) => {
+    (deck: Deck, inverted = false, shuffled = false) => {
       if (deck.cards.length === 0) {
         Alert.alert('Empty deck', 'This deck has no cards to learn.');
         return;
       }
-      const session = shuffled
-        ? startSession(deck, shuffle(deck.cards.map(card => card.id)))
-        : startSession(deck);
+      const session = startSession(
+        deck,
+        { inverted },
+        shuffled ? shuffle(deck.cards.map(card => card.id)) : undefined,
+      );
       navigation.navigate('LearnTab', {
         screen: 'Study',
         params: { sessionId: session.id },
@@ -135,6 +143,31 @@ export default function DecksScreen({ navigation }: Props) {
     },
     [navigation, startSession],
   );
+
+  const openSessionSetup = useCallback((deck: Deck) => {
+    if (deck.cards.length === 0) {
+      Alert.alert('Empty deck', 'This deck has no cards to learn.');
+      return;
+    }
+    setSetupDeckId(deck.id);
+    setSetupInverted(false);
+    setSetupShuffled(false);
+    setSetupVisible(true);
+  }, []);
+
+  const closeSessionSetup = useCallback(() => setSetupVisible(false), []);
+
+  const setupDeck = useMemo(
+    () => decks.find(deck => deck.id === setupDeckId),
+    [decks, setupDeckId],
+  );
+
+  const startFromSetup = useCallback(() => {
+    setSetupVisible(false);
+    if (setupDeck) {
+      handleStartSession(setupDeck, setupInverted, setupShuffled);
+    }
+  }, [setupDeck, setupInverted, setupShuffled, handleStartSession]);
 
   const notYetAvailable = useCallback((format: string) => {
     Alert.alert(format, 'Only CSV files can be imported for now.');
@@ -217,9 +250,9 @@ export default function DecksScreen({ navigation }: Props) {
               onStart={() => handleStartSession(item)}
               menuItems={[
                 {
-                  label: 'Shuffle and start session',
-                  icon: 'shuffle',
-                  onPress: () => handleStartSession(item, true),
+                  label: 'Start session with options',
+                  icon: 'play',
+                  onPress: () => openSessionSetup(item),
                 },
                 {
                   label: 'Edit deck',
@@ -259,6 +292,17 @@ export default function DecksScreen({ navigation }: Props) {
         title={openMenu === 'format' ? 'Import deck from file' : 'Add a deck'}
         items={openMenu === 'format' ? formatMenuItems : addMenuItems}
         onClose={() => setOpenMenu(null)}
+      />
+
+      <SessionSetupDialog
+        visible={setupVisible}
+        deckName={setupDeck?.name ?? ''}
+        inverted={setupInverted}
+        shuffled={setupShuffled}
+        onInvertedChange={setSetupInverted}
+        onShuffledChange={setSetupShuffled}
+        onStart={startFromSetup}
+        onCancel={closeSessionSetup}
       />
     </View>
   );

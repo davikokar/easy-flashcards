@@ -162,14 +162,21 @@ function reducer(state: State, action: Action): State {
   }
 }
 
+type SessionOptions = { inverted: boolean };
+
 type DecksContextValue = State & {
   getDeck: (deckId: string) => Deck | undefined;
   getSession: (sessionId: string) => Session | undefined;
   addDeck: (input: { name: string; sourceFileName: string | null; cards: ParsedCard[] }) => Deck;
   deleteDeck: (deckId: string) => void;
   renameDeck: (deckId: string, name: string) => void;
-  startSession: (deck: Deck, cardIds?: string[]) => Session;
-  replaySession: (sourceSessionId: string, deck: Deck, cardIds: string[]) => Session;
+  startSession: (deck: Deck, options: SessionOptions, cardIds?: string[]) => Session;
+  replaySession: (
+    sourceSessionId: string,
+    deck: Deck,
+    options: SessionOptions,
+    cardIds: string[],
+  ) => Session;
   recordAnswer: (sessionId: string, cardId: string, answer: Answer) => void;
   recordReviewAnswer: (sessionId: string, cardId: string, answer: Answer) => void;
   deleteSession: (sessionId: string) => void;
@@ -184,7 +191,11 @@ function createId(prefix: string): string {
   return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
 }
 
-function createSession(deck: Deck, cardIds: string[] | undefined): Session {
+function createSession(
+  deck: Deck,
+  options: SessionOptions,
+  cardIds: string[] | undefined,
+): Session {
   const now = Date.now();
   return {
     id: createId('session'),
@@ -197,6 +208,7 @@ function createSession(deck: Deck, cardIds: string[] | undefined): Session {
     completedAt: null,
     clearedAt: null,
     fixedCardIds: [],
+    inverted: options.inverted,
   };
 }
 
@@ -259,15 +271,18 @@ export function DecksProvider({ children }: { children: React.ReactNode }) {
     return deck;
   }, []);
 
-  const startSession = useCallback<DecksContextValue['startSession']>((deck, cardIds) => {
-    const session = createSession(deck, cardIds);
-    dispatch({ type: 'startSession', session });
-    return session;
-  }, []);
+  const startSession = useCallback<DecksContextValue['startSession']>(
+    (deck, options, cardIds) => {
+      const session = createSession(deck, options, cardIds);
+      dispatch({ type: 'startSession', session });
+      return session;
+    },
+    [],
+  );
 
   const replaySession = useCallback<DecksContextValue['replaySession']>(
-    (sourceSessionId, deck, cardIds) => {
-      const session = createSession(deck, cardIds);
+    (sourceSessionId, deck, options, cardIds) => {
+      const session = createSession(deck, options, cardIds);
       dispatch({ type: 'replaySession', session, sourceSessionId, at: session.startedAt });
       return session;
     },

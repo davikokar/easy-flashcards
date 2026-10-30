@@ -26,6 +26,8 @@ type Review = {
 type Props = {
   deckName: string;
   isActive: boolean;
+  /** Shows the Inverted pill beside the status pill. */
+  inverted?: boolean;
   answeredCount: number;
   cardCount: number;
   tally: AnswerTally;
@@ -33,8 +35,11 @@ type Props = {
   /** Already formatted, e.g. by `formatDate`. */
   startedLabel: string;
   menuItems: MenuItem[];
+  /** Not ok and okeish cards in a completed session; the Replay missed button needs more than 0. */
+  missedCount?: number;
   onResume?: () => void;
   onReplay?: () => void;
+  onReplayMissed?: () => void;
   /** The error review button is shown only when this is provided. */
   review?: Review;
 };
@@ -42,14 +47,17 @@ type Props = {
 export default function SessionCard({
   deckName,
   isActive,
+  inverted = false,
   answeredCount,
   cardCount,
   tally,
   shares,
   startedLabel,
   menuItems,
+  missedCount = 0,
   onResume,
   onReplay,
+  onReplayMissed,
   review,
 }: Props) {
   const cards = `card${cardCount === 1 ? '' : 's'}`;
@@ -63,6 +71,9 @@ export default function SessionCard({
           review.count === 1 ? '' : 's'
         } for ${deckName}`
     : '';
+  const replayMissedLabel = `Replay the ${missedCount} missed or unsure card${
+    missedCount === 1 ? '' : 's'
+  } for ${deckName}`;
 
   return (
     <View style={styles.card}>
@@ -71,17 +82,29 @@ export default function SessionCard({
           <Text style={styles.name} numberOfLines={1}>
             {deckName}
           </Text>
-          <View style={[styles.pill, isActive ? styles.pillActive : styles.pillDone]}>
-            {isActive ? (
-              <View style={styles.pillDot} />
-            ) : (
-              <AnswerIcon name="tick" color={colors.success} size={12} />
-            )}
-            <Text
-              style={[styles.pillText, isActive ? styles.pillTextActive : styles.pillTextDone]}
-              numberOfLines={1}>
-              {status}
-            </Text>
+          <View style={styles.pills}>
+            <View style={[styles.pill, isActive ? styles.pillActive : styles.pillDone]}>
+              {isActive ? (
+                <View style={styles.pillDot} />
+              ) : (
+                <AnswerIcon name="tick" color={colors.success} size={12} />
+              )}
+              <Text
+                style={[styles.pillText, isActive ? styles.pillTextActive : styles.pillTextDone]}
+                numberOfLines={1}>
+                {status}
+              </Text>
+            </View>
+            {inverted ? (
+              <View
+                accessible
+                accessibilityLabel="Inverted session"
+                style={[styles.pill, styles.pillInverted]}>
+                <Text style={[styles.pillText, styles.pillTextInverted]} numberOfLines={1}>
+                  Inverted
+                </Text>
+              </View>
+            ) : null}
           </View>
         </View>
         <KebabMenu
@@ -134,6 +157,14 @@ export default function SessionCard({
               </View>
             </View>
           ) : null}
+          {!isActive && onReplayMissed && missedCount > 0 ? (
+            <Button
+              variant="warning"
+              accessibilityLabel={replayMissedLabel}
+              icon={renderReplayIcon}
+              onPress={onReplayMissed}
+            />
+          ) : null}
           {!isActive && onReplay ? (
             <Button
               variant="secondary"
@@ -173,6 +204,12 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '700',
   },
+  // Wraps, so the Inverted pill drops under the status pill rather than squeezing it.
+  pills: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+  },
   pill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -193,6 +230,11 @@ const styles = StyleSheet.create({
     borderColor: `${colors.success}4d`,
     backgroundColor: `${colors.success}26`,
   },
+  // Neutral on purpose: direction is not a state, so it must not read as one.
+  pillInverted: {
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceAlt,
+  },
   pillDot: {
     width: 6,
     height: 6,
@@ -209,6 +251,9 @@ const styles = StyleSheet.create({
   },
   pillTextDone: {
     color: colors.success,
+  },
+  pillTextInverted: {
+    color: colors.textMuted,
   },
   footer: {
     flexDirection: 'row',

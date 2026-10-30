@@ -88,7 +88,8 @@ store knowledge: each of those screens overrides `headerRight` itself (via
   **options button**
 - **Menu sheet** (`MenuSheet`): the bottom sheet a Kebab menu opens — a dimmed backdrop and a list
   of **Menu items**, each with an optional **Menu icon** and an optional `destructive` flag that
-  colours it danger. This is the app's only menu surface. Aliases: **bottom sheet**, **action
+  colours it danger. This is the app's only menu surface (a **menu** is a list of actions; the
+  **Session setup dialog** is a dialog, not a second menu). Aliases: **bottom sheet**, **action
   sheet**
 - **Menu icon** (`MenuIcon`): the small glyph on a menu item, and also used outside menus (the
   **Header toolbar**, the **Deck meta row**, and the **Session card footer**). The available names
@@ -98,7 +99,8 @@ store knowledge: each of those screens overrides `headerRight` itself (via
   name rather than adding a second glyph for an existing idea**, and remember that adding one means
   drawing it, not importing it.
 - **Export sample deck dialog** (in `AppMenu`): the centred `Modal` explaining the CSV format,
-  with **Share** and **Cancel**. The one dialog in the app that is not an `Alert`.
+  with **Share** and **Cancel**. One of the two dialogs in the app that are not an `Alert`; the
+  other is the **Session setup dialog**.
 
 Everything else that interrupts the user is a native `Alert` — confirmations, failures, and the
 "not available yet" stubs.
@@ -163,12 +165,33 @@ Everything else that interrupts the user is a native `Alert` — confirmations, 
   it is zero.
 - **Start session button**: the small rounded-square primary button with a play glyph at the end of
   the Deck meta row, labelled ``Start session for {deck name}``. Icon-only, with no visible text.
-  Creates a **new** session over the whole deck and navigates across tabs into the Study screen; it
-  does not resume an active one.
+  Creates a **new** session over the whole deck, in deck order, **not inverted and not shuffled**,
+  and navigates across tabs into the Study screen; it does not resume an active one.
 - **Deck options menu**: the Kebab menu on a Deck card, labelled ``Options for {deck name}``.
-  Holds **Shuffle and start session** (same as the Start session button, but the new session's cards
-  are in random order), **Edit deck** (a stub) and **Delete deck** (destructive, confirmed by an
-  `Alert`).
+  Holds **Start session with options** (play glyph; opens the **Session setup dialog**), **Edit
+  deck** (a stub) and **Delete deck** (destructive, confirmed by an `Alert`). It was **Shuffle and
+  start session** before
+  [ADR-0010](../../docs/architecture/decisions/0010-inverted-sessions.md).
+- **Session setup dialog** (`SessionSetupDialog`): the centred `Modal` that **Start session with
+  options** opens, titled `Start session` over the deck's name. It holds two independent **Session
+  options** and the **Start** and **Cancel** buttons. Not the **Session options menu**, which is the
+  Kebab menu on a Learn **Session card** — "session options" there are menu items, here they are
+  checkboxes. Aliases: **options dialog**, **start options**
+  - **Session options**: two checkbox rows, **Inverted** (the card front shows the answer and the
+    back the question) and **Shuffle** (random card order). They are independent — either, both or
+    neither. A row is a `Pressable` with `accessibilityRole="checkbox"`, labelled `Inverted` or
+    `Shuffle`, with its checked state in `accessibilityState`. **Both start unchecked every time the
+    dialog opens.** With both unchecked, **Start** does the same as the **Start session button**.
+  - **Start**: the primary Button. Creates a **new** session with the chosen options and navigates
+    across tabs into the Study screen, as the Start session button does. An empty deck alerts
+    `Empty deck` instead, on every start path including this one.
+  - **Cancel**: the secondary Button; also the backdrop and the Back button. Creates nothing.
+- **Inverted session**: a session whose faces are swapped — the Flip card's front shows each
+  card's answer and its back the question
+  ([ADR-0010](../../docs/architecture/decisions/0010-inverted-sessions.md)). The direction is fixed
+  when the session is created and never changes. It is kept by **Replay**, **Replay missed**,
+  **Start a new session** and **Study the whole deck again**. Only starting from a deck chooses a
+  direction; the plain **Start session button** is never inverted. Statistics do not distinguish it.
 - **Add deck button**: the floating action button at the bottom right, a primary rounded square
   labelled `Add a deck`. It is
   the app's only FAB. Shows a spinner while an import is in flight. Opens the **Add deck menu**.
@@ -191,6 +214,11 @@ Everything else that interrupts the user is a native `Alert` — confirmations, 
   completed one. Active is tinted primary with a dot; completed is tinted success with a tick
   (**Answer icon**). "In progress" and "Completed" are the user-facing words; **active** is the
   word used in code and in prose about state.
+- **Inverted pill**: the neutral (`surfaceAlt` fill, `border` outline, muted text) pill reading
+  `Inverted`, shown beside the Session status pill on an **inverted session**, in both active and
+  completed states, and absent otherwise. It wraps under the status pill when the row is too narrow.
+  Labelled `Inverted session`. Deliberately not tinted: direction is not a state. The Study screen
+  shows the same pill in its **Progress header**.
 - **Session results bar** (`SessionResultsBar`): the segmented track and legend on a Session card,
   labelled ``Progress: {answered} of {total} answered — {n} ok, {n} okeish, {n} not ok``. One
   segment per answer — green ok, amber okeish, red not ok — each sized by its share of **all the
@@ -237,7 +265,9 @@ Everything else that interrupts the user is a native `Alert` — confirmations, 
 The densest screen in the app, and the one with vocabulary worth being precise about.
 
 - **Progress header**: `Card {n} of {total}` on the left, `Ok {n}` on the right. Only plain ok
-  answers are counted there, not okeish.
+  answers are counted there, not okeish. On an **inverted session** the **Inverted pill** sits
+  between them, labelled `Inverted session: the front shows the answer`; a normal session shows
+  nothing there.
 - **Session progress bar**: the thin **Success bar** under the progress header. It shows **how far
   through the session the user is**, not how well they are doing — the same component, a different
   meaning. Say which you mean. Not the **Session results bar** on the Learn screen's Session cards.
@@ -250,7 +280,12 @@ The densest screen in the app, and the one with vocabulary worth being precise a
 - **Flip card** (`FlipCard`): the card itself. Two faces, **Question** and **Answer**, rotated with
   a `rotateY` animation. Its accessibility label is the **action**, not the state — `Show answer`
   while the question is up, `Show question` while the answer is. Each face scrolls independently.
-  Flipping it is what unlocks the **Answer buttons**. Aliases: **the card**
+  Flipping it is what unlocks the **Answer buttons**. Aliases: **the card**. Its props are `front`
+  and `back`, and the face labels (`QUESTION`, `ANSWER`) and hints (`Tap to reveal the answer`)
+  are **roles, not card fields**: the front is always labelled `QUESTION` and the back `ANSWER`,
+  whichever of the card's fields each shows. In an **inverted session** the front therefore shows
+  the card's answer under `QUESTION`; the **Inverted pill** is what explains it. Do not relabel
+  the faces by direction.
 - **Answer buttons**: three **icon-only** Buttons side by side at the bottom, in this order: **Not
   ok** (danger, cross), **Okeish** (warning, question mark), **Ok** (success, tick). They have no
   visible text; the accessibility labels are `Not ok`, `Okeish`, and `Ok`. They are **disabled
@@ -350,8 +385,12 @@ These are constraints, not suggestions. Each one is load-bearing somewhere.
   new one.
 - **Every token comes from [`src/theme.ts`](../../src/theme.ts).** `colors`, `spacing`, `radius` —
   twelve colours, five spacings, three radii, and no second source of styling. A raw hex or a
-  magic number in a `StyleSheet` is a finding, with two existing exceptions: `mark`'s foreground in
-  `RichText` and the FAB's spinner colour, both of which need contrast against a fixed background.
+  magic number in a `StyleSheet` is a finding, with three existing exceptions: `mark`'s foreground in
+  `RichText` and the FAB's spinner colour, both of which need contrast against a fixed background,
+  and the **modal backdrop scrim** (`#000000aa`) behind the Menu sheet, the Export sample deck
+  dialog and the Session setup dialog — a translucent black has to dim whatever is underneath, so
+  it cannot be one of the opaque theme colours. Reuse that value for any new modal; do not pick a
+  second one.
 - **Every control needs an accessibility label on the same element as its press handler**, not on
   the child that draws it. `Button` and the menu items set `accessibilityRole="button"`; a bare
   `Pressable` needs both.

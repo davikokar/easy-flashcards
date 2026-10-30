@@ -121,6 +121,21 @@ does. The decision above is unchanged — a session is still a snapshot, in its 
 *Correction, 2026-10-30:* this amendment first said a replay calls `startSession` with the
 original's `cardIds`. It never did; the first bullet above now lists the real callers.
 
+## Amendment 3 — 2026-10-30
+
+[ADR-0010](0010-inverted-sessions.md) adds inverted sessions. The decision above is unchanged — a
+session is still a snapshot, in its own key, and *active* still means exactly
+`completedAt === null`. One detail is added: the snapshot now records the session's **direction**.
+
+- A session carries a required `inverted: boolean`, set when it is created and **never changed
+  afterwards** — unlike `clearedAt` and `fixedCardIds`, it does not change on completion or after.
+  Older records, which carry none, read back as `false`.
+- `startSession` now takes a required `{ inverted: boolean }` options argument as well as the deck
+  and the optional `cardIds`.
+- **A session created from an existing session takes that session's direction.**
+- Direction does not touch `cardIds` or `results`: the card ids and their order are snapshotted
+  exactly as before, and a result still records only a card id and an answer.
+
 ## References
 
 - [`src/types.ts`](../../../src/types.ts) — `Session`, `SessionResult`
@@ -130,4 +145,5 @@ original's `cardIds`. It never did; the first bullet above now lists the real ca
 - [ADR-0005](0005-answers-recorded-immediately.md) — what writing into a session looks like
 - [ADR-0008](0008-clear-completed-sessions.md) — the cleared state (Amendment 1)
 - [ADR-0009](0009-error-review-marks-cards-fixed.md) — reviewing without a session (Amendment 2)
+- [ADR-0010](0010-inverted-sessions.md) — a session's direction (Amendment 3)
 - [ARCHITECTURE.md §2, §5](../ARCHITECTURE.md)

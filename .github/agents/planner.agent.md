@@ -24,10 +24,10 @@ app's own code. Read these before planning:
    and any change to a storage key or its shape). A plan that silently includes one of those is a
    broken plan: surface it as an open question instead.
 2. `docs/architecture/README.md` and `docs/architecture/decisions/` — the ADR index and the
-   decisions themselves. Every one marked `Active` is binding. All nine existing ADRs constrain
+   decisions themselves. Every one marked `Active` is binding. All ten existing ADRs constrain
    ordinary work here, not exotic work: they cover the HTML renderer, sessions, the store,
    persistence, when an answer is written, the launch tab, the Okeish answer, clearing completed
-   sessions, and reviewing a session's errors.
+   sessions, reviewing a session's errors, and a session's direction.
 3. `docs/architecture/ARCHITECTURE.md` — the system overview. Its §8 *Known debt* is where to look
    before proposing anything; several obvious improvements are already recorded there with the
    reason they were not made.

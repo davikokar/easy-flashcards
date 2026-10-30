@@ -36,7 +36,9 @@ for the required format and status rules.
 > ADR-0008 was also recorded ahead of its work; ADR-0002 carries an amendment for it, and
 > ARCHITECTURE.md links to it now that the work has landed. ADR-0009 was recorded ahead of its
 > work, together with amendments to ADR-0002, ADR-0005, ADR-0007 and ADR-0008, and
-> ARCHITECTURE.md links to it now that the work has landed.
+> ARCHITECTURE.md links to it now that the work has landed. ADR-0010 was recorded ahead of its
+> work, together with Amendment 3 to ADR-0002, and ARCHITECTURE.md links to it now that the work
+> has landed.
 
 ### Index
 
@@ -51,3 +53,4 @@ for the required format and status rules.
 | [ADR-0007](decisions/0007-okeish-third-answer.md) | A third answer, Okeish, stored under the existing v1 keys | Active | 2026-10-26 |
 | [ADR-0008](decisions/0008-clear-completed-sessions.md) | Clearing a completed session archives it under the existing v1 key | Active | 2026-10-27 |
 | [ADR-0009](decisions/0009-error-review-marks-cards-fixed.md) | Reviewing a session's errors marks cards fixed and changes no statistic | Active | 2026-10-30 |
+| [ADR-0010](decisions/0010-inverted-sessions.md) | A session's direction is chosen at creation and stored on the session | Active | 2026-10-30 |

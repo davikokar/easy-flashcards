@@ -37,9 +37,9 @@ vocabulary is in
 
 | Tab | Canonical name | What it shows | Implementation |
 |---|---|---|---|
-| Decks | **Decks screen** | Every imported deck as a **Deck card**: its card count, a **Mastery bar** splitting its reviews into Ok / Okeish / Not ok, its session and active-session counts, and its last session date. Where a deck is imported, started (in deck order or shuffled), and deleted. | `DecksScreen`, route `DecksList` |
-| Learn | **Learn screen** | Every listed session — active, or completed and not cleared — as a **Session card**, active ones first and most recently touched first within each group. A card shows a **Session status pill**, a **Session results bar** splitting the session's cards into answered Ok / Okeish / Not ok and unanswered, and a footer with the start date and icon-only buttons: **Resume** on an active session; **Replay** (the session's own cards, in its order) and, when it has any, **Replay missed** (its Not ok and Okeish cards) on a completed one. Where a session is resumed, replayed, or restarted over the whole deck — each start a new session, leaving the original untouched — an active one discarded (a real delete), and a completed one cleared, singly or all at once (hidden from the list but still counted — [ADR-0008](decisions/0008-clear-completed-sessions.md)). | `LearnScreen`, route `LearnList` |
-| Learn | **Study screen** | One session: the flip card, the icon-only answer buttons (Not Ok, Okeish, Ok — [ADR-0007](decisions/0007-okeish-third-answer.md)), the answered-so-far strip, and the end-of-session summary, which offers to replay the missed or unsure cards. | `StudyScreen`, route `Study` (param `sessionId`) |
+| Decks | **Decks screen** | Every imported deck as a **Deck card**: its card count, a **Mastery bar** splitting its reviews into Ok / Okeish / Not ok, its session and active-session counts, and its last session date. Where a deck is imported, started, and deleted. The **Start session button** starts in deck order and not inverted; the Deck options menu's **Start session with options** opens the **Session setup dialog**, where **Inverted** and **Shuffle** are chosen independently ([ADR-0010](decisions/0010-inverted-sessions.md)). | `DecksScreen`, route `DecksList` |
+| Learn | **Learn screen** | Every listed session — active, or completed and not cleared — as a **Session card**, active ones first and most recently touched first within each group. A card shows a **Session status pill** (followed by an **Inverted pill** on an inverted session), a **Session results bar** splitting the session's cards into answered Ok / Okeish / Not ok and unanswered, and a footer with the start date and icon-only buttons: **Resume** on an active session; **Replay** (the session's own cards, in its order) and, when it has any, **Replay missed** (its Not ok and Okeish cards) on a completed one. Where a session is resumed, replayed, or restarted over the whole deck — each start a new session, leaving the original untouched — an active one discarded (a real delete), and a completed one cleared, singly or all at once (hidden from the list but still counted — [ADR-0008](decisions/0008-clear-completed-sessions.md)). | `LearnScreen`, route `LearnList` |
+| Learn | **Study screen** | One session, in its direction — an inverted session shows each card's answer first and an **Inverted pill** in the Progress header ([ADR-0010](decisions/0010-inverted-sessions.md)): the flip card, the icon-only answer buttons (Not Ok, Okeish, Ok — [ADR-0007](decisions/0007-okeish-third-answer.md)), the answered-so-far strip, and the end-of-session summary, which offers to replay the missed or unsure cards. | `StudyScreen`, route `Study` (param `sessionId`) |
 | Statistics | **Statistics screen** | Totals across every deck, then one row per deck. A search narrows the rows and leaves the totals. | `StatsScreen`, route `StatsOverview` |
 | Statistics | **Deck statistics screen** | One deck's totals and every card in it, hardest first. | `DeckStatsScreen`, route `DeckStats` (param `deckId`) |
 
@@ -47,9 +47,10 @@ Two of the five are detail screens reached by pushing onto their tab's stack: **
 Learn screen or from starting a deck, **Deck statistics** from the Statistics screen. The other
 three are the roots of their tabs and are reached only by switching tab.
 
-There are no modal screens. Transient UI is either an `Alert` or the **Menu sheet**
-(`MenuSheet`), a bottom sheet rendered in a `Modal` and opened from a **Kebab menu**
-(`KebabMenu`). The **App menu** (`AppMenu`) in the header is one of those kebab menus; on the
+There are no modal screens. Transient UI is an `Alert`, the **Menu sheet** (`MenuSheet`), a
+bottom sheet rendered in a `Modal` and opened from a **Kebab menu** (`KebabMenu`), or one of two
+centred `Modal` dialogs: the **Export sample deck dialog** inside `AppMenu`, and the **Session
+setup dialog** (`SessionSetupDialog`) that the Decks screen opens. The **App menu** (`AppMenu`) in the header is one of those kebab menus; on the
 Decks, Learn and Statistics screens it sits at the end of the **Header toolbar** (`HeaderToolbar`),
 after the **Search button** and — on Decks and Learn only — the **Filter button**, and on the Learn
 screen it carries **Clear completed sessions** ahead of its common items. The Search button opens
@@ -86,7 +87,8 @@ AsyncStorage                              Device (SAF)
               Components (Button, FlipCard, RichText, SuccessBar,
                           MasteryBar, DeckCard, HeaderToolbar,
                           SearchBar, SessionCard, SessionResultsBar,
-                          HistoryStrip, EmptyState, KebabMenu, MenuSheet)
+                          SessionSetupDialog, HistoryStrip, EmptyState,
+                          KebabMenu, MenuSheet)
                         ← plain props + callbacks, no store access
 ```
 
@@ -106,6 +108,18 @@ credit in any success rate ([ADR-0007](decisions/0007-okeish-third-answer.md)).
 deck is the job of the screen that needs the cards — the Study screen, and the Learn screen when it
 starts a new session from an old one — through `getDeck(session.deckId)` —
 [ADR-0002](decisions/0002-sessions-are-snapshots.md).
+
+**A session carries its direction.** `Session.inverted` is set when the session is created and
+nothing changes it afterwards. It comes from a required options argument —
+`startSession(deck, { inverted }, cardIds?)` and
+`replaySession(sourceSessionId, deck, { inverted }, cardIds)` — so a call site that forgets it
+fails `npm run typecheck`; no reducer action was added, because the flag travels inside the
+`Session` the existing actions carry. Only the Decks screen chooses a direction: the **Start
+session button** passes `false`, the **Session setup dialog** passes the user's choice. A session
+created from an existing one — the Learn screen's `startFrom` and the Study screen's start-again —
+passes the source session's `inverted`. Which face is shown first comes only from `cardFaces` in
+`utils/cardFaces.ts`; answers, card counters and every `stats.ts` function ignore direction —
+[ADR-0010](decisions/0010-inverted-sessions.md).
 
 **Clearing a session archives it; it does not delete it.** `clearCompletedSessions` and
 `clearSession` stamp `clearedAt` on completed sessions, which hides them from the Learn screen and
@@ -129,7 +143,8 @@ testable under Jest with no renderer and no mocks. Every file in `__tests__/` te
 | [`stats.ts`](../../src/utils/stats.ts) | Every derived number in the app: `successRate`, `answerShares`, `sessionProgressShares` (each answer's share of a session's cards rather than of its reviews, scaled down together if the results ever outnumber the cards), `resolvableCardIds` (the given card ids that still exist in a deck, in the given order — what the Learn screen passes to `startSession`), `getDeckStats`, `getGlobalStats`, `getSessionTally`, `getSessionStats`, `getMissedOrUnsureCardIds`, `summarizeSessions`, `summarizeSessionsByDeck` (with `EMPTY_SESSION_SUMMARY` for a deck that has none), `isSessionActive`, `isSessionCleared`, `listedSessions` (the sessions the Learn screen shows), `clearableSessionCount` (completed sessions not yet cleared), `clearCompletedSessionsAt` and `clearSessionAt` (the transforms the reducer applies to clear sessions, returning the same array when nothing qualifies), `previousReviewIndex` (where a review swipe right on the Study screen lands — one answered card back, wrapping from the oldest round to the frontier), `sortSessions`, `sortCardsByDifficulty`, `cardReviewCount`, and the `formatRate` / `formatDate` display helpers. |
 | [`fileUri.ts`](../../src/utils/fileUri.ts) | `fileUriToPath` and `pathToFileUri` — the percent-encoding boundary between a `file://` URI and a path. |
 | [`search.ts`](../../src/utils/search.ts) | The title search behind the Search bar. `splitSearchWords` lower-cases a query, splits it on whitespace, `-`, `_` and `.`, and drops empty and repeated words; `titleMatchesWords` is true when every word occurs in the title as a literal substring, in any order; `filterByTitle(items, query, getTitle)` combines the two, and returns `items` itself — not a copy — for a query with no words, so a memoised list keeps its identity. |
-| [`shuffle.ts`](../../src/utils/shuffle.ts) | `shuffle(items, random = Math.random)` — Fisher-Yates over a copy; the input is never mutated. `random` is injectable so tests are deterministic. The Decks screen uses it to order the `cardIds` it passes to `startSession`. |
+| [`shuffle.ts`](../../src/utils/shuffle.ts) | `shuffle(items, random = Math.random)` — Fisher-Yates over a copy; the input is never mutated. `random` is injectable so tests are deterministic. The Decks screen uses it to order the `cardIds` it passes to `startSession` when **Shuffle** is ticked in the Session setup dialog. Shuffling is not stored; the order is the `cardIds` themselves. |
+| [`cardFaces.ts`](../../src/utils/cardFaces.ts) | `cardFaces(card, inverted)` — the session's direction applied to a card: `{ front, back }`, the `question` then the `answer`, swapped when `inverted`. The single place a direction is applied; the card itself is never rewritten. Also `readInverted(value)`, the sessions loader's rule for the stored flag: `true` only for an exact `true` ([ADR-0010](decisions/0010-inverted-sessions.md)). |
 
 `isSessionActive` is the single definition of "active": `completedAt === null`. Do not write that
 comparison anywhere else. `isSessionCleared` is the same for "cleared": `clearedAt !== null`. Only
@@ -188,8 +203,9 @@ each hold whether the Search bar is open and the query, and filter their list wi
 in a `useMemo`; closing the bar clears the query. The Decks and Statistics screens match on the
 deck's `name`; the Learn screen matches on the session's `deckName` snapshot and searches only
 `listedSessions`, so a cleared session never appears; the Statistics screen filters only its deck
-rows, and its global totals still cover every deck. `DecksScreen` also holds import-in-flight and
-which menu is open; `StudyScreen` holds the flip, the viewed card index, and which card's answer
+rows, and its global totals still cover every deck. `DecksScreen` also holds import-in-flight,
+which menu is open, and the Session setup dialog's deck, visibility, and **Inverted** and
+**Shuffle** choices, which reset to unticked each time the dialog opens; `StudyScreen` holds the flip, the viewed card index, and which card's answer
 has been revealed.
 
 ### `src/components/` — the stateless half
@@ -197,21 +213,22 @@ has been revealed.
 | File | Role |
 |---|---|
 | [`Button.tsx`](../../src/components/Button.tsx) | The only button. Variants `primary`, `secondary`, `success`, `danger`, `warning`; handles `disabled` and `loading`. Takes an optional `icon` render function, passed the foreground colour for the variant; with no `label` it is icon-only, and its type then requires an `accessibilityLabel`. |
-| [`FlipCard.tsx`](../../src/components/FlipCard.tsx) | The study card. Two faces, a `rotateY` interpolation, and a scrollable body. Owns the animation, not the flip state. |
+| [`FlipCard.tsx`](../../src/components/FlipCard.tsx) | The study card. Two faces, a `rotateY` interpolation, and a scrollable body. Owns the animation, not the flip state. Takes `front` and `back` — roles, not card fields: the Study screen fills them from `cardFaces`, so in an inverted session `front` is the card's answer. The `QUESTION` / `ANSWER` side labels stay positional. |
 | [`RichText.tsx`](../../src/components/RichText.tsx) | Renders `parseHtml` output as nested `<Text>`. See §6. |
 | [`SuccessBar.tsx`](../../src/components/SuccessBar.tsx) | The one visual encoding of a success rate. Used on the Study, Statistics and Deck statistics screens; the Decks screen shows a `MasteryBar` and the Learn screen a `SessionResultsBar` instead. An optional `color` overrides the rate-based colours for a bar that is not a success rate — the Study screen's session progress bar passes `colors.text`. |
 | [`MasteryBar.tsx`](../../src/components/MasteryBar.tsx) | The Ok / Okeish / Not ok split of a deck's reviews: a segmented track plus a legend giving each answer's `AnswerIcon` (tick, question mark, cross, in the answer's colour) followed by its percentage. Takes the output of `answerShares`; with `null` it draws an empty track, grey icons, and `--` for each share. The panel carries one accessibility label summarising all three shares. |
 | [`DeckCard.tsx`](../../src/components/DeckCard.tsx) | One deck on the Decks screen: a header with the name, card count and the **Deck options menu** (a `KebabMenu`), a `MasteryBar`, and a footer with the session counts, the last-session date and the **Start session button**. Takes display-ready values and callbacks; derives nothing. |
 | [`HeaderToolbar.tsx`](../../src/components/HeaderToolbar.tsx) | The `headerRight` of the Decks, Learn and Statistics screens: the **Search button**, the **Filter button**, then the `AppMenu` in its `boxed` variant. The Filter button renders only when both `onFilter` and `filterLabel` are given, which the Statistics screen does not. `searchActive` tints the Search button and marks it expanded while the Search bar is open. Takes optional `menuItems` that it passes to `AppMenu` as `extraItems`. The buttons only call the callbacks they are given. It was `DecksToolbar` until the Learn screen used it. |
 | [`SearchBar.tsx`](../../src/components/SearchBar.tsx) | The **Search bar**: a search glyph, an auto-focused `TextInput`, and the **Close search button**. Controlled — the screen owns the query and whether the bar is shown, and passes `value`, `onChangeText`, `onClose` and the placeholder. |
-| [`SessionCard.tsx`](../../src/components/SessionCard.tsx) | One session on the Learn screen: a header with the deck name, the **Session status pill** and the **Session options menu** (a `KebabMenu`), a `SessionResultsBar`, and a footer with the start date and the icon-only **Resume**, **Replay missed** and **Replay** buttons. Resume shows only on an active session and the two replays only on a completed one, each only when its callback is given. Takes display-ready values and callbacks; derives nothing. |
+| [`SessionCard.tsx`](../../src/components/SessionCard.tsx) | One session on the Learn screen: a header with the deck name, the **Session status pill**, the neutral **Inverted pill** when `inverted` is set, and the **Session options menu** (a `KebabMenu`), a `SessionResultsBar`, and a footer with the start date and the icon-only **Resume**, **Replay missed** and **Replay** buttons. Resume shows only on an active session and the two replays only on a completed one, each only when its callback is given; Replay missed also needs a `missedCount` above 0, which its label states. The pills wrap, so the Inverted pill drops below the status pill on a narrow card. Takes display-ready values and callbacks; derives nothing. |
+| [`SessionSetupDialog.tsx`](../../src/components/SessionSetupDialog.tsx) | The **Session setup dialog**: a centred `Modal` with the deck name, two independent checkbox rows — **Inverted** and **Shuffle** — and **Start** / **Cancel**. Controlled: the Decks screen owns the visibility and both choices, and starts the session in `onStart`. The backdrop and Back cancel. |
 | [`SessionResultsBar.tsx`](../../src/components/SessionResultsBar.tsx) | A session's answered part: a segmented track whose Ok / Okeish / Not ok segments are each sized by their share of the session's cards, so the unfilled remainder is the unanswered part, plus a legend giving each answer's `AnswerIcon` and count, the icons grey while nothing is answered. Takes the output of `sessionProgressShares`, the tally and the card count. The panel carries one accessibility label. Not a success rate. |
 | [`HistoryStrip.tsx`](../../src/components/HistoryStrip.tsx) | The answered-so-far tiles on the Study screen, coloured per answer; auto-scrolls to the current card. |
 | [`EmptyState.tsx`](../../src/components/EmptyState.tsx) | Every list's `ListEmptyComponent`. |
 | [`KebabMenu.tsx`](../../src/components/KebabMenu.tsx) | The three-dot control; opens a `MenuSheet`. Owns the open/closed state. An optional `variant="boxed"` draws the trigger as a bordered rounded square, matching the Header toolbar's buttons; the default is `plain`. |
 | [`MenuSheet.tsx`](../../src/components/MenuSheet.tsx) | The bottom sheet, in a `Modal`. Defines the shared `MenuItem` type. |
 | [`MenuIcons.tsx`](../../src/components/MenuIcons.tsx) | `MenuIcon` — every menu icon, drawn from nested `View`s on a 20-point grid. Also carries glyphs used outside menus: `search` and `filter` in the Header toolbar, `search` and `close` in the Search bar, `clock` in the Deck card and Session card footers, and `replay` on the Session card's two replay buttons. An optional `size` scales the grid about its centre. |
-| [`AnswerIcons.tsx`](../../src/components/AnswerIcons.tsx) | `AnswerIcon` — the tick, cross and question-mark glyphs for Ok, Not Ok and Okeish, drawn from rotated `View`s. Used on the Study screen's answer buttons, in the `MasteryBar` and `SessionResultsBar` legends, and as the tick in a completed session's status pill. Hidden from accessibility; the containing button or panel carries the name. |
+| [`AnswerIcons.tsx`](../../src/components/AnswerIcons.tsx) | `AnswerIcon` — the tick, cross and question-mark glyphs for Ok, Not Ok and Okeish, drawn from rotated `View`s. Used on the Study screen's answer buttons, in the `MasteryBar` and `SessionResultsBar` legends, as the tick in a completed session's status pill, and as the tick in a ticked Session setup dialog checkbox. Hidden from accessibility; the containing button or panel carries the name. |
 | [`AppMenu.tsx`](../../src/components/AppMenu.tsx) | The header kebab menu. The one component that calls a service. Passes an optional `variant` through to its `KebabMenu`, and takes optional `extraItems` — screen-specific `MenuItem`s shown before Export sample deck and Settings — so a screen can add an item without `AppMenu` reading the store. |
 
 `AppMenu` is the exception to "components take plain props": it calls `exportSampleDeck` directly
@@ -290,8 +307,10 @@ take down a session in progress.
 now, clamps `results` to `cardIds.length`, reads a missing or non-numeric card counter as `0`,
 preserves an answer of `'ok'`, `'okeish'` or `'notOk'`, and coerces any other answer to `'ok'`. A
 session's `clearedAt` is kept only when it is a finite number **and** the session is completed;
-otherwise it is read as `null`, so an active session can never be hidden. The
-cost is silent data loss on a corrupt record; the alternative is an app that cannot start
+otherwise it is read as `null`, so an active session can never be hidden. A session's
+`inverted` is read as `true` only when the stored value is exactly `true` (`readInverted` in
+`utils/cardFaces.ts`); missing or any other value is `false`, for active and completed sessions
+alike. The cost is silent data loss on a corrupt record; the alternative is an app that cannot start
 ([ADR-0004](decisions/0004-versioned-defensive-storage.md)).
 
 **The `/v1` suffix is the migration mechanism.** A shape change the normaliser cannot absorb takes
@@ -299,10 +318,14 @@ a new key and converts from the old one on first read. Nothing rewrites what `/v
 field whose default is the *true* value for every older record is absorbed under `/v1` instead —
 [ADR-0004 Amendment 1](decisions/0004-versioned-defensive-storage.md); a card's Okeish counter is
 the first such field ([ADR-0007](decisions/0007-okeish-third-answer.md)) and a session's
-`clearedAt` the second ([ADR-0008](decisions/0008-clear-completed-sessions.md)). The opposite
-direction is not covered: an older build reading data this one wrote loses the Okeish data, and
-drops `clearedAt` so every cleared session reappears in its Learn list, on its first save. Both
-losses are permanent; reinstalling the newer build does not restore them.
+`clearedAt` the second ([ADR-0008](decisions/0008-clear-completed-sessions.md)); a session's
+`inverted` is another, absent on every older record and read there as `false`
+([ADR-0010](decisions/0010-inverted-sessions.md)). The opposite direction is not covered: an older
+build reading data this one wrote loses the Okeish data, drops `clearedAt` so every cleared
+session reappears in its Learn list, and drops `inverted` so every inverted session becomes a
+normal one — an active one resumed there shows the question first — on its first save. These
+losses are permanent; reinstalling the newer build does not restore them. No answer or counter is
+lost to the `inverted` drop, because both directions record them the same way.
 
 **Ids are generated, not derived**: `createId(prefix)` in `DecksContext` returns
 `` `${prefix}_${Date.now().toString(36)}_${random}` ``. Deck ids, card ids and session ids all come
@@ -386,14 +409,26 @@ proposing a change:
   silently rewrite every Okeish answer on the next launch. Since
   [ADR-0008](decisions/0008-clear-completed-sessions.md) it includes the `clearedAt` rule: dropping
   the "completed only" check also type-checks, and would let a corrupt record hide an active
-  session.
-- **A downgrade silently loses Okeish data and un-clears every cleared session.** An older APK
-  drops the card's Okeish counter, reads every `'okeish'` answer as `'ok'`, and drops each session's
-  `clearedAt`, and its first save makes all of that permanent. No session statistic is lost — the
-  cleared sessions were still counted — but they return to the Learn list and stay there. Nothing
-  blocks it: `versionCode` in [`android/app/build.gradle`](../../android/app/build.gradle) has never
-  been bumped and release builds share the debug keystore. Accepted in ADR-0007 and ADR-0008, not
-  mitigated.
+  session. Since [ADR-0010](decisions/0010-inverted-sessions.md) it calls `readInverted`, which is
+  tested; whether the loader calls it — rather than coercing with `Boolean(...)`, which would read
+  a stray `"false"` as inverted — is not.
+- **Direction is not covered by any test that renders.** `cardFaces` is tested, but nothing checks
+  that the Study screen passes it the session's `inverted`, or that every path creating a session
+  from another passes the source's flag. A card shown the wrong way round passes `npm test`; only a
+  device run catches it ([ADR-0010](decisions/0010-inverted-sessions.md)).
+- **A downgrade silently loses Okeish data, un-clears every cleared session, and un-inverts every
+  inverted session.** An older APK drops the card's Okeish counter, reads every `'okeish'` answer
+  as `'ok'`, and drops each session's `clearedAt` and `inverted`, and its first save makes all of
+  that permanent. No session statistic is lost — the cleared sessions were still counted, and an
+  inverted answer is recorded like any other — but cleared sessions return to the Learn list and
+  an active inverted session resumes showing the question first. Nothing blocks it: `versionCode`
+  in [`android/app/build.gradle`](../../android/app/build.gradle) has never been bumped and release
+  builds share the debug keystore. Accepted in ADR-0007, ADR-0008 and ADR-0010, not mitigated.
+- **Statistics cannot tell the directions apart, and shuffling is not recorded.** A card has one
+  set of counters for both directions, so a card known one way and not the other shows one blended
+  rate, and Hardest first cannot say which direction is hard. Whether a session was shuffled is
+  visible only in its `cardIds` order. Accepted in
+  [ADR-0010](decisions/0010-inverted-sessions.md).
 - **Cleared sessions are kept forever and cannot be restored from the UI.** Clearing removes
   nothing, so the sessions key only grows; only *Delete deck* and *Reset statistics* shrink it.
   There is no *restore* and no *show cleared*: a session cleared by mistake stays hidden though its

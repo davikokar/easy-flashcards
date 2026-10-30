@@ -32,12 +32,14 @@ Read these before designing anything:
    route in the Learn stack rather than a tab, and why there is no block layout in a card. The
    **Planner owns this file** — do not rewrite it. If your work adds or retargets a screen or a
    route, say so in your report so the update gets scheduled.
-4. `docs/architecture/decisions/` — nine active ADRs. Four constrain design directly:
+4. `docs/architecture/decisions/` — ten active ADRs. Five constrain design directly:
    **ADR-0001** (no block layout, no images, no tables inside a card), **ADR-0005** (an answer is
    permanent the moment it is given, so there is no undo to design), **ADR-0006** (the app
-   launches on the tab with unfinished work, after a load gate), and **ADR-0009** (reviewing a
+   launches on the tab with unfinished work, after a load gate), **ADR-0009** (reviewing a
    session's errors creates no session and changes no statistic; only an Ok is stored, as a fixed
-   card, and nothing un-fixes it).
+   card, and nothing un-fixes it), and **ADR-0010** (a session's direction is chosen only when
+   starting from a deck and never changes, so there is no mid-session switch to design; a session
+   started from another inherits it, and statistics do not show it).
 5. Repository memory at `/memories/repo/easy-flashcards.md` — traps already paid for.
 
 `docs/requirements/flashcards_app_requirements.md` is the **frozen** original brief. It is history

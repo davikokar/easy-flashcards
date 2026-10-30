@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Session, SessionResult } from '../types';
+import { readInverted } from '../utils/cardFaces';
 import { normalizeFixedCardIds } from '../utils/stats';
 
 const SESSIONS_KEY = '@easy-flashcards/sessions/v1';
@@ -53,6 +54,7 @@ function normalizeSession(value: unknown): Session | null {
     completedAt,
     clearedAt,
     fixedCardIds: normalizeFixedCardIds(session.fixedCardIds, cutResults, completedAt),
+    inverted: readInverted(session.inverted),
   };
 }
 

@@ -4,13 +4,15 @@ import RichText from './RichText';
 import { colors, radius, spacing } from '../theme';
 
 type Props = {
-  question: string;
-  answer: string;
+  /** What is shown first. The labels are roles, not fields: in an inverted session this is the card's answer. */
+  front: string;
+  /** What is revealed by flipping. */
+  back: string;
   flipped: boolean;
   onFlip: () => void;
 };
 
-export default function FlipCard({ question, answer, flipped, onFlip }: Props) {
+export default function FlipCard({ front, back, flipped, onFlip }: Props) {
   const progress = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -48,7 +50,7 @@ export default function FlipCard({ question, answer, flipped, onFlip }: Props) {
       <Animated.View style={[styles.card, styles.absoluteFill, frontStyle]}>
         <Text style={styles.sideLabel}>QUESTION</Text>
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          <RichText html={question} style={styles.cardText} />
+          <RichText html={front} style={styles.cardText} />
         </ScrollView>
         <Text style={styles.hint}>Tap to reveal the answer</Text>
       </Animated.View>
@@ -56,7 +58,7 @@ export default function FlipCard({ question, answer, flipped, onFlip }: Props) {
       <Animated.View style={[styles.card, styles.absoluteFill, styles.cardBack, backStyle]}>
         <Text style={styles.sideLabel}>ANSWER</Text>
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          <RichText html={answer} style={styles.cardText} />
+          <RichText html={back} style={styles.cardText} />
         </ScrollView>
         <Text style={styles.hint}>Tap to see the question again</Text>
       </Animated.View>

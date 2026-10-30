@@ -131,7 +131,7 @@ export default function LearnScreen({ navigation }: Props) {
         Alert.alert('Deck unavailable', 'This deck no longer exists or has no cards.');
         return;
       }
-      const next = startSession(deck, cardIds);
+      const next = startSession(deck, { inverted: session.inverted }, cardIds);
       navigation.navigate('Study', { sessionId: next.id });
     },
     [getDeck, navigation, startSession],
@@ -187,6 +187,7 @@ export default function LearnScreen({ navigation }: Props) {
             <SessionCard
               deckName={item.deckName}
               isActive={isActive}
+              inverted={item.inverted}
               answeredCount={item.results.length}
               cardCount={cardCount}
               tally={tally}

@@ -10,6 +10,7 @@ import SuccessBar from '../components/SuccessBar';
 import { useDecks } from '../state/DecksContext';
 import { LearnStackParamList } from '../navigation/types';
 import { Answer, SessionResult } from '../types';
+import { cardFaces } from '../utils/cardFaces';
 import {
   formatRate,
   getOutstandingReviewCardIds,
@@ -91,6 +92,8 @@ export default function StudyScreen({ route, navigation }: Props) {
   const isFinished = (isReviewMode || queue.length > 0) && index >= queue.length;
   const isReviewing = viewIndex < index;
   const currentCard = isFinished ? undefined : cardsById.get(queue[viewIndex]);
+  const currentFaces =
+    currentCard && session ? cardFaces(currentCard, session.inverted) : undefined;
   const hasSeenAnswer = currentCard !== undefined && currentCard.id === revealedCardId;
   const answersDisabled = isReviewing || !hasSeenAnswer;
 
@@ -204,9 +207,9 @@ export default function StudyScreen({ route, navigation }: Props) {
     if (!deck) {
       return;
     }
-    const next = startSession(deck);
+    const next = startSession(deck, { inverted: session?.inverted ?? false });
     navigation.replace('Study', { sessionId: next.id });
-  }, [deck, navigation, startSession]);
+  }, [deck, navigation, session?.inverted, startSession]);
 
   if (!session || !deck || reviewUnavailable || (!isReviewMode && queue.length === 0)) {
     return (
@@ -300,6 +303,14 @@ export default function StudyScreen({ route, navigation }: Props) {
         <Text style={styles.progressText}>
           Card {viewIndex + 1} of {queue.length}
         </Text>
+        {session.inverted ? (
+          <View
+            accessible
+            accessibilityLabel="Inverted session: the front shows the answer"
+            style={styles.invertedPill}>
+            <Text style={styles.invertedPillText}>Inverted</Text>
+          </View>
+        ) : null}
         <Text style={styles.progressText}>Ok {okCount}</Text>
       </View>
       <SuccessBar rate={(index / queue.length) * 100} height={6} color={colors.text} />
@@ -309,12 +320,12 @@ export default function StudyScreen({ route, navigation }: Props) {
       <Animated.View
         style={[styles.cardArea, { transform: [{ translateX }] }]}
         {...panResponder.panHandlers}>
-        {currentCard ? (
+        {currentCard && currentFaces ? (
           <FlipCard
             // A fresh mount starts face-up; reusing one would show the old card's flip state on the new card.
             key={`${sessionId}-${mode ?? 'session'}-${passNumber}-${viewIndex}`}
-            question={currentCard.question}
-            answer={currentCard.answer}
+            front={currentFaces.front}
+            back={currentFaces.back}
             flipped={flipped}
             onFlip={() => {
               setFlipped(previous => !previous);
@@ -369,7 +380,21 @@ const styles = StyleSheet.create({
   },
   progressHeader: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  invertedPill: {
+    paddingVertical: 2,
+    paddingHorizontal: spacing.sm,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceAlt,
+  },
+  invertedPillText: {
+    color: colors.textMuted,
+    fontSize: 12,
+    fontWeight: '600',
   },
   progressText: {
     color: colors.textMuted,

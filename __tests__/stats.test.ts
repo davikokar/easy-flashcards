@@ -64,6 +64,7 @@ function session(
     completedAt,
     clearedAt,
     fixedCardIds: [],
+    inverted: false,
   };
 }
 
@@ -513,6 +514,7 @@ function reviewSession(overrides: Partial<Session> = {}): Session {
     completedAt: 2,
     clearedAt: null,
     fixedCardIds: [],
+    inverted: false,
     ...overrides,
   };
 }

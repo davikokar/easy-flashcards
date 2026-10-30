@@ -15,6 +15,10 @@ card by card, and track how well you know each card.
   *Okeish* (question mark) and *Ok* (tick) — a progress indicator, and an end-of-session summary
   that offers to replay the cards you missed or were unsure of. Okeish counts as a review but not
   as a success.
+- **Inverted sessions**: *Start session with options* in a deck's menu lets you study the deck the
+  other way round (each card's answer first, its question on the back), shuffled, or both. A
+  session keeps its direction when you resume it, and a session started from it is inverted too.
+  Inverted answers count towards the same card statistics as normal ones.
 - **Session list** on the *Learn* tab: every session in progress and every completed one you have
   not cleared, unfinished first, each with its progress split into ok / okeish / not ok. Resume a
   session in progress; replay a completed one over the same cards, or replay only the cards you
@@ -69,12 +73,12 @@ npm test
 | --- | --- |
 | [src/navigation](src/navigation) | Bottom tabs + per-tab native stacks |
 | [src/screens](src/screens) | Decks, Learn, Study, Statistics and per-deck statistics screens |
-| [src/components](src/components) | Flip card, HTML renderer, buttons, progress bars |
+| [src/components](src/components) | Flip card, HTML renderer, buttons, progress bars, session setup dialog |
 | [src/state/DecksContext.tsx](src/state/DecksContext.tsx) | Context + reducer store, auto-persisting |
 | [src/storage/decksStorage.ts](src/storage/decksStorage.ts) | AsyncStorage read/write with defensive normalisation |
 | [src/services/importDeck.ts](src/services/importDeck.ts) | Document picker + file read + CSV parsing |
-| [src/utils](src/utils) | CSV parsing, HTML parsing, statistics helpers, file URI conversion, shuffling |
-| [\_\_tests\_\_](__tests__) | Unit tests for the CSV, HTML, statistics, file URI and shuffle logic |
+| [src/utils](src/utils) | CSV parsing, HTML parsing, statistics helpers, file URI conversion, shuffling, search, card faces |
+| [\_\_tests\_\_](__tests__) | Unit tests for the CSV, HTML, statistics, file URI, shuffle, search and card-faces logic |
 
 ## Notes on dependencies
 
