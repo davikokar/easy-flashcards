@@ -26,10 +26,9 @@ rendered by the app's own code. Read these before you write anything:
    yourself. If your change leaves it inaccurate, name the stale section in your report and let the
    Orchestrator route the edit. Its §8 *Known debt* is worth reading first: several obvious
    improvements are already recorded there with the reason they were not made.
-4. `docs/architecture/decisions/` — ten active ADRs, all binding and all about ordinary work here:
-   the in-repo HTML renderer, sessions as snapshots, the single store, versioned defensive storage,
-   recording an answer immediately, the launch tab, the Okeish answer, clearing completed
-   sessions, reviewing a session's errors, and a session's stored direction (inverted sessions).
+4. `docs/architecture/decisions/` — read the index in `docs/architecture/README.md` first. Every ADR
+   marked `Active` is binding, and they are about ordinary work here, not exotic work; read in full
+   the ones whose subject your change touches.
 5. `.github/instructions/ui-vocabulary.instructions.md` — canonical names for screens, areas and
    controls, and the constraints on writing UI here. Use them in code and in your report.
 6. `.github/instructions/tests.instructions.md` — and in particular **what is not tested**.
@@ -125,9 +124,10 @@ These coding principles are mandatory:
 9. Quality
 - Favor deterministic, testable behavior.
 - Keep tests simple and focused on verifying observable behavior.
-- Follow `.github/instructions/tests.instructions.md`. **New pure logic always gets a test**; a
-  change to a screen, a component, the reducer or a storage normaliser currently cannot have one,
-  and you must say so rather than letting a green suite imply coverage.
+- Follow `.github/instructions/tests.instructions.md`. **New pure logic always gets a test**, and
+  so does a new reducer case or normaliser rule. A change to a screen, a component, a service or
+  the wiring in `DecksContext.tsx` currently cannot have one, and you must say so rather than
+  letting a green suite imply coverage.
 
 ## Definition of done
 
@@ -206,8 +206,8 @@ not implement one because you noticed it.
 
 ## Architecture Decisions
 
-- Read relevant active ADRs under `docs/architecture/decisions/` before changing architecture. All
-  ten are about ordinary work here, so "my change is too small to involve an ADR" is usually wrong.
+- Read relevant active ADRs under `docs/architecture/decisions/` before changing architecture. They
+  are about ordinary work here, so "my change is too small to involve an ADR" is usually wrong.
 - Implement approved decisions consistently; do not silently contradict or rewrite an active ADR.
 - If implementation reveals a significant new architectural choice, changed tradeoff, or invalid
   assumption, stop that part of the work and report the decision needed to the Planner or

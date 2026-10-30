@@ -77,12 +77,13 @@ the answers usually are:
   larger than the change described means an editor rewrote the file; compare `git diff --stat` with
   `git diff --ignore-all-space --stat` and report both numbers.
 - **Where something is used.** Every call site of a symbol, every importer of a module, every file
-  naming a term. Dead exports are a real question here — `renameDeck` is one.
+  naming a term. Dead exports are a real question here.
 - **Whether a document still matches the code.** Quote the document line and the code line side by
   side and let the difference speak. Do not rule on which is wrong. The UI vocabulary quotes real
   UI strings, so "does this label still say that?" is a common and answerable version of this.
-- **What the test suite actually covers.** `__tests__/` holds pure-logic tests of `src/utils/` and
-  nothing else. If asked whether something is tested, name the files and let the caller conclude.
+- **What the test suite actually covers.** `__tests__/` holds unit tests of `src/utils/`,
+  `src/state/reducer.ts` and the two storage loaders, and nothing renders. If asked whether
+  something is tested, name the files and let the caller conclude.
 - **Whether a device is attached.** `adb devices`, reported verbatim. `adb` is not on `PATH` here;
   use `"$HOME/AppData/Local/Android/Sdk/platform-tools/adb.exe"`.
 
@@ -106,8 +107,8 @@ should be fixed", not "this looks wrong", not "this is a hard violation" — tha
 to the Reviewer, and the separation is what keeps you cheap and keeps the review honest.
 
 The line is narrower than it sounds, so use this test: *could two people who disagree about the
-change both accept this sentence?* A finding of the form "`renameDeck` is declared at
-`src/state/DecksContext.tsx:131` and dispatched at line 225; `grep -r renameDeck src/` returns no
-match outside that file" passes, and is useful precisely because it does. "Deck renaming is dead
-code that should be wired up" has already judged. Report the first and let the caller reach the
+change both accept this sentence?* A finding of the form "`someExport` is declared at
+`src/utils/stats.ts:<line>`; `grep -r someExport src/` returns no match outside that file" passes,
+and is useful precisely because it does. "`someExport` is dead code that should be removed" has
+already judged. Report the first and let the caller reach the
 second.

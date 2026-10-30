@@ -1,19 +1,7 @@
 import { CachesDirectoryPath, writeFile } from '@dr.pogodin/react-native-fs';
 import { errorCodes, isErrorWithCode, saveDocuments } from '@react-native-documents/picker';
 import { pathToFileUri } from '../utils/fileUri';
-
-export const SAMPLE_DECK_FILE_NAME = 'sample-deck.csv';
-
-/** Kept in sync with samples/sample-deck.csv; raw assets are not bundled into the app. */
-export const SAMPLE_DECK_CSV = [
-  'Question;Answer',
-  'What is the capital of <b>France</b>?;Paris',
-  'Translate <i>"good morning"</i> to Spanish;Buenos d&iacute;as',
-  'What does HTML stand for?;<b>H</b>yper<b>T</b>ext <b>M</b>arkup <b>L</b>anguage',
-  'Name the three primary colours;<ul><li>Red</li><li>Green</li><li>Blue</li></ul>',
-  'Which planet is known as the Red Planet?;Mars<br />Fourth planet from the Sun',
-  '',
-].join('\n');
+import { SAMPLE_DECK_CSV, SAMPLE_DECK_FILE_NAME } from '../utils/sampleDeck';
 
 export class ExportCancelledError extends Error {
   constructor() {

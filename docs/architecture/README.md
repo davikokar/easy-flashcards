@@ -2,7 +2,7 @@
 
 This directory holds the architectural documentation for Easy Flashcards.
 
-[ARCHITECTURE.md](ARCHITECTURE.md) describes the current system: the three tabs and five screens,
+[ARCHITECTURE.md](ARCHITECTURE.md) describes the current system: the three tabs and six screens,
 the one-way data flow through the single store, the layer responsibilities, persistence, and the
 HTML rendering path. Read it before changing how state is owned, how a screen gets its data, or
 how anything is persisted. It is maintained by the Planner and updated in the same change as the
@@ -38,7 +38,8 @@ for the required format and status rules.
 > work, together with amendments to ADR-0002, ADR-0005, ADR-0007 and ADR-0008, and
 > ARCHITECTURE.md links to it now that the work has landed. ADR-0010 was recorded ahead of its
 > work, together with Amendment 3 to ADR-0002, and ARCHITECTURE.md links to it now that the work
-> has landed.
+> has landed. ADR-0011 was recorded ahead of its work, together with Amendment 5 to ADR-0002, and
+> ARCHITECTURE.md links to it now that the work has landed.
 
 ### Index
 
@@ -54,3 +55,4 @@ for the required format and status rules.
 | [ADR-0008](decisions/0008-clear-completed-sessions.md) | Clearing a completed session archives it under the existing v1 key | Active | 2026-10-27 |
 | [ADR-0009](decisions/0009-error-review-marks-cards-fixed.md) | Reviewing a session's errors marks cards fixed and changes no statistic | Active | 2026-10-30 |
 | [ADR-0010](decisions/0010-inverted-sessions.md) | A session's direction is chosen at creation and stored on the session | Active | 2026-10-30 |
+| [ADR-0011](decisions/0011-deck-editing-is-one-action.md) | A deck is edited by one action, and a deck gains a description under the existing v1 key | Active | 2026-10-30 |

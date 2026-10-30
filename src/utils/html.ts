@@ -75,6 +75,26 @@ function parseAttributes(raw: string): Record<string, string> {
 }
 
 /**
+ * Where an opening `li` or `p` ends the previous sibling the author never closed, or -1. An `li`
+ * stops at a nested list; a `p` only closes over inline content.
+ */
+function implicitCloseIndex(stack: Array<{ tag: string }>, tag: string): number {
+  if (tag !== 'li' && tag !== 'p') {
+    return -1;
+  }
+  for (let i = stack.length - 1; i >= 0; i -= 1) {
+    const open = stack[i].tag;
+    if (open === tag) {
+      return i;
+    }
+    if (tag === 'li' ? open === 'ul' || open === 'ol' : BLOCK_TAGS.has(open)) {
+      return -1;
+    }
+  }
+  return -1;
+}
+
+/**
  * Tolerant parser for the small HTML subset used in flashcards; unknown or
  * unbalanced tags never throw, they are kept as plain text or auto-closed.
  */
@@ -114,6 +134,10 @@ export function parseHtml(source: string): HtmlNode[] {
         children: [],
       });
     } else {
+      const implicitIndex = implicitCloseIndex(stack, tag);
+      if (implicitIndex !== -1) {
+        stack.length = implicitIndex;
+      }
       const element: HtmlNode = {
         type: 'element',
         tag,
@@ -130,22 +154,4 @@ export function parseHtml(source: string): HtmlNode[] {
 
   pushText(source.slice(lastIndex));
   return root;
-}
-
-export function htmlToPlainText(source: string): string {
-  const flatten = (nodes: HtmlNode[]): string =>
-    nodes
-      .map(node => {
-        if (node.type === 'text') {
-          return node.text;
-        }
-        if (node.tag === 'br') {
-          return '\n';
-        }
-        const inner = flatten(node.children);
-        return BLOCK_TAGS.has(node.tag) ? `\n${inner}` : inner;
-      })
-      .join('');
-
-  return flatten(parseHtml(source)).replace(/\s+/g, ' ').trim();
 }

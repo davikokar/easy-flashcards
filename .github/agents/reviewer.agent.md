@@ -24,7 +24,8 @@ standards you review against are:
 1. `AGENTS.md` — conventions, project layout, state ownership, the storage keys, the definition of
    done, the dependency traps, the known gaps, and the list of changes that require the user's
    approval.
-2. `docs/architecture/decisions/` — ten ADRs, all `Active` and all binding.
+2. `docs/architecture/decisions/` — every ADR marked `Active` in the index
+   (`docs/architecture/README.md`) is binding.
 3. `docs/architecture/ARCHITECTURE.md` — the system overview, including §8 *Known debt*.
 4. `.github/instructions/ui-vocabulary.instructions.md` — canonical UI names and the UI
    constraints.
@@ -73,12 +74,13 @@ Does the code conform to this repo's documented standards?
 - **Layering.** Does a `src/screens/` file keep the store and navigator access, and a
   `src/components/` file stay on plain props and callbacks? `AppMenu` is the one documented
   exception.
-- **Testability.** Did a `react` or `react-native` import land in `src/utils/`? That makes the
-  whole module untestable and is the single easiest way to lose the only test coverage the project
-  has.
+- **Testability.** Did a `react` or `react-native` import land in `src/utils/` or
+  `src/state/reducer.ts`? That makes the whole module untestable and is the single easiest way to
+  lose most of the test coverage the project has.
 - **Tests.** Does new pure logic have at least one test, and does it pin observable behaviour
-  rather than implementation detail? Is new untestable code — a screen, a component, a reducer
-  case, a normaliser — **named as such in the report**? A green suite proves nothing about those,
+  rather than implementation detail? Does a new reducer case or normaliser rule have one too? Is
+  new untestable code — a screen, a component, a service, the provider's wiring — **named as such
+  in the report**? A green suite proves nothing about those,
   and a report that implies otherwise is a finding.
 - **Sessions.** Does anything treat a session as live rather than as a snapshot (ADR-0002)? Is
   "active" tested as `completedAt === null` somewhere other than `isSessionActive`? Does a new path

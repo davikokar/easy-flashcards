@@ -113,10 +113,28 @@ save the older app makes writes that back. Versioning the key does not prevent t
 changes what is lost. The owner accepted it for ADR-0007, and nothing blocks a downgrade today,
 because `versionCode` has never been bumped. The details are in ADR-0007's *Consequences*.
 
+## Amendment 2 — 2026-10-30
+
+The decision above is unchanged. Three details moved:
+
+- **A parse failure of the whole key now really resolves to `[]`.** The decision said so, but both
+  loaders called `JSON.parse` unguarded, so a corrupt key rejected the whole load. Both now read
+  through `parseStoredArray` in [`src/utils/storedArray.ts`](../../../src/utils/storedArray.ts).
+- **A failed load blocks every save for that run.** If the load rejects anyway — AsyncStorage itself
+  failing — the store starts empty with `error` set, and the save effect in `DecksProvider` writes
+  nothing while `error` is set. Before this, the first change after a failed load wrote the empty
+  state over both keys, which is the data loss this record exists to prevent. The cost: anything
+  done in that run is not saved (ARCHITECTURE.md §8).
+- **The normalisers are tested.** `__tests__/decksStorage.test.ts` and
+  `__tests__/sessionsStorage.test.ts` mock AsyncStorage and drive both loaders, so the *Negative*
+  consequence "they are untested" no longer holds. The unused `clearDecks` and `clearSessions` were
+  removed; each module now owns `load*`, `save*` and its normalisation.
+
 ## References
 
 - [`src/storage/decksStorage.ts`](../../../src/storage/decksStorage.ts),
   [`src/storage/sessionsStorage.ts`](../../../src/storage/sessionsStorage.ts)
+- [`src/utils/storedArray.ts`](../../../src/utils/storedArray.ts)
 - [`src/types.ts`](../../../src/types.ts)
 - [ADR-0003](0003-single-context-reducer-store.md) — the store that drives these writes
 - [ADR-0007](0007-okeish-third-answer.md) — the first shape change under `/v1` (Amendment 1)

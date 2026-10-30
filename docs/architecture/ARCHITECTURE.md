@@ -31,19 +31,20 @@ sample deck out.
 
 ## 1. The screens
 
-The app has **three tabs** carrying **five screens**. These names are canonical; the full
+The app has **three tabs** carrying **six screens**. These names are canonical; the full
 vocabulary is in
 [.github/instructions/ui-vocabulary.instructions.md](../../.github/instructions/ui-vocabulary.instructions.md).
 
 | Tab | Canonical name | What it shows | Implementation |
 |---|---|---|---|
-| Decks | **Decks screen** | Every imported deck as a **Deck card**: its card count, a **Mastery bar** splitting its reviews into Ok / Okeish / Not ok, its session and active-session counts, and its last session date. Where a deck is imported, started, and deleted. The **Start session button** starts in deck order and not inverted; the Deck options menu's **Start session with options** opens the **Session setup dialog**, where **Inverted** and **Shuffle** are chosen independently ([ADR-0010](decisions/0010-inverted-sessions.md)). | `DecksScreen`, route `DecksList` |
+| Decks | **Decks screen** | Every imported deck as a **Deck card**: its card count, a **Mastery bar** splitting its reviews into Ok / Okeish / Not ok, its session and active-session counts, and its last session date. Where a deck is imported, started, edited, and deleted. A deck's description, when it has one, shows under its card count. The **Start session button** starts in deck order and not inverted; the Deck options menu's **Start session with options** opens the **Session setup dialog**, where **Inverted** and **Shuffle** are chosen independently ([ADR-0010](decisions/0010-inverted-sessions.md)). | `DecksScreen`, route `DecksList` |
+| Decks | **Edit deck screen** | One deck's title, description and cards in editable fields: add a card, remove a card, edit a card's question and answer. Nothing is written until **Save**, which commits the whole edit in one action ([ADR-0011](decisions/0011-deck-editing-is-one-action.md)); leaving with unsaved changes asks first. | `EditDeckScreen`, route `EditDeck` (param `deckId`) |
 | Learn | **Learn screen** | Every listed session — active, or completed and not cleared — as a **Session card**, active ones first and most recently touched first within each group. A card shows a **Session status pill** (followed by an **Inverted pill** on an inverted session), a **Session results bar** splitting the session's cards into answered Ok / Okeish / Not ok and unanswered, and a footer with the start date and icon-only buttons: **Resume** on an active session; on a completed one the **Review errors button** — shown while the session has missed or unsure cards that still exist in its deck, with a **Review badge** giving how many are outstanding, or a tick and the button disabled once every one is fixed — then the **Replay button**. Where a session is resumed; replayed — a new session over the original's cards that still exist, in its order, which **also clears the original** ([ADR-0008](decisions/0008-clear-completed-sessions.md) Amendment 1); restarted over the whole deck with **Start a new session**, which leaves the original untouched; its errors reviewed, which opens the Study screen in review mode and creates no session ([ADR-0009](decisions/0009-error-review-marks-cards-fixed.md)); an active one discarded (a real delete); and a completed one cleared, singly or all at once (hidden from the list but still counted — ADR-0008). Every session started from a session keeps its `inverted`. | `LearnScreen`, route `LearnList` |
 | Learn | **Study screen** | One session, in its direction — an inverted session shows each card's answer first and an **Inverted pill** in the Progress header ([ADR-0010](decisions/0010-inverted-sessions.md)): the flip card, the icon-only answer buttons (Not Ok, Okeish, Ok — [ADR-0007](decisions/0007-okeish-third-answer.md)), the answered-so-far strip, and the **Session summary**, which offers **Review the {n} missed or unsure** (switching to review mode over the same session) and **Study the whole deck again** (a new session in the same direction). With `mode: 'review'` on a completed session it is in **review mode** instead: **Review passes** over the session's outstanding missed or unsure cards, each pass a snapshot shown once per card in the session's direction, ending on the **Review summary**. Only an Ok given in a review writes anything, and all it writes is that the card is fixed ([ADR-0009](decisions/0009-error-review-marks-cards-fixed.md)). | `StudyScreen`, route `Study` (params `sessionId`, optional `mode: 'review'`) |
 | Statistics | **Statistics screen** | Totals across every deck, then one row per deck. A search narrows the rows and leaves the totals. | `StatsScreen`, route `StatsOverview` |
 | Statistics | **Deck statistics screen** | One deck's totals and every card in it, hardest first. | `DeckStatsScreen`, route `DeckStats` (param `deckId`) |
 
-Two of the five are detail screens reached by pushing onto their tab's stack: **Study** from the
+Three of the six are detail screens reached by pushing onto their tab's stack: **Edit deck** from the Decks screen's Deck options menu, **Study** from the
 Learn screen (Resume, Replay, Review errors, Start a new session) or from starting a deck, **Deck statistics** from the Statistics screen. The other
 three are the roots of their tabs and are reached only by switching tab.
 
@@ -72,9 +73,9 @@ AsyncStorage                              Device (SAF)
         │                                     utils/csv.ts (PapaParse)
         └───────────────┬─────────────────────────┘
                         │
-              DecksContext  (useReducer)
+              DecksContext  (useReducer over state/reducer.ts)
               state: decks, sessions, isLoading, error
-              api:   addDeck, deleteDeck, renameDeck, startSession,
+              api:   addDeck, updateDeck, deleteDeck, startSession,
                      replaySession, recordAnswer, recordReviewAnswer,
                      deleteSession, clearCompletedSessions, clearSession,
                      resetDeckStats, getDeck, getSession
@@ -89,7 +90,7 @@ AsyncStorage                              Device (SAF)
                           MasteryBar, DeckCard, HeaderToolbar,
                           SearchBar, SessionCard, SessionResultsBar,
                           SessionSetupDialog, HistoryStrip, EmptyState,
-                          KebabMenu, MenuSheet)
+                          KebabMenu, MenuSheet, FormField, CardEditor)
                         ← plain props + callbacks, no store access
 ```
 
@@ -144,6 +145,15 @@ session's review is done, is derived, never stored —
 [ADR-0009](decisions/0009-error-review-marks-cards-fixed.md),
 [ADR-0005](decisions/0005-answers-recorded-immediately.md) Amendment 2.
 
+**Editing a deck is one action, committed once.** The Edit deck screen holds the title, the
+description and the whole card list as local state and writes nothing while the user types. **Save**
+calls `updateDeck(deckId, edit)`, which mints an id for each new card and dispatches `updateDeck`
+once; the reducer applies `applyDeckEdit` to the deck and `reconcileSession` to each of its
+sessions in the same case. A card keeps its counters across an edit, a removed card takes its
+counters with it, the new title reaches every session's `deckName`, and an active session loses
+the removed cards that it had not yet answered —
+[ADR-0011](decisions/0011-deck-editing-is-one-action.md).
+
 ---
 
 ## 3. Layers
@@ -151,17 +161,22 @@ session's review is done, is derived, never stored —
 ### `src/utils/` — pure TypeScript
 
 Nothing here imports from `react` or `react-native`, and that is the property that makes it
-testable under Jest with no renderer and no mocks. Every file in `__tests__/` tests one of these.
+testable under Jest with no renderer and no mocks. Every file here has a test in `__tests__/`,
+named after it; so do `src/state/reducer.ts` and the two storage modules (see §8 for what is not
+tested).
 
 | File | Role |
 |---|---|
 | [`csv.ts`](../../src/utils/csv.ts) | `parseFlashcardsCsv` — wraps PapaParse, detects the delimiter, matches the `Question` / `Answer` headers case-insensitively, skips incomplete rows and counts them, throws `CsvImportError` on a file it cannot use. Also `deckNameFromFileName`. |
-| [`html.ts`](../../src/utils/html.ts) | A tolerant HTML parser: `parseHtml` to `HtmlNode[]`, `decodeEntities`, `htmlToPlainText`, and the `BLOCK_TAGS` set. It never throws — unclosed and stray tags are absorbed. |
-| [`stats.ts`](../../src/utils/stats.ts) | Every derived number in the app: `successRate`, `answerShares`, `sessionProgressShares` (each answer's share of a session's cards rather than of its reviews, scaled down together if the results ever outnumber the cards), `resolvableCardIds` (the given card ids that still exist in a deck, in the given order — what the Learn screen's Replay passes to `replaySession`, and what every review derivation filters through), `getDeckStats`, `getGlobalStats`, `getSessionTally`, `getSessionStats`, `getMissedOrUnsureCardIds`, `getReviewableCardIds`, `getOutstandingReviewCardIds` and `getReviewState` (the error review's derived values — see below), `normalizeFixedCardIds` (the sessions loader's rule for `fixedCardIds`), `applyReviewAnswer` (the transform behind `recordReviewAnswer`, returning the same array when nothing changes), `prependSessionClearing` (the transform behind `replaySession`: the new session first, its source cleared with `clearSessionAt` semantics), `summarizeSessions`, `summarizeSessionsByDeck` (with `EMPTY_SESSION_SUMMARY` for a deck that has none), `isSessionActive`, `isSessionCleared`, `listedSessions` (the sessions the Learn screen shows), `clearableSessionCount` (completed sessions not yet cleared), `clearCompletedSessionsAt` and `clearSessionAt` (the transforms the reducer applies to clear sessions, returning the same array when nothing qualifies), `previousReviewIndex` (where a review swipe right on the Study screen lands — one answered card back, wrapping from the oldest round to the frontier), `sortSessions`, `sortCardsByDifficulty`, `cardReviewCount`, and the `formatRate` / `formatDate` display helpers. |
+| [`html.ts`](../../src/utils/html.ts) | A tolerant HTML parser: `parseHtml` to `HtmlNode[]`, `decodeEntities`, and the `BLOCK_TAGS` set. It never throws — unclosed and stray tags are absorbed, and an unclosed `<li>` or `<p>` is closed when its next sibling opens. |
+| [`stats.ts`](../../src/utils/stats.ts) | Every derived number in the app: `successRate`, `answerShares`, `sessionProgressShares` (each answer's share of a session's cards rather than of its reviews, scaled down together if the results ever outnumber the cards), `resolvableCardIds` (the given card ids that still exist in a deck, in the given order — what the Learn screen's Replay passes to `replaySession`, and what every review derivation filters through), `getDeckStats`, `getGlobalStats`, `getSessionTally`, `canRecordAnswer` (the reducer's guard for `recordAnswer`: only an active session's next unanswered card is accepted, so a repeated or out-of-order answer is a no-op), `getMissedOrUnsureCardIds`, `getReviewableCardIds`, `getOutstandingReviewCardIds` and `getReviewState` (the error review's derived values — see below), `normalizeFixedCardIds` (the sessions loader's rule for `fixedCardIds`), `applyReviewAnswer` (the transform behind `recordReviewAnswer`, returning the same array when nothing changes), `prependSessionClearing` (the transform behind `replaySession`: the new session first, its source cleared with `clearSessionAt` semantics), `summarizeSessions`, `summarizeSessionsByDeck` (with `EMPTY_SESSION_SUMMARY` for a deck that has none), `isSessionActive`, `isSessionCleared`, `listedSessions` (the sessions the Learn screen shows), `clearableSessionCount` (completed sessions not yet cleared), `clearCompletedSessionsAt` and `clearSessionAt` (the transforms the reducer applies to clear sessions, returning the same array when nothing qualifies), `previousReviewIndex` (where a review swipe right on the Study screen lands — one answered card back, wrapping from the oldest round to the frontier), `sortSessions`, `sortCardsByDifficulty`, `cardReviewCount`, and the `formatRate` / `formatDate` display helpers. |
 | [`fileUri.ts`](../../src/utils/fileUri.ts) | `fileUriToPath` and `pathToFileUri` — the percent-encoding boundary between a `file://` URI and a path. |
 | [`search.ts`](../../src/utils/search.ts) | The title search behind the Search bar. `splitSearchWords` lower-cases a query, splits it on whitespace, `-`, `_` and `.`, and drops empty and repeated words; `titleMatchesWords` is true when every word occurs in the title as a literal substring, in any order; `filterByTitle(items, query, getTitle)` combines the two, and returns `items` itself — not a copy — for a query with no words, so a memoised list keeps its identity. |
 | [`shuffle.ts`](../../src/utils/shuffle.ts) | `shuffle(items, random = Math.random)` — Fisher-Yates over a copy; the input is never mutated. `random` is injectable so tests are deterministic. The Decks screen uses it to order the `cardIds` it passes to `startSession` when **Shuffle** is ticked in the Session setup dialog. Shuffling is not stored; the order is the `cardIds` themselves. |
 | [`cardFaces.ts`](../../src/utils/cardFaces.ts) | `cardFaces(card, inverted)` — the session's direction applied to a card: `{ front, back }`, the `question` then the `answer`, swapped when `inverted`. The single place a direction is applied; the card itself is never rewritten. Also `readInverted(value)`, the sessions loader's rule for the stored flag: `true` only for an exact `true` ([ADR-0010](decisions/0010-inverted-sessions.md)). |
+| [`storedArray.ts`](../../src/utils/storedArray.ts) | `parseStoredArray(raw)` — the rows of a stored JSON array; `[]` for a missing, unparseable or non-array value. Both loaders read through it, so a corrupt key never throws. |
+| [`sampleDeck.ts`](../../src/utils/sampleDeck.ts) | `SAMPLE_DECK_CSV` and `SAMPLE_DECK_FILE_NAME` — the built-in sample deck that `exportSampleDeck` writes out. Raw assets are not bundled, so it is a copy of `samples/sample-deck.csv`; a test checks that the two parse the same. |
+| [`deckEdit.ts`](../../src/utils/deckEdit.ts) | The pure side of editing a deck ([ADR-0011](decisions/0011-deck-editing-is-one-action.md)). `CardDraft` / `DeckEdit` are the editor's shapes; `draftsOf`, `isDeckEditChanged` (what the Save button and the discard prompt rest on), `removedCardIds` and `firstIncompleteCard` serve the Edit deck screen. `applyDeckEdit` is the transform behind `updateDeck` — existing cards keep their counters, new ones start at zero, the list's order becomes the deck's — and `reconcileSession` applies the edit to a session: the new `deckName`, and for an active session the removed cards dropped from its unanswered part, which can complete it or, left with no cards and no answers, delete it (`null`). |
 
 `isSessionActive` is the single definition of "active": `completedAt === null`. Do not write that
 comparison anywhere else. `isSessionCleared` is the same for "cleared": `clearedAt !== null`. Only
@@ -189,24 +204,26 @@ Not Ok — [ADR-0007](decisions/0007-okeish-third-answer.md).
 
 `Card`, `Deck`, `Answer`, `SessionResult` and `Session` are what is persisted; a `Session` carries
 `clearedAt`, `fixedCardIds` and `inverted` beside its snapshot. The derived `DeckStats`,
-`SessionSummary`, `SessionStats`, `AnswerTally`, `AnswerShares` and `ReviewState` are what
+`SessionSummary`, `AnswerTally`, `AnswerShares` and `ReviewState` are what
 `stats.ts` returns and are never stored.
 
 ### `src/storage/` — the AsyncStorage boundary
 
-One module per key, each owning `load*`, `save*`, `clear*`, and the normalisation that read applies.
+One module per key, each owning `load*`, `save*`, and the normalisation that read applies.
 See §5.
 
 ### `src/state/` — the store
 
-[`DecksContext.tsx`](../../src/state/DecksContext.tsx) holds the whole store: the `State` shape,
-the reducer and its actions, the `DecksProvider` with the load and save effects, the `createId`
-helper, and the `useDecks()` hook that throws if used outside the provider. The two clear actions,
+The store is two files. [`reducer.ts`](../../src/state/reducer.ts) is plain TypeScript with no
+React import: the `State` shape, `initialState`, the `Action` union and the `reducer`. It is
+tested directly in `__tests__/reducer.test.ts`. [`DecksContext.tsx`](../../src/state/DecksContext.tsx)
+holds the rest: the `DecksProvider` with the load and save effects, the `createId` helper, the
+functions on `DecksContextValue`, and the `useDecks()` hook that throws if used outside the
+provider. `recordAnswer` is guarded by `canRecordAnswer`, and the two clear actions,
 `replaySession` and `recordReviewAnswer` delegate to `clearCompletedSessionsAt`, `clearSessionAt`,
-`prependSessionClearing` and `applyReviewAnswer` in `stats.ts`, so their guard rules are tested
-even though the reducer is not. One private `createSession` helper builds the session for both
-`startSession` and `replaySession`, with `clearedAt: null`, `fixedCardIds: []` and the `inverted`
-it is given.
+`prependSessionClearing` and `applyReviewAnswer` — all in `stats.ts`. One private `createSession`
+helper in `DecksContext.tsx` builds the session for both `startSession` and `replaySession`, with
+`clearedAt: null`, `fixedCardIds: []` and the `inverted` it is given.
 [ADR-0003](decisions/0003-single-context-reducer-store.md) keeps it the only store.
 
 ### `src/services/` — the device boundary
@@ -214,7 +231,7 @@ it is given.
 | File | Role |
 |---|---|
 | [`importDeck.ts`](../../src/services/importDeck.ts) | `pickAndParseCsv` — opens the system picker, copies the chosen file into the app cache, reads it, parses it, and returns `{ deckName, fileName, parsed }`. Throws `ImportCancelledError` when the user backs out. |
-| [`exportSampleDeck.ts`](../../src/services/exportSampleDeck.ts) | `exportSampleDeck` — writes the built-in `SAMPLE_DECK_CSV` to the cache and opens the system save dialog. Throws `ExportCancelledError` on cancel. |
+| [`exportSampleDeck.ts`](../../src/services/exportSampleDeck.ts) | `exportSampleDeck` — writes the built-in `SAMPLE_DECK_CSV` (from `utils/sampleDeck.ts`) to the cache and opens the system save dialog. Throws `ExportCancelledError` on cancel. |
 
 A cancelled picker is a normal outcome, not an error, which is why each service has its own
 cancellation error type for the caller to catch and ignore.
@@ -237,6 +254,10 @@ of the outstanding card ids taken when the pass starts, the pass's own answers, 
 Its frontier is the length of whichever results apply — `session.results` in a session, the pass's
 answers in review mode — and it resets all of that local state when `(sessionId, mode)` changes,
 because a navigation to the mounted Study route updates its params rather than remounting it.
+`EditDeckScreen` holds the draft of one deck — title, description and a list of card drafts, each
+with a key that is stable while editing — initialised once from the stored deck; it derives
+whether anything changed with `isDeckEditChanged`, and intercepts leaving with the navigator's
+`beforeRemove` event until the edit is saved.
 
 ### `src/components/` — the stateless half
 
@@ -255,6 +276,8 @@ because a navigation to the mounted Study route updates its params rather than r
 | [`SessionResultsBar.tsx`](../../src/components/SessionResultsBar.tsx) | A session's answered part: a segmented track whose Ok / Okeish / Not ok segments are each sized by their share of the session's cards, so the unfilled remainder is the unanswered part, plus a legend giving each answer's `AnswerIcon` and count, the icons grey while nothing is answered. Takes the output of `sessionProgressShares`, the tally and the card count. The panel carries one accessibility label. Not a success rate. |
 | [`HistoryStrip.tsx`](../../src/components/HistoryStrip.tsx) | The answered-so-far tiles on the Study screen, coloured per answer — in review mode, the pass's answers; auto-scrolls to the current card. |
 | [`EmptyState.tsx`](../../src/components/EmptyState.tsx) | Every list's `ListEmptyComponent`. |
+| [`FormField.tsx`](../../src/components/FormField.tsx) | A labelled `TextInput`, single- or multi-line. Controlled; takes an optional `accessibilityLabel` that replaces the visible label as the accessible name. |
+| [`CardEditor.tsx`](../../src/components/CardEditor.tsx) | One card on the Edit deck screen: a `Card {n}` header with a **Remove card button**, and a **Question** and an **Answer** `FormField`. `React.memo`'d, and takes `cardKey`-addressed callbacks so a keystroke re-renders only the card being typed in. |
 | [`KebabMenu.tsx`](../../src/components/KebabMenu.tsx) | The three-dot control; opens a `MenuSheet`. Owns the open/closed state. An optional `variant="boxed"` draws the trigger as a bordered rounded square, matching the Header toolbar's buttons; the default is `plain`. |
 | [`MenuSheet.tsx`](../../src/components/MenuSheet.tsx) | The bottom sheet, in a `Modal`. Defines the shared `MenuItem` type. |
 | [`MenuIcons.tsx`](../../src/components/MenuIcons.tsx) | `MenuIcon` — every menu icon, drawn from nested `View`s on a 20-point grid. Also carries glyphs used outside menus: `search` and `filter` in the Header toolbar, `search` and `close` in the Search bar, `clock` in the Deck card and Session card footers, and `replay` on the Session card's Review errors and Replay buttons. An optional `size` scales the grid about its centre. |
@@ -283,6 +306,7 @@ stack, and no deep linking.
 RootNavigator  (NavigationContainer, dark theme built from src/theme.ts)
 └── Tab.Navigator          initialRouteName = active session ? 'LearnTab' : 'DecksTab'
     ├── DecksTab   → DecksNavigator  → DecksList     (DecksScreen)
+    │                                → EditDeck      (EditDeckScreen)   param: deckId
     ├── LearnTab   → LearnNavigator  → LearnList     (LearnScreen)
     │                                → Study         (StudyScreen)      params: sessionId, mode?: 'review'
     └── StatsTab   → StatsNavigator  → StatsOverview (StatsScreen)
@@ -309,10 +333,9 @@ navigates to `Study` with `mode: 'review'`; Resume, Replay and Start a new sessi
 it. Review mode applies only to a completed session: with an active, missing or deckless session
 the Study screen shows its *Nothing to study* state.
 
-`RootNavigator` gives each root screen the bare **App menu** as its default `headerRight`, but all
-three root screens override it with `navigation.setOptions` in a `useLayoutEffect`, replacing it
-with the **Header toolbar** and restyling the header (background colour and a larger title). No
-screen shows the navigator's default any more; it is only a fallback. The toolbar renders the App
+The navigator sets no `headerRight`. Each of the three root screens sets its own with
+`navigation.setOptions` in a `useLayoutEffect` — the **Header toolbar** — and restyles the header
+(background colour and a larger title). The toolbar renders the App
 menu after the Search button and, on Decks and Learn, the Filter button; the Learn screen's also
 passes **Clear completed sessions** to that App menu as an extra item. Detail screens carry no App
 menu.
@@ -325,16 +348,19 @@ Two AsyncStorage keys, each owned by one module. Nothing else writes storage.
 
 | Key | Holds | Module |
 |---|---|---|
-| `@easy-flashcards/decks/v1` | `Deck[]`, each with its `Card[]` and their counters | [`decksStorage.ts`](../../src/storage/decksStorage.ts) |
+| `@easy-flashcards/decks/v1` | `Deck[]`, each with its `description` ([ADR-0011](decisions/0011-deck-editing-is-one-action.md)) and its `Card[]` and their counters | [`decksStorage.ts`](../../src/storage/decksStorage.ts) |
 | `@easy-flashcards/sessions/v1` | `Session[]` — active, completed, and cleared ([ADR-0008](decisions/0008-clear-completed-sessions.md)), each with its `fixedCardIds` ([ADR-0009](decisions/0009-error-review-marks-cards-fixed.md)) and its direction, `inverted` ([ADR-0010](decisions/0010-inverted-sessions.md)) | [`sessionsStorage.ts`](../../src/storage/sessionsStorage.ts) |
 
-**Both are loaded once**, in parallel, by a mount effect in `DecksProvider`. A failure of either
-sets `error` and clears `isLoading`; the app starts empty rather than not at all.
+**Both are loaded once**, in parallel, by a mount effect in `DecksProvider`. A corrupt or
+non-array key reads as `[]` (`parseStoredArray`), so only a failure of AsyncStorage itself rejects.
+That sets `error` and clears `isLoading`; the app starts empty rather than not at all, and the
+Decks screen shows the message.
 
 **Both are written together**, as whole arrays, by a second effect watching `state.decks` and
 `state.sessions`. A `hasLoaded` ref suppresses the write that would otherwise fire immediately
-after hydration. A failed write is caught and discarded, deliberately: a storage error must not
-take down a session in progress.
+after hydration, and **nothing is written while `error` is set**: after a failed load the state is
+empty, and saving it would overwrite the data the read could not reach. A failed write is caught
+and discarded, deliberately: a storage error must not take down a session in progress.
 
 **Reads normalise and never throw.** Each loader drops malformed rows — a card with no `id`,
 `question` or `answer`; a session whose `cardIds` is not an array — defaults missing timestamps to
@@ -347,7 +373,7 @@ otherwise it is read as `null`, so an active session can never be hidden. A sess
 kept, first occurrence winning; and an active session always reads back `[]`. A session's
 `inverted` is read as `true` only when the stored value is exactly `true` (`readInverted` in
 `utils/cardFaces.ts`); missing or any other value is `false`, for active and completed sessions
-alike. The cost is silent data loss on a corrupt record; the alternative is an app that cannot start
+alike. A deck's `description` is read as `''` when missing or not a string. The cost is silent data loss on a corrupt record; the alternative is an app that cannot start
 ([ADR-0004](decisions/0004-versioned-defensive-storage.md)).
 
 **The `/v1` suffix is the migration mechanism.** A shape change the normaliser cannot absorb takes
@@ -359,14 +385,17 @@ the second ([ADR-0008](decisions/0008-clear-completed-sessions.md)), a session's
 third, absent on every older record and read there as `[]`
 ([ADR-0009](decisions/0009-error-review-marks-cards-fixed.md)), and a session's `inverted` the
 fourth, absent on every older record and read there as `false`
-([ADR-0010](decisions/0010-inverted-sessions.md)). The opposite direction is not covered: an older
+([ADR-0010](decisions/0010-inverted-sessions.md)), and a deck's `description` the fifth, absent on
+every older record and read there as `''` ([ADR-0011](decisions/0011-deck-editing-is-one-action.md)).
+The opposite direction is not covered: an older
 build reading data this one wrote loses the Okeish data, drops `clearedAt` so every cleared
 session — every replayed original included — reappears in its Learn list, drops `fixedCardIds` so
 every reviewed session's count returns to its full number of missed or unsure cards, and drops
 `inverted` so every inverted session becomes a normal one — an active one resumed there shows the
 question first — on its first save. These losses are permanent; reinstalling the newer build does
 not restore them. No answer or counter is lost to the `fixedCardIds` or `inverted` drop, because a
-review never wrote one and both directions record them the same way.
+review never wrote one and both directions record them the same way. It also drops a deck's
+`description`.
 
 **Ids are generated, not derived**: `createId(prefix)` in `DecksContext` returns
 `` `${prefix}_${Date.now().toString(36)}_${random}` ``. Deck ids, card ids and session ids all come
@@ -381,9 +410,10 @@ Both sides of a card are HTML, because that is how the source CSVs are written. 
 renders it itself — [ADR-0001](decisions/0001-own-the-html-renderer.md).
 
 - [`utils/html.ts`](../../src/utils/html.ts) turns a string into `HtmlNode[]`. It is tolerant by
-  design: an unclosed tag is closed at the end of input, a stray closing tag is dropped, and
-  nothing throws. The input is a user's CSV file, so malformed markup is expected rather than
-  exceptional.
+  design: an unclosed tag is closed at the end of input, an unclosed `<li>` or `<p>` is closed when
+  the next one opens (an `<li>` never across a nested list, a `<p>` never across a block tag), a
+  stray closing tag is dropped, and nothing throws. The input is a user's CSV file, so malformed
+  markup is expected rather than exceptional.
 - [`components/RichText.tsx`](../../src/components/RichText.tsx) renders those nodes as **nested
   `<Text>` elements**, mapping each tag through a `TAG_STYLES` table. `<br>` becomes a newline,
   `<hr>` a run of box-drawing characters, `<li>` a bullet or a number, and a block tag gets a
@@ -412,7 +442,7 @@ Unsupported tags are not an error — an unknown tag renders its children with n
 | File reading | `@dr.pogodin/react-native-fs` |
 | HTML | owned in-repo — `src/utils/html.ts` + `src/components/RichText.tsx` |
 | Animation | the React Native `Animated` API, with `PanResponder` for the Study screen's swipe |
-| Tests | Jest with `@react-native/jest-preset` — pure-logic only |
+| Tests | Jest with `@react-native/jest-preset` — pure logic, the reducer, and the storage loaders with AsyncStorage mocked by `jest.mock`; nothing renders |
 | Lint / format | ESLint extending `@react-native`, which carries Prettier |
 
 Versions are in [`package.json`](../../package.json); Android SDK levels in
@@ -432,32 +462,15 @@ proposing a change:
 ## 8. Known debt
 
 - **No component tests.** `react-test-renderer` is a dev dependency and nothing imports it, and
-  there is no `@testing-library/react-native`. Every test is a pure-logic test of `src/utils/`.
-  A screen, a component, or a storage normaliser can break with the whole suite green. Adding a
-  component-test setup is a dependency change and needs approval.
-- **The reducer is untested.** It is the most behaviour-dense code in the app — cascading deletes,
-  auto-completion, counter updates — and it lives in a `.tsx` file next to the provider, so testing
-  it means rendering. Extracting the reducer into a `.ts` file would make it testable today; that
-  has not been done. The clear actions, `replaySession` and `recordReviewAnswer` are the partial
-  exception: their transforms live in `stats.ts` and are tested, but the dispatch wiring around
-  them is not — nothing checks, for instance, that `replaySession` clears the source id it is given
-  or that `recordReviewAnswer` leaves the counters alone.
+  there is no `@testing-library/react-native`. The suite covers `src/utils/`, the reducer in
+  `src/state/reducer.ts`, and the two storage loaders; nothing renders. A screen or a component can
+  break with the whole suite green, and so can the wiring in `DecksContext.tsx` — `createSession`,
+  the timestamps each function passes, and the load and save effects. Adding a component-test setup
+  is a dependency change and needs approval.
 - **`deleteSession` deletes whatever it is given.** The rule that it is only for discarding an
   active session lives in the Learn screen, not the reducer; a future caller that deletes a
   completed session silently changes the session statistics
   ([ADR-0008](decisions/0008-clear-completed-sessions.md)).
-- **The storage normalisers are untested**, and they are the code that runs against data the app
-  did not write. Since [ADR-0007](decisions/0007-okeish-third-answer.md) that includes the Okeish
-  paths: a sessions loader that coerced `'okeish'` to `'ok'` would still type-check, and would
-  silently rewrite every Okeish answer on the next launch. Since
-  [ADR-0008](decisions/0008-clear-completed-sessions.md) it includes the `clearedAt` rule: dropping
-  the "completed only" check also type-checks, and would let a corrupt record hide an active
-  session. Since [ADR-0009](decisions/0009-error-review-marks-cards-fixed.md) it calls
-  `normalizeFixedCardIds`, which is tested; whether the loader calls it, and with the clamped
-  `results` and the normalised `completedAt` rather than the raw values, is not. Since
-  [ADR-0010](decisions/0010-inverted-sessions.md) it calls `readInverted`, which is
-  tested; whether the loader calls it — rather than coercing with `Boolean(...)`, which would read
-  a stray `"false"` as inverted — is not.
 - **Study review mode can only be checked on a device.** The pass snapshot, the pass's local
   answers, the frontier switching between `session.results` and the pass, the reset on a change of
   `(sessionId, mode)`, the empty pass that goes straight to the Review summary, and the rule that a
@@ -499,10 +512,18 @@ proposing a change:
   *restore* and no *show cleared*: a session cleared by mistake stays hidden though its data is
   intact, and its review state is hidden with it. Accepted in
   [ADR-0008](decisions/0008-clear-completed-sessions.md).
-- **`renameDeck` is dead code.** The store exposes it, the reducer implements it including the
-  rename of every session's `deckName` snapshot, and nothing calls it. The *Edit deck* menu item
-  alerts instead.
-- **Several menu entries and buttons are placeholders.** *Edit deck*, *Add deck manually*, the
+- **A deck's statistics can fall out of step with its sessions'.** Removing a card in the Edit deck
+  screen deletes its counters for good, but every session that included it keeps its answers, so a
+  deck's totals can be lower than the sum over its sessions. A completed session may also list card
+  ids that no longer exist. Accepted in
+  [ADR-0011](decisions/0011-deck-editing-is-one-action.md).
+- **Editing a deck cannot reorder cards, and exporting a deck is not built.** The title and
+  description are not part of the CSV format, and no path writes a deck back to CSV; how they
+  would be exported is deliberately left open. A re-import still creates a second deck.
+- **The Edit deck screen is not covered by any test that renders.** `deckEdit.ts` and the reducer
+  case are tested; the screen's draft state, the Save button's enabled state, the discard prompt
+  and the remove confirmation are not.
+- **Several menu entries and buttons are placeholders.** *Add deck manually*, the
   XML / JSON / JSONL import formats, *Settings*, and the Header toolbar's **Filter button** — on
   both the Decks screen and the Learn screen — all show a "not available yet" alert. They are deliberate stubs, not bugs.
 - **The whole store is written on every change.** Two full arrays are serialised and written for a
@@ -518,3 +539,7 @@ proposing a change:
 - **No error surface for a failed write.** `saveDecks` / `saveSessions` failures are caught and
   discarded so a session is not interrupted. The user is told nothing, and the loss is only
   discovered on the next launch.
+- **After a failed load, nothing done in that run is saved.** Saving is blocked while `error` is set
+  so the empty state cannot overwrite the stored data. A deck imported or a session studied before
+  the next successful launch is lost, and the only sign is the error line on the Decks screen
+  ([ADR-0004](decisions/0004-versioned-defensive-storage.md) Amendment 2).

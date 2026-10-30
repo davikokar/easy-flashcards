@@ -8,7 +8,6 @@ import {
   ReviewState,
   Session,
   SessionResult,
-  SessionStats,
   SessionSummary,
 } from '../types';
 
@@ -109,6 +108,11 @@ export function isSessionActive(session: Session): boolean {
 
 export function isSessionCleared(session: Session): boolean {
   return session.clearedAt !== null;
+}
+
+/** An answer is accepted only for an active session's next unanswered card, so a repeat is a no-op. */
+export function canRecordAnswer(session: Session, cardId: string): boolean {
+  return isSessionActive(session) && session.cardIds[session.results.length] === cardId;
 }
 
 /** The sessions the Learn screen shows: everything not cleared; an active session is always listed. */
@@ -262,19 +266,6 @@ export function prependSessionClearing(
   at: number,
 ): Session[] {
   return [newSession, ...clearSessionAt(sessions, sourceSessionId, at)];
-}
-
-export function getSessionStats(session: Session): SessionStats {
-  const { okCount, okeishCount, notOkCount } = getSessionTally(session);
-  return {
-    cardCount: session.cardIds.length,
-    answered: session.results.length,
-    okCount,
-    okeishCount,
-    notOkCount,
-    successRate: successRate(okCount, okeishCount, notOkCount),
-    isActive: isSessionActive(session),
-  };
 }
 
 export function summarizeSessions(sessions: Session[]): SessionSummary {

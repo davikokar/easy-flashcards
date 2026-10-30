@@ -115,11 +115,20 @@ The Study screen still has no save responsibility: a pass's position and its non
 view state. *Reviewing* in the sense of this record — swiping back to look at an answered card —
 is still read-only, in a session and in a review pass alike.
 
+## Amendment 3 — 2026-10-30
+
+The decision above is unchanged. The guard on the `recordAnswer` case is tighter: an answer is
+accepted only for an **active** session's **next unanswered card** — `cardIds[results.length]` —
+checked by `canRecordAnswer` in [`src/utils/stats.ts`](../../../src/utils/stats.ts). Anything else
+returns the state unchanged. Before this, two taps landing before a re-render could record the same
+card twice: two results, two counter increments, and a session completed one card early.
+
 ## References
 
-- [`src/state/DecksContext.tsx`](../../../src/state/DecksContext.tsx) — the `recordAnswer` case
+- [`src/state/reducer.ts`](../../../src/state/reducer.ts) — the `recordAnswer` case
 - [`src/screens/StudyScreen.tsx`](../../../src/screens/StudyScreen.tsx)
-- [`src/utils/stats.ts`](../../../src/utils/stats.ts) — `isSessionActive`, `getSessionStats`
+- [`src/utils/stats.ts`](../../../src/utils/stats.ts) — `isSessionActive`, `canRecordAnswer`,
+  `getSessionTally`
 - [ADR-0002](0002-sessions-are-snapshots.md) — what is being written into
 - [ADR-0007](0007-okeish-third-answer.md) — the third answer (Amendment 1)
 - [ADR-0009](0009-error-review-marks-cards-fixed.md) — the review answer (Amendment 2)

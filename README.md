@@ -11,6 +11,11 @@ card by card, and track how well you know each card.
   - Columns `Question` and `Answer` (header matching is case-insensitive).
   - Delimiters: semicolon (`;`) or tab (`\t`).
   - BOM and CRLF tolerant; incomplete rows are skipped and reported.
+- **Deck editing**: *Edit deck* in a deck's menu opens a form for the deck's title, an optional
+  description (shown on its card on the *Decks* tab) and its cards. Edit a card's question or
+  answer, add a card, or remove one, then press *Save*; nothing changes until you do. Editing a
+  card keeps its statistics, removing one deletes them, and the title change reaches the deck's
+  sessions.
 - **Study sessions** with an animated card flip, three icon feedback buttons — *Not Ok* (cross),
   *Okeish* (question mark) and *Ok* (tick) — a progress indicator, and an end-of-session summary
   that offers to review the cards you missed or were unsure of, or to study the whole deck again.
@@ -79,13 +84,13 @@ npm test
 | Path | Purpose |
 | --- | --- |
 | [src/navigation](src/navigation) | Bottom tabs + per-tab native stacks |
-| [src/screens](src/screens) | Decks, Learn, Study, Statistics and per-deck statistics screens |
+| [src/screens](src/screens) | Decks, Edit deck, Learn, Study, Statistics and per-deck statistics screens |
 | [src/components](src/components) | Flip card, HTML renderer, buttons, progress bars, session setup dialog |
-| [src/state/DecksContext.tsx](src/state/DecksContext.tsx) | Context + reducer store, auto-persisting |
-| [src/storage/decksStorage.ts](src/storage/decksStorage.ts) | AsyncStorage read/write with defensive normalisation |
-| [src/services/importDeck.ts](src/services/importDeck.ts) | Document picker + file read + CSV parsing |
-| [src/utils](src/utils) | CSV parsing, HTML parsing, statistics helpers, file URI conversion, shuffling, search, card faces |
-| [\_\_tests\_\_](__tests__) | Unit tests for the CSV, HTML, statistics, file URI, shuffle, search and card-faces logic |
+| [src/state](src/state) | Context store (`DecksContext.tsx`) over a pure reducer (`reducer.ts`), auto-persisting |
+| [src/storage](src/storage) | AsyncStorage read/write with defensive normalisation, one module per key |
+| [src/services](src/services) | Document picker + file read + CSV parsing; sample deck export |
+| [src/utils](src/utils) | Pure logic: CSV and HTML parsing, statistics, search, shuffling, and more |
+| [\_\_tests\_\_](__tests__) | Jest unit tests for the utils, the reducer and the storage loaders |
 
 ## Notes on dependencies
 

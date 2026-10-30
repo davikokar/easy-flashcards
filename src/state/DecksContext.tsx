@@ -9,158 +9,10 @@ import React, {
 } from 'react';
 import { Answer, Deck, Session } from '../types';
 import { ParsedCard } from '../utils/csv';
+import { DeckEdit } from '../utils/deckEdit';
 import { loadDecks, saveDecks } from '../storage/decksStorage';
 import { loadSessions, saveSessions } from '../storage/sessionsStorage';
-import {
-  applyReviewAnswer,
-  clearCompletedSessionsAt,
-  clearSessionAt,
-  prependSessionClearing,
-} from '../utils/stats';
-
-type State = {
-  decks: Deck[];
-  sessions: Session[];
-  isLoading: boolean;
-  error: string | null;
-};
-
-type Action =
-  | { type: 'loaded'; decks: Deck[]; sessions: Session[] }
-  | { type: 'loadFailed'; message: string }
-  | { type: 'addDeck'; deck: Deck }
-  | { type: 'deleteDeck'; deckId: string }
-  | { type: 'renameDeck'; deckId: string; name: string }
-  | { type: 'startSession'; session: Session }
-  | { type: 'replaySession'; session: Session; sourceSessionId: string; at: number }
-  | { type: 'recordAnswer'; sessionId: string; cardId: string; answer: Answer; at: number }
-  | { type: 'recordReviewAnswer'; sessionId: string; cardId: string; answer: Answer }
-  | { type: 'deleteSession'; sessionId: string }
-  | { type: 'clearCompletedSessions'; at: number }
-  | { type: 'clearSession'; sessionId: string; at: number }
-  | { type: 'resetDeckStats'; deckId: string };
-
-const initialState: State = { decks: [], sessions: [], isLoading: true, error: null };
-
-function reducer(state: State, action: Action): State {
-  switch (action.type) {
-    case 'loaded':
-      return { decks: action.decks, sessions: action.sessions, isLoading: false, error: null };
-    case 'loadFailed':
-      return { ...state, isLoading: false, error: action.message };
-    case 'addDeck':
-      return { ...state, decks: [action.deck, ...state.decks] };
-    case 'deleteDeck':
-      return {
-        ...state,
-        decks: state.decks.filter(deck => deck.id !== action.deckId),
-        sessions: state.sessions.filter(session => session.deckId !== action.deckId),
-      };
-    case 'renameDeck':
-      return {
-        ...state,
-        decks: state.decks.map(deck =>
-          deck.id === action.deckId ? { ...deck, name: action.name } : deck,
-        ),
-        sessions: state.sessions.map(session =>
-          session.deckId === action.deckId ? { ...session, deckName: action.name } : session,
-        ),
-      };
-    case 'startSession':
-      return { ...state, sessions: [action.session, ...state.sessions] };
-    case 'replaySession':
-      return {
-        ...state,
-        sessions: prependSessionClearing(
-          state.sessions,
-          action.session,
-          action.sourceSessionId,
-          action.at,
-        ),
-      };
-    case 'recordReviewAnswer': {
-      const sessions = applyReviewAnswer(
-        state.sessions,
-        action.sessionId,
-        action.cardId,
-        action.answer,
-      );
-      return sessions === state.sessions ? state : { ...state, sessions };
-    }
-    case 'recordAnswer': {
-      const session = state.sessions.find(item => item.id === action.sessionId);
-      if (!session || session.completedAt !== null) {
-        return state;
-      }
-      const results = [...session.results, { cardId: action.cardId, answer: action.answer }];
-      const updatedSession: Session = {
-        ...session,
-        results,
-        updatedAt: action.at,
-        completedAt: results.length >= session.cardIds.length ? action.at : null,
-      };
-      return {
-        ...state,
-        sessions: state.sessions.map(item => (item.id === session.id ? updatedSession : item)),
-        decks: state.decks.map(deck => {
-          if (deck.id !== session.deckId) {
-            return deck;
-          }
-          return {
-            ...deck,
-            lastStudiedAt: action.at,
-            cards: deck.cards.map(card =>
-              card.id === action.cardId
-                ? {
-                    ...card,
-                    okCount: card.okCount + (action.answer === 'ok' ? 1 : 0),
-                    okeishCount: card.okeishCount + (action.answer === 'okeish' ? 1 : 0),
-                    notOkCount: card.notOkCount + (action.answer === 'notOk' ? 1 : 0),
-                    lastReviewedAt: action.at,
-                  }
-                : card,
-            ),
-          };
-        }),
-      };
-    }
-    case 'deleteSession':
-      return {
-        ...state,
-        sessions: state.sessions.filter(session => session.id !== action.sessionId),
-      };
-    case 'clearCompletedSessions': {
-      const sessions = clearCompletedSessionsAt(state.sessions, action.at);
-      return sessions === state.sessions ? state : { ...state, sessions };
-    }
-    case 'clearSession': {
-      const sessions = clearSessionAt(state.sessions, action.sessionId, action.at);
-      return sessions === state.sessions ? state : { ...state, sessions };
-    }
-    case 'resetDeckStats':
-      return {
-        ...state,
-        sessions: state.sessions.filter(session => session.deckId !== action.deckId),
-        decks: state.decks.map(deck =>
-          deck.id === action.deckId
-            ? {
-                ...deck,
-                lastStudiedAt: null,
-                cards: deck.cards.map(card => ({
-                  ...card,
-                  okCount: 0,
-                  okeishCount: 0,
-                  notOkCount: 0,
-                  lastReviewedAt: null,
-                })),
-              }
-            : deck,
-        ),
-      };
-    default:
-      return state;
-  }
-}
+import { State, initialState, reducer } from './reducer';
 
 type SessionOptions = { inverted: boolean };
 
@@ -168,8 +20,8 @@ type DecksContextValue = State & {
   getDeck: (deckId: string) => Deck | undefined;
   getSession: (sessionId: string) => Session | undefined;
   addDeck: (input: { name: string; sourceFileName: string | null; cards: ParsedCard[] }) => Deck;
+  updateDeck: (deckId: string, edit: DeckEdit) => void;
   deleteDeck: (deckId: string) => void;
-  renameDeck: (deckId: string, name: string) => void;
   startSession: (deck: Deck, options: SessionOptions, cardIds?: string[]) => Session;
   replaySession: (
     sourceSessionId: string,
@@ -238,7 +90,8 @@ export function DecksProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (state.isLoading) {
+    // After a failed load the state is empty, so saving it would overwrite what is stored.
+    if (state.isLoading || state.error !== null) {
       return;
     }
     if (!hasLoaded.current) {
@@ -248,12 +101,13 @@ export function DecksProvider({ children }: { children: React.ReactNode }) {
     Promise.all([saveDecks(state.decks), saveSessions(state.sessions)]).catch(() => {
       // Persistence failures must not break the running session.
     });
-  }, [state.decks, state.sessions, state.isLoading]);
+  }, [state.decks, state.sessions, state.isLoading, state.error]);
 
   const addDeck = useCallback<DecksContextValue['addDeck']>(input => {
     const deck: Deck = {
       id: createId('deck'),
       name: input.name,
+      description: '',
       sourceFileName: input.sourceFileName,
       createdAt: Date.now(),
       lastStudiedAt: null,
@@ -269,6 +123,17 @@ export function DecksProvider({ children }: { children: React.ReactNode }) {
     };
     dispatch({ type: 'addDeck', deck });
     return deck;
+  }, []);
+
+  const updateDeck = useCallback<DecksContextValue['updateDeck']>((deckId, edit) => {
+    dispatch({
+      type: 'updateDeck',
+      deckId,
+      name: edit.name,
+      description: edit.description,
+      cards: edit.cards.map(card => ({ ...card, id: card.id ?? createId('card') })),
+      at: Date.now(),
+    });
   }, []);
 
   const startSession = useCallback<DecksContextValue['startSession']>(
@@ -295,8 +160,8 @@ export function DecksProvider({ children }: { children: React.ReactNode }) {
       getDeck: deckId => state.decks.find(deck => deck.id === deckId),
       getSession: sessionId => state.sessions.find(session => session.id === sessionId),
       addDeck,
+      updateDeck,
       deleteDeck: deckId => dispatch({ type: 'deleteDeck', deckId }),
-      renameDeck: (deckId, name) => dispatch({ type: 'renameDeck', deckId, name }),
       startSession,
       replaySession,
       recordAnswer: (sessionId, cardId, answer) =>
@@ -308,7 +173,7 @@ export function DecksProvider({ children }: { children: React.ReactNode }) {
       clearSession: sessionId => dispatch({ type: 'clearSession', sessionId, at: Date.now() }),
       resetDeckStats: deckId => dispatch({ type: 'resetDeckStats', deckId }),
     }),
-    [state, addDeck, startSession, replaySession],
+    [state, addDeck, updateDeck, startSession, replaySession],
   );
 
   return <DecksContext.Provider value={value}>{children}</DecksContext.Provider>;

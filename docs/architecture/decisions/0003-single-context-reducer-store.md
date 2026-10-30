@@ -81,8 +81,25 @@ A new operation is a new action plus a new function on `DecksContextValue`. It i
 - Everything is in memory at once. There is no pagination and no partial load, so deck size is
   bounded only by the device.
 
+## Amendment 1 — 2026-10-30
+
+The decision above is unchanged — one Context over `useReducer`, one provider, no second store. Two
+details moved:
+
+- **The reducer has its own file.** `State`, `initialState`, the `Action` union and `reducer` now
+  live in [`src/state/reducer.ts`](../../../src/state/reducer.ts), plain TypeScript with no React
+  import; [`DecksContext.tsx`](../../../src/state/DecksContext.tsx) keeps the provider, its effects
+  and the exposed functions. The *Negative* consequence "the reducer is untested" no longer holds:
+  `__tests__/reducer.test.ts` tests every action. The *Positive* "every way the state can change is
+  visible in one `switch` in one file" now points at `reducer.ts`.
+- **The action set changed.** `renameDeck` was removed as dead code (see
+  [ADR-0002](0002-sessions-are-snapshots.md) Amendment 4). Since this record was written,
+  `replaySession`, `recordReviewAnswer`, `clearCompletedSessions` and `clearSession` were added;
+  the reducer's `Action` union is the current list.
+
 ## References
 
+- [`src/state/reducer.ts`](../../../src/state/reducer.ts)
 - [`src/state/DecksContext.tsx`](../../../src/state/DecksContext.tsx)
 - [`src/utils/stats.ts`](../../../src/utils/stats.ts)
 - [ADR-0004](0004-versioned-defensive-storage.md) — the persistence this store drives

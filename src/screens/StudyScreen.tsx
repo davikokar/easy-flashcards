@@ -113,7 +113,9 @@ export default function StudyScreen({ route, navigation }: Props) {
       }
       if (isReviewMode) {
         recordReviewAnswer(sessionId, cardId, value);
-        setPassResults(previous => [...previous, { cardId, answer: value }]);
+        setPassResults(previous =>
+          previous.length > index ? previous : [...previous, { cardId, answer: value }],
+        );
       } else {
         recordAnswer(sessionId, cardId, value);
       }

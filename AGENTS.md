@@ -22,8 +22,9 @@ explain non-obvious decisions in short commit messages.
   [src/components/AnswerIcons.tsx](src/components/AnswerIcons.tsx) and
   [src/navigation/TabIcons.tsx](src/navigation/TabIcons.tsx).
 - **Navigation:** React Navigation — one bottom tab navigator, one native stack per tab.
-- **State:** one React Context over `useReducer`, in
-  [src/state/DecksContext.tsx](src/state/DecksContext.tsx). No Redux, no Zustand, no MobX
+- **State:** one React Context over `useReducer` — the provider in
+  [src/state/DecksContext.tsx](src/state/DecksContext.tsx), the reducer in
+  [src/state/reducer.ts](src/state/reducer.ts). No Redux, no Zustand, no MobX
   ([ADR-0003](docs/architecture/decisions/0003-single-context-reducer-store.md)).
 - **Persistence:** AsyncStorage, two keys, written whole on every state change. See *Storage keys*
   below.
@@ -38,8 +39,9 @@ explain non-obvious decisions in short commit messages.
 - **Build:** Gradle for Android (`android/`), CocoaPods for iOS (`ios/`). SDK levels are in
   [android/build.gradle](android/build.gradle); app config in
   [android/app/build.gradle](android/app/build.gradle).
-- **Tests:** Jest with `@react-native/jest-preset`. Pure-logic unit tests only, under
-  [__tests__/](__tests__/). There are no component or end-to-end tests — see *Known gaps*.
+- **Tests:** Jest with `@react-native/jest-preset`, under [__tests__/](__tests__/): pure logic in
+  `src/utils/`, the reducer, and the storage loaders with AsyncStorage mocked. Nothing renders, and
+  there are no component or end-to-end tests — see *Known gaps*.
 
 ## Project layout
 
@@ -49,21 +51,22 @@ index.js                # AppRegistry entry point
 src/
   types.ts              # Deck, Card, Session, Answer, and the derived stats types
   theme.ts              # colors / spacing / radius tokens — the whole design system
-  state/                # DecksContext: the single store
+  state/                # DecksContext (provider) + reducer.ts (pure): the single store
   storage/              # AsyncStorage read/write + normalisation, one file per key
   navigation/           # RootNavigator, per-tab stacks, param lists, tab icons
   screens/              # One file per screen
   components/           # Reusable presentational components
   services/             # Device-boundary operations: picking and saving files
-  utils/                # Pure TypeScript: csv, html, fileUri, stats
-__tests__/              # Jest unit tests for src/utils only
+  utils/                # Pure TypeScript: csv, html, fileUri, stats, and more
+__tests__/              # Jest unit tests: utils, the reducer, the storage loaders
 docs/                   # Architecture, decisions, and the original requirements
 samples/                # Example CSV decks
 ```
 
-`src/utils/` and `src/types.ts` import nothing from `react-native`. That is deliberate and it is
-what makes them testable under Jest without a renderer or a mock. Keep new pure logic there; keep
-anything that touches a device API in `src/services/` or `src/storage/`.
+`src/utils/`, `src/types.ts` and `src/state/reducer.ts` import nothing from `react` or
+`react-native`. That is deliberate and it is what makes them testable under Jest without a renderer
+or a mock. Keep new pure logic there; keep anything that touches a device API in `src/services/` or
+`src/storage/`.
 
 **Which files are in which directory is owned by
 [docs/architecture/ARCHITECTURE.md](docs/architecture/ARCHITECTURE.md) §3** — this file deliberately
@@ -108,7 +111,9 @@ goes into an ADR or a design document, not into history.
 When a project-wide fact changes, **this table is the checklist** — walk every row.
 `.github/agents/*.agent.md` is the row most easily missed, and the costliest: an agent definition
 is injected before the agent reads anything else, so a stale fact there is believed rather than
-discovered.
+discovered. For that reason an agent file states **roles, rules and where to look**, never a count
+or a list that grows (how many ADRs, screens or colours, which ADRs exist): point to the index or
+the owning document instead, so that adding an ADR or a screen does not touch an agent file.
 
 ### Two rules that matter more than the table
 
@@ -148,7 +153,8 @@ discovered.
 - **`DecksContext` is the only store.** It holds `decks`, `sessions`, `isLoading` and `error`, and
   it exposes one function per operation. There is no second provider and no global singleton; do
   not add one ([ADR-0003](docs/architecture/decisions/0003-single-context-reducer-store.md)).
-- **A new operation is a new reducer action**, not a mutation written by a screen. Screens call
+- **A new operation is a new reducer action** in [src/state/reducer.ts](src/state/reducer.ts), not
+  a mutation written by a screen, and it gets a test in `__tests__/reducer.test.ts`. Screens call
   `useDecks()` and invoke an exposed function; they never reach into state and write it back.
 - **Derived values are computed, never stored.** Success rates, session progress, orderings and
   difficulty rankings all live as pure functions in [src/utils/stats.ts](src/utils/stats.ts) and
@@ -205,6 +211,12 @@ discovered.
   and do not start a session over a session's missed cards; no path does any more. `fixedCardIds`
   is always `[]` on an active session, and nothing un-fixes a card
   ([ADR-0009](docs/architecture/decisions/0009-error-review-marks-cards-fixed.md)).
+- **Editing a deck is one action.** The Edit deck screen keeps its changes in local state and
+  commits them once, through `updateDeck` (one reducer case). A card keeps its counters across an
+  edit; a removed card takes them with it; the new title is written to every session's `deckName`;
+  and removed cards leave the unanswered part of an active session's `cardIds`
+  ([ADR-0011](docs/architecture/decisions/0011-deck-editing-is-one-action.md)). A deck's
+  `description` is `''` when it has none, and is not part of the CSV format yet.
 
 ### Storage keys
 
@@ -217,9 +229,12 @@ writing, and normalising it.
 | `@easy-flashcards/sessions/v1` | every `Session` — active, completed, and cleared — with the cards fixed in its error review (`fixedCardIds`) and its direction (`inverted`) | [src/storage/sessionsStorage.ts](src/storage/sessionsStorage.ts) |
 
 - **Reads are defensive and never throw on bad data.** Each loader drops rows it cannot make sense
-  of and fills in defaults for missing timestamps, because the alternative is an app that will not
-  start after one corrupt write
+  of and fills in defaults for missing timestamps, and a corrupt key reads as `[]`, because the
+  alternative is an app that will not start after one corrupt write
   ([ADR-0004](docs/architecture/decisions/0004-versioned-defensive-storage.md)).
+- **Nothing is saved after a failed load.** If loading rejects, the store starts empty with `error`
+  set, and the save effect stays off for that run so the empty state cannot overwrite the stored
+  data ([ADR-0004](docs/architecture/decisions/0004-versioned-defensive-storage.md) Amendment 2).
 - **The `/v1` suffix is the migration mechanism.** A shape change that the normaliser cannot absorb
   takes a new key, with the old one read once and converted. Do not change what `/v1` means. A new
   field whose default is the *true* value for every older record stays under `/v1`
@@ -315,14 +330,11 @@ Recorded here so they are not rediscovered as surprises. The full list, with rea
 [docs/architecture/ARCHITECTURE.md](docs/architecture/ARCHITECTURE.md) §8.
 
 - **No component tests.** `react-test-renderer` is a dev dependency and nothing uses it; there is
-  no `@testing-library/react-native`. Every test in `__tests__/` is a pure-logic test of
-  `src/utils/`. A screen, a reducer, or a storage normaliser can therefore break without any test
-  failing. Adding a component-test setup is a dependency change — ask first.
-- **The store's reducer is untested**, for the same reason: it lives in a `.tsx` file alongside
-  the provider, so testing it means rendering.
-- **`renameDeck` is exposed by the store and called by nothing.** The deck kebab menu's *Edit deck*
-  item shows a "not available yet" alert.
-- **Several menu entries and buttons are placeholders** that alert rather than act: *Edit deck*,
+  no `@testing-library/react-native`. The suite covers `src/utils/`, the reducer and the storage
+  loaders, and nothing renders. A screen, a component, or the wiring in `DecksContext.tsx` can
+  therefore break without any test failing. Adding a component-test setup is a dependency change —
+  ask first.
+- **Several menu entries and buttons are placeholders** that alert rather than act:
   *Add deck manually*, the XML / JSON / JSONL import formats, *Settings*, and the Header toolbar's
   **Filter button** on both the Decks and Learn screens. They are intentional stubs, not bugs — do
   not "fix" one into existence without being asked.

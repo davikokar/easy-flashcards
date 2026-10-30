@@ -320,7 +320,7 @@ There are two different things here, and they are not in conflict:
 - "Design how a card with no reviews yet is shown in the per-deck breakdown."
 
 ### ❌ WRONG delegation
-- "Call `renameDeck` from the kebab menu's Edit item and open a `Modal` with a `TextInput`."
+- "Add a `renameDeck` reducer case and open a `Modal` with a `TextInput` from the kebab menu's Edit item."
 - "Fix it by adding a `borderColor: colors.primary` when `stats.isActive`."
 - "Memoise the session list with `useMemo` keyed on `sessions`."
 
@@ -340,16 +340,17 @@ implementing. State the symptom and let the agent diagnose it.
 - Task 1.1: Design how renaming is entered, confirmed, and cancelled, and name the
   controls → Designer
   Files: .github/instructions/ui-vocabulary.instructions.md
-  (No ADR — the store already exposes renameDeck and ADR-0002 already defines what a
-   rename does to a session's snapshot)
+  (No ADR — ADR-0002 Amendment 4 already defines what a rename does to a session's
+   snapshot)
 
 ### Phase 2: Implementation (depends on Phase 1)
 - Task 2.1: Let the user rename a deck from its options menu → Coder
-  Files: src/screens/DecksScreen.tsx
-  (Single task — the store action already exists; do not split)
+  Files: src/state/reducer.ts, src/state/DecksContext.tsx, src/screens/DecksScreen.tsx,
+  __tests__/reducer.test.ts
+  (Single task — the store action and its only caller land together; do not split)
 
 ### Phase 3: Verification (alone — owns the gate; UI change, so check adb devices)
-### Phase 4: Overview update (Planner — §8 lists renameDeck as dead code and it no longer is)
+### Phase 4: Overview update (Planner — a new store action, and §8 may list the limitation it removes)
   Files: docs/architecture/ARCHITECTURE.md
 ### Phase 5: Review (alone)
 ```

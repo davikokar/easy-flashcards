@@ -189,5 +189,6 @@ starting a session from a deck.
 - [`src/utils/stats.ts`](../../../src/utils/stats.ts) — every statistic, unchanged by direction
 - [`src/screens/DecksScreen.tsx`](../../../src/screens/DecksScreen.tsx),
   [`src/screens/StudyScreen.tsx`](../../../src/screens/StudyScreen.tsx)
-- [ARCHITECTURE.md](../ARCHITECTURE.md) — to link back to this record once the work lands
+- [ARCHITECTURE.md](../ARCHITECTURE.md) — updated for this record by the change that implemented
+  it, and links back to it
 - [AGENTS.md](../../../AGENTS.md) — *Storage keys*, *State ownership*, *What to ask before doing*

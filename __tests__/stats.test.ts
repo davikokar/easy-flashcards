@@ -2,18 +2,22 @@ import { Answer, Card, Deck, Session } from '../src/types';
 import {
   answerShares,
   applyReviewAnswer,
+  canRecordAnswer,
+  cardReviewCount,
   clearableSessionCount,
   clearCompletedSessionsAt,
   clearSessionAt,
+  EMPTY_SESSION_SUMMARY,
+  formatDate,
   getDeckStats,
   getGlobalStats,
   getMissedOrUnsureCardIds,
   getOutstandingReviewCardIds,
   getReviewableCardIds,
   getReviewState,
-  getSessionStats,
   getSessionTally,
   formatRate,
+  isSessionActive,
   isSessionCleared,
   listedSessions,
   normalizeFixedCardIds,
@@ -36,6 +40,7 @@ function deck(id: string, cards: Card[]): Deck {
   return {
     id,
     name: id,
+    description: '',
     sourceFileName: null,
     createdAt: 0,
     lastStudiedAt: null,
@@ -158,35 +163,6 @@ describe('getGlobalStats', () => {
   });
 });
 
-describe('getSessionStats', () => {
-  it('reports progress and whether the session is still active', () => {
-    const active = session('s1', 'd1', 10, null);
-    const stats = getSessionStats(active);
-
-    expect(stats).toEqual({
-      cardCount: 2,
-      answered: 2,
-      okCount: 1,
-      okeishCount: 0,
-      notOkCount: 1,
-      successRate: 50,
-      isActive: true,
-    });
-  });
-
-  it('counts okeish separately from not ok', () => {
-    const stats = getSessionStats(mixedSession());
-
-    expect(stats).toMatchObject({
-      answered: 4,
-      okCount: 1,
-      okeishCount: 2,
-      notOkCount: 1,
-      successRate: 25,
-    });
-  });
-});
-
 function mixedSession(): Session {
   return {
     ...session('mixed', 'd1', 1, 2),
@@ -279,6 +255,42 @@ describe('summarizeSessions', () => {
     ]);
 
     expect(summary).toEqual({ total: 3, active: 1, completed: 2, lastSessionAt: 30 });
+  });
+});
+
+describe('cardReviewCount', () => {
+  it('adds ok, okeish and not ok', () => {
+    expect(cardReviewCount(card('a', 2, 3, 4))).toBe(9);
+  });
+
+  it('is 0 for an unreviewed card', () => {
+    expect(cardReviewCount(card('a', 0, 0))).toBe(0);
+  });
+});
+
+describe('isSessionActive', () => {
+  it('is true only while completedAt is null', () => {
+    expect(isSessionActive(session('s', 'd', 1, null))).toBe(true);
+    expect(isSessionActive(session('s', 'd', 1, 2))).toBe(false);
+  });
+});
+
+describe('EMPTY_SESSION_SUMMARY', () => {
+  it('matches the summary of no sessions', () => {
+    expect(EMPTY_SESSION_SUMMARY).toEqual(summarizeSessions([]));
+  });
+});
+
+describe('formatDate', () => {
+  it('says Never for a null or zero timestamp', () => {
+    expect(formatDate(null)).toBe('Never');
+    expect(formatDate(0)).toBe('Never');
+  });
+
+  it('formats a timestamp with the device locale', () => {
+    const timestamp = Date.UTC(2026, 0, 15, 12);
+
+    expect(formatDate(timestamp)).toBe(new Date(timestamp).toLocaleDateString());
   });
 });
 
@@ -594,6 +606,29 @@ describe('getReviewState', () => {
   });
 });
 
+describe('canRecordAnswer', () => {
+  const active = { ...session('s1', 'd', 1, null), results: [{ cardId: 'a', answer: 'ok' as const }] };
+
+  it('accepts the next unanswered card of an active session', () => {
+    expect(canRecordAnswer(active, 'b')).toBe(true);
+  });
+
+  it('rejects a card that was already answered', () => {
+    expect(canRecordAnswer(active, 'a')).toBe(false);
+  });
+
+  it('rejects a card that is not next, or not in the session', () => {
+    const fresh = { ...active, results: [] };
+
+    expect(canRecordAnswer(fresh, 'b')).toBe(false);
+    expect(canRecordAnswer(fresh, 'zzz')).toBe(false);
+  });
+
+  it('rejects every answer for a completed session', () => {
+    expect(canRecordAnswer(session('s2', 'd', 1, 2), 'a')).toBe(false);
+  });
+});
+
 describe('applyReviewAnswer', () => {
   it('adds the card id on Ok', () => {
     const sessions = [reviewSession()];
@@ -730,11 +765,10 @@ describe('prependSessionClearing', () => {
 });
 
 describe('fixedCardIds and the statistics', () => {
-  it('does not change getSessionStats, getSessionTally or summaries', () => {
+  it('does not change getSessionTally or summaries', () => {
     const plain = reviewSession();
     const fixed = reviewSession({ fixedCardIds: ['b', 'c'] });
 
-    expect(getSessionStats(fixed)).toEqual(getSessionStats(plain));
     expect(getSessionTally(fixed)).toEqual(getSessionTally(plain));
     expect(getMissedOrUnsureCardIds(fixed)).toEqual(getMissedOrUnsureCardIds(plain));
     expect(summarizeSessions([fixed])).toEqual(summarizeSessions([plain]));

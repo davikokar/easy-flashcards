@@ -163,9 +163,9 @@ ones, and the success rate is still `ok / (ok + okeish + notOk)`. One detail mov
 - [`src/types.ts`](../../../src/types.ts) — `Answer`, `Card`, `SessionResult`
 - [`src/storage/decksStorage.ts`](../../../src/storage/decksStorage.ts),
   [`src/storage/sessionsStorage.ts`](../../../src/storage/sessionsStorage.ts)
-- [`src/state/DecksContext.tsx`](../../../src/state/DecksContext.tsx) — `recordAnswer`,
-  `resetDeckStats`, `addDeck`
+- [`src/state/reducer.ts`](../../../src/state/reducer.ts) — `recordAnswer`, `resetDeckStats`;
+  [`src/state/DecksContext.tsx`](../../../src/state/DecksContext.tsx) — `addDeck`
 - [`src/utils/stats.ts`](../../../src/utils/stats.ts) — `successRate`, `cardReviewCount`,
-  `getSessionStats`, `sortCardsByDifficulty`
+  `getSessionTally`, `sortCardsByDifficulty`
 - [`android/app/build.gradle`](../../../android/app/build.gradle) — `versionCode`
 - [AGENTS.md](../../../AGENTS.md) — *Storage keys*, *What to ask before doing*

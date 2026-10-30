@@ -16,16 +16,23 @@ These rules apply only to test files. They complement the project-wide rules in
 
 **Read this before concluding that a green suite means a working change.**
 
-Every test in this repository is a **pure-logic unit test of `src/utils/`**. There are no component
-tests, no reducer tests, no storage tests, and no end-to-end tests. Specifically:
+The suite is **unit tests, and nothing renders**. It covers:
+
+- the pure logic in `src/utils/`;
+- the reducer in `src/state/reducer.ts`, called directly with a state and an action;
+- the two storage loaders, with `@react-native-async-storage/async-storage` replaced by a
+  `jest.mock` in each test file. That is the only mock in the suite.
+
+There are no component tests and no end-to-end tests. Specifically:
 
 - `react-test-renderer` is a dev dependency and **nothing imports it**.
 - There is no `@testing-library/react-native` and no `jest-native`.
-- Nothing mocks AsyncStorage, the document picker, or the filesystem, because nothing needs to yet.
+- Nothing mocks the document picker or the filesystem, so `src/services/` is untested.
 
-So a screen, a component, the reducer, or a storage normaliser can break with the whole suite
-green. When your change is in one of those, the gate that catches a regression is
-`npm run typecheck` plus running it on a device — not `npm test`. Say which you did.
+So a screen, a component, a service, or the wiring in `DecksContext.tsx` — the provider's effects
+and the functions it exposes — can break with the whole suite green. When your change is in one of
+those, the gate that catches a regression is `npm run typecheck` plus running it on a device — not
+`npm test`. Say which you did.
 
 **Adding a component-test setup is a dependency change and needs the user's approval**
 (see *What to ask before doing* in [AGENTS.md](../../AGENTS.md)). Do not install one mid-task to
@@ -43,9 +50,10 @@ make a brief easier.
 
 ## Writing a unit test
 
-- **Build the input literally in the test.** No fixture files, no factories, no shared `beforeEach`
-  setup object. These are small pure functions and a test that shows its whole input is readable
-  without scrolling.
+- **Build the input literally in the test.** No fixture files, no shared `beforeEach` setup object.
+  A small builder per shape (`card()`, `deck()`, `session()`) is fine when it takes its varying
+  values as arguments. The one file read from disk is `samples/sample-deck.csv`, in
+  `sampleDeck.test.ts`, because the test exists to check that the shipped copy matches it.
 - **Assert on returned values**, never on how a function got there.
 - Test the failure path as well as the happy one. `parseFlashcardsCsv` throws `CsvImportError` on
   a file it cannot use, and that is part of its contract — assert on the throw, not just on the
@@ -53,21 +61,25 @@ make a brief easier.
 - Test the tolerance that is deliberate. `parseHtml` absorbing an unclosed tag and
   `fileUriToPath` leaving a stray `%` alone are both decisions, and a test is what stops the next
   person "fixing" them.
-- Pin behaviour that depends on an ambient value by setting it. Anything locale-sensitive —
-  `formatDate` goes through `toLocaleDateString` — must set the default locale, assert, and restore
-  the previous default in `afterEach`.
+- Do not assert a literal for anything locale-sensitive. `formatDate` goes through
+  `toLocaleDateString`, and Jest cannot change the default locale, so compare it with
+  `new Date(timestamp).toLocaleDateString()` for the same value.
 
 ## What is testable, and where new logic belongs
 
-`src/utils/` and `src/types.ts` import nothing from `react` or `react-native`. That is the property
-that makes them testable under Jest with no renderer and no mocks, and it is deliberate.
+`src/utils/`, `src/types.ts` and `src/state/reducer.ts` import nothing from `react` or
+`react-native`. That is the property that makes them testable under Jest with no renderer and no
+mocks, and it is deliberate.
 
 - **New pure logic goes in `src/utils/` and gets a test.** A derived number, a sort, a format, a
   parse — all of it. If you find yourself writing a calculation inside a screen, that is the signal
   to move it.
-- A function that needs AsyncStorage, the picker, the filesystem, or a React hook belongs in
-  `src/storage/`, `src/services/`, or the component, and is currently untestable here. Say so in
-  your report rather than leaving it unsaid.
+- A new store operation is a new case in `src/state/reducer.ts` and gets a test in
+  `__tests__/reducer.test.ts`. A new normaliser rule in `src/storage/` gets a test in that module's
+  test file, through the mocked AsyncStorage.
+- A function that needs the picker, the filesystem, or a React hook belongs in `src/services/` or
+  the component, and is currently untestable here. Say so in your report rather than leaving it
+  unsaid.
 - Do not add a `react-native` import to a `src/utils/` file to save a few lines. It makes the whole
   module untestable, and the failure is a confusing module-resolution error rather than an obvious
   one.

@@ -11,6 +11,8 @@ export type Card = {
 export type Deck = {
   id: string;
   name: string;
+  /** Free text; '' when the deck has none. */
+  description: string;
   sourceFileName: string | null;
   createdAt: number;
   lastStudiedAt: number | null;
@@ -62,16 +64,6 @@ export type SessionSummary = {
   active: number;
   completed: number;
   lastSessionAt: number | null;
-};
-
-export type SessionStats = {
-  cardCount: number;
-  answered: number;
-  okCount: number;
-  okeishCount: number;
-  notOkCount: number;
-  successRate: number | null;
-  isActive: boolean;
 };
 
 /** Per-answer counts for one session's results. */

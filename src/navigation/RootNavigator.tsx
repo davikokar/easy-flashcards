@@ -4,11 +4,11 @@ import { DefaultTheme, NavigationContainer, Theme } from '@react-navigation/nati
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import DecksScreen from '../screens/DecksScreen';
+import EditDeckScreen from '../screens/EditDeckScreen';
 import LearnScreen from '../screens/LearnScreen';
 import StudyScreen from '../screens/StudyScreen';
 import StatsScreen from '../screens/StatsScreen';
 import DeckStatsScreen from '../screens/DeckStatsScreen';
-import AppMenu from '../components/AppMenu';
 import { useDecks } from '../state/DecksContext';
 import { isSessionActive } from '../utils/stats';
 import {
@@ -46,17 +46,18 @@ const screenOptions = {
   contentStyle: { backgroundColor: colors.background },
 } as const;
 
-const renderAppMenu = () => <AppMenu />;
-
-const rootScreenOptions = { headerRight: renderAppMenu } as const;
-
 function DecksNavigator() {
   return (
     <DecksStack.Navigator screenOptions={screenOptions}>
       <DecksStack.Screen
         name="DecksList"
         component={DecksScreen}
-        options={{ title: 'Decks', ...rootScreenOptions }}
+        options={{ title: 'Decks' }}
+      />
+      <DecksStack.Screen
+        name="EditDeck"
+        component={EditDeckScreen}
+        options={{ title: 'Edit deck' }}
       />
     </DecksStack.Navigator>
   );
@@ -68,7 +69,7 @@ function LearnNavigator() {
       <LearnStack.Screen
         name="LearnList"
         component={LearnScreen}
-        options={{ title: 'Learn', ...rootScreenOptions }}
+        options={{ title: 'Learn' }}
       />
       <LearnStack.Screen name="Study" component={StudyScreen} options={{ title: 'Session' }} />
     </LearnStack.Navigator>
@@ -81,7 +82,7 @@ function StatsNavigator() {
       <StatsStack.Screen
         name="StatsOverview"
         component={StatsScreen}
-        options={{ title: 'Statistics', ...rootScreenOptions }}
+        options={{ title: 'Statistics' }}
       />
       <StatsStack.Screen
         name="DeckStats"

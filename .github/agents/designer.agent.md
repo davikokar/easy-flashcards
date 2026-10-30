@@ -17,13 +17,13 @@ materially harm the user experience instead of ignoring them.
 
 This is **Easy Flashcards**, a React Native app built with plain React Native primitives — **no
 component library, no icon font, no SVG**. It is **dark-only**: there is no light scheme and no
-theme switch. The design system is one file, [`src/theme.ts`](../../src/theme.ts): twelve colours,
-five spacings, three radii, and nothing else. The accent is `colors.primary` (`#4f8cff`).
+theme switch. The design system is one file, [`src/theme.ts`](../../src/theme.ts): colour, spacing and radius
+tokens, and nothing else. The accent is `colors.primary` (`#4f8cff`).
 
 Read these before designing anything:
 
-1. `.github/instructions/ui-vocabulary.instructions.md` — the canonical names for the three tabs,
-   five screens, and every area and control, plus the constraints on writing UI here. **You own
+1. `.github/instructions/ui-vocabulary.instructions.md` — the canonical names for the tabs,
+   screens, and every area and control, plus the constraints on writing UI here. **You own
    this file** and you update it in the same change when you add a name. Use the existing terms;
    do not invent parallel vocabulary.
 2. `AGENTS.md` — tech stack, project layout, the state-ownership rules you must design within, and
@@ -32,14 +32,11 @@ Read these before designing anything:
    route in the Learn stack rather than a tab, and why there is no block layout in a card. The
    **Planner owns this file** — do not rewrite it. If your work adds or retargets a screen or a
    route, say so in your report so the update gets scheduled.
-4. `docs/architecture/decisions/` — ten active ADRs. Five constrain design directly:
-   **ADR-0001** (no block layout, no images, no tables inside a card), **ADR-0005** (an answer is
-   permanent the moment it is given, so there is no undo to design), **ADR-0006** (the app
-   launches on the tab with unfinished work, after a load gate), **ADR-0009** (reviewing a
-   session's errors creates no session and changes no statistic; only an Ok is stored, as a fixed
-   card, and nothing un-fixes it), and **ADR-0010** (a session's direction is chosen only when
-   starting from a deck and never changes, so there is no mid-session switch to design; a session
-   started from another inherits it, and statistics do not show it).
+4. `docs/architecture/decisions/` — every ADR marked `Active` in the index
+   (`docs/architecture/README.md`) is binding. Read the index, and in full the ones about what a
+   card may contain (no block layout, images or tables), answers being permanent (so there is no
+   undo to design), the launch tab, reviewing errors, and a session's direction (chosen only when
+   starting from a deck and never changed mid-session) — they constrain design directly.
 5. Repository memory at `/memories/repo/easy-flashcards.md` — traps already paid for.
 
 `docs/requirements/flashcards_app_requirements.md` is the **frozen** original brief. It is history
@@ -55,12 +52,11 @@ You are a subagent and start with no memory of earlier phases. Spend the time to
   are whatever `MenuIconName` in [`src/components/MenuIcons.tsx`](../../src/components/MenuIcons.tsx)
   lists — read it rather than trusting a copy — and `MenuIcon` takes an optional `size` that
   scales its 20-point grid. Reuse one before adding another.
-- **There is one button component and four variants** — primary, secondary, success, danger. No
-  icon button, no text button, no segmented control. Adding a kind of button is a vocabulary
+- **There is one button component with a fixed set of variants** (read `Button.tsx`). No
+  text button, no segmented control. Adding a kind of button is a vocabulary
   change, not a styling detail.
 - **There is one menu surface**: a Kebab menu opening a bottom Menu sheet. Everything else that
-  interrupts the user is a native `Alert`. The only non-`Alert` dialog in the app is the export
-  explanation in `AppMenu`.
+  interrupts the user is a native `Alert` or one of the few dialogs the UI vocabulary lists.
 - **Colour carries meaning in `SuccessBar` and it is fixed**: grey for no data, green at 70% and
   above, amber from 40%, red below. "No reviews yet" and "0%" are different states and the app
   distinguishes them — `formatRate` returns `--` for the first. Do not collapse them.
@@ -71,7 +67,7 @@ You are a subagent and start with no memory of earlier phases. Spend the time to
 - **The app is English-only** with no i18n layer. Strings are literals in the component. Write them
   in sentence case and keep them short; a label that needs a second line usually means the
   interaction is wrong.
-- **Switching tab is not navigation into a hierarchy.** The three tabs are peers with independent
+- **Switching tab is not navigation into a hierarchy.** The tabs are peers with independent
   stacks, and the Study screen is a route inside the Learn stack. A design that assumes a global
   back stack will not work.
 - **Nothing in the test suite covers a screen or a component.** Anything whose success depends on

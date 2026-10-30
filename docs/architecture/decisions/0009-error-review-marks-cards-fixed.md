@@ -213,7 +213,8 @@ belong to [the UI vocabulary](../../../.github/instructions/ui-vocabulary.instru
 - [ADR-0008](0008-clear-completed-sessions.md) — Amendment 1, the replay that clears its original
 - [`src/types.ts`](../../../src/types.ts) — `Session`
 - [`src/storage/sessionsStorage.ts`](../../../src/storage/sessionsStorage.ts)
-- [`src/state/DecksContext.tsx`](../../../src/state/DecksContext.tsx)
+- [`src/state/reducer.ts`](../../../src/state/reducer.ts),
+  [`src/state/DecksContext.tsx`](../../../src/state/DecksContext.tsx)
 - [`src/utils/stats.ts`](../../../src/utils/stats.ts) — `getMissedOrUnsureCardIds`,
   `resolvableCardIds`
 - [`src/screens/StudyScreen.tsx`](../../../src/screens/StudyScreen.tsx),

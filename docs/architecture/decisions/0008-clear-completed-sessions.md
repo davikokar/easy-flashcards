@@ -217,11 +217,11 @@ before, and a downgrade un-clears every replayed original along with every hand-
   (Amendment 1)
 - [`src/types.ts`](../../../src/types.ts) — `Session`
 - [`src/storage/sessionsStorage.ts`](../../../src/storage/sessionsStorage.ts)
-- [`src/state/DecksContext.tsx`](../../../src/state/DecksContext.tsx) — `deleteSession`,
-  `deleteDeck`, `resetDeckStats`, `startSession`
+- [`src/state/reducer.ts`](../../../src/state/reducer.ts) — `deleteSession`, `deleteDeck`,
+  `resetDeckStats`, `startSession`
 - [`src/utils/stats.ts`](../../../src/utils/stats.ts) — `isSessionActive`, `summarizeSessions`,
   `summarizeSessionsByDeck`, `sortSessions`
 - [`src/screens/LearnScreen.tsx`](../../../src/screens/LearnScreen.tsx) — the Session options menu
-- [ARCHITECTURE.md §2, §3, §5, §8](../ARCHITECTURE.md) — not yet updated for this record; the
-  overview is updated by the change that implements it, which carries adding this link
+- [ARCHITECTURE.md §2, §3, §5, §8](../ARCHITECTURE.md) — updated for this record by the change that
+  implemented it, and links back to it
 - [AGENTS.md](../../../AGENTS.md) — *Storage keys*, *What to ask before doing*

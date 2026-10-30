@@ -1,4 +1,4 @@
-import { decodeEntities, htmlToPlainText, parseHtml } from '../src/utils/html';
+import { decodeEntities, parseHtml } from '../src/utils/html';
 
 describe('parseHtml', () => {
   it('parses nested inline tags', () => {
@@ -37,6 +37,26 @@ describe('parseHtml', () => {
   it('ignores stray closing tags', () => {
     expect(parseHtml('text</b>')).toEqual([{ type: 'text', text: 'text' }]);
   });
+
+  it('closes an unclosed li when the next li opens', () => {
+    const [list] = parseHtml('<ul><li>a<li>b</ul>');
+
+    expect(list).toMatchObject({ tag: 'ul' });
+    expect((list as { children: unknown[] }).children).toHaveLength(2);
+  });
+
+  it('keeps an li inside a nested list as a child of its own list', () => {
+    const [list] = parseHtml('<ul><li>a<ul><li>b</li></ul></li></ul>');
+
+    expect((list as { children: unknown[] }).children).toHaveLength(1);
+  });
+
+  it('closes an unclosed p when the next p opens', () => {
+    const nodes = parseHtml('<p>a<p>b');
+
+    expect(nodes).toHaveLength(2);
+    expect(nodes[1]).toMatchObject({ tag: 'p' });
+  });
 });
 
 describe('decodeEntities', () => {
@@ -46,11 +66,5 @@ describe('decodeEntities', () => {
 
   it('leaves unknown entities untouched', () => {
     expect(decodeEntities('&unknown;')).toBe('&unknown;');
-  });
-});
-
-describe('htmlToPlainText', () => {
-  it('strips tags and collapses whitespace', () => {
-    expect(htmlToPlainText('<p>Hello <b>world</b></p><p>Bye</p>')).toBe('Hello world Bye');
   });
 });

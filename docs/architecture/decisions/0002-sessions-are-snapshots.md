@@ -145,11 +145,29 @@ session is still a snapshot, in its own key, and *active* still means exactly
 - Direction does not touch `cardIds` or `results`: the card ids and their order are snapshotted
   exactly as before, and a result still records only a card id and an answer.
 
+## Amendment 4 — 2026-10-30
+
+The `renameDeck` action was removed as dead code: the store exposed it and nothing called it. The
+decision above is unchanged. Two sentences above now describe code that no longer exists — the
+*Negative* consequence that the two copies of a deck's name are "kept in step by the `renameDeck`
+reducer case", and Amendment 1's "still renamed by `renameDeck`". Today nothing renames a deck, so
+the two copies cannot diverge. The rule they imply still binds: **a rename, when one is built, must
+update every session's `deckName` snapshot — cleared ones included — in the same reducer case.**
+
+## Amendment 5 — 2026-10-30
+
+[ADR-0011](0011-deck-editing-is-one-action.md) adds editing a deck. The decision above is unchanged.
+Amendment 4's rule is now met: `updateDeck` rewrites `deckName` on every session of the deck, cleared
+ones included, in the same reducer case. It also changes one session field after creation: removing
+a card drops it from the *unanswered* part of an **active** session's `cardIds` (and may complete or
+delete that session), so `cardIds` is frozen only for completed sessions and for the answered part of
+an active one.
+
 ## References
 
 - [`src/types.ts`](../../../src/types.ts) — `Session`, `SessionResult`
-- [`src/state/DecksContext.tsx`](../../../src/state/DecksContext.tsx) — `startSession`,
-  `deleteDeck`, `renameDeck`
+- [`src/state/reducer.ts`](../../../src/state/reducer.ts) — `startSession`, `deleteDeck`
+- [`src/state/DecksContext.tsx`](../../../src/state/DecksContext.tsx) — `createSession`
 - [`src/storage/sessionsStorage.ts`](../../../src/storage/sessionsStorage.ts)
 - [ADR-0005](0005-answers-recorded-immediately.md) — what writing into a session looks like
 - [ADR-0008](0008-clear-completed-sessions.md) — the cleared state (Amendment 1)

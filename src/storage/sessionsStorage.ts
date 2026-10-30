@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Session, SessionResult } from '../types';
 import { readInverted } from '../utils/cardFaces';
 import { normalizeFixedCardIds } from '../utils/stats';
+import { parseStoredArray } from '../utils/storedArray';
 
 const SESSIONS_KEY = '@easy-flashcards/sessions/v1';
 
@@ -60,20 +61,9 @@ function normalizeSession(value: unknown): Session | null {
 
 export async function loadSessions(): Promise<Session[]> {
   const raw = await AsyncStorage.getItem(SESSIONS_KEY);
-  if (!raw) {
-    return [];
-  }
-  const parsed: unknown = JSON.parse(raw);
-  if (!Array.isArray(parsed)) {
-    return [];
-  }
-  return parsed.map(normalizeSession).filter((session): session is Session => session !== null);
+  return parseStoredArray(raw).map(normalizeSession).filter((session): session is Session => session !== null);
 }
 
 export async function saveSessions(sessions: Session[]): Promise<void> {
   await AsyncStorage.setItem(SESSIONS_KEY, JSON.stringify(sessions));
-}
-
-export async function clearSessions(): Promise<void> {
-  await AsyncStorage.removeItem(SESSIONS_KEY);
 }

@@ -37,10 +37,13 @@ Say "the app launches on the tab with unfinished work", not "the app defaults to
 
 ## Screens
 
-Five screens. Three are the roots of their tabs; two are detail screens pushed onto a stack.
+Six screens. Three are the roots of their tabs; three are detail screens pushed onto a stack.
 
 - **Decks screen** (`DecksScreen`, route `DecksList`): The list of imported decks, one **Deck card**
   each. Root of the Decks tab. Aliases: **deck list**, **deck library**
+- **Edit deck screen** (`EditDeckScreen`, route `EditDeck`, param `deckId`): One deck's title,
+  description and cards as editable fields. Pushed onto the Decks stack from **Edit deck** in the
+  Deck options menu. Aliases: **deck editor**
 - **Learn screen** (`LearnScreen`, route `LearnList`): The list of sessions, one **Session card**
   each, unfinished ones first. Root of the Learn tab. Aliases: **session list**
 - **Study screen** (`StudyScreen`, route `Study`, params `sessionId` and optional `mode`): One
@@ -71,8 +74,7 @@ The split here is by **folder, not by suffix** — there is no `*Screen` / `*Con
 
 `AppMenu` is the one exception and a deliberate one: it calls `exportSampleDeck` directly because
 it has no screen to belong to — the **Header toolbar** mounts it (boxed) on the Decks, Learn and
-Statistics screens (the navigator's default `headerRight` still mounts it plain, until a screen
-overrides it). It takes optional `extraItems` so a screen can add items without `AppMenu` gaining
+Statistics screens; the navigator sets no default `headerRight`). It takes optional `extraItems` so a screen can add items without `AppMenu` gaining
 store knowledge: each of those screens overrides `headerRight` itself (via
 `navigation.setOptions`), and the Learn screen's Header toolbar passes `menuItems` that supply
 **Clear completed sessions**.
@@ -171,7 +173,7 @@ Everything else that interrupts the user is a native `Alert` — confirmations, 
   and navigates across tabs into the Study screen; it does not resume an active one.
 - **Deck options menu**: the Kebab menu on a Deck card, labelled ``Options for {deck name}``.
   Holds **Start session with options** (play glyph; opens the **Session setup dialog**), **Edit
-  deck** (a stub) and **Delete deck** (destructive, confirmed by an `Alert`). It was **Shuffle and
+  deck** (opens the **Edit deck screen**) and **Delete deck** (destructive, confirmed by an `Alert`). It was **Shuffle and
   start session** before
   [ADR-0010](../../docs/architecture/decisions/0010-inverted-sessions.md).
 - **Session setup dialog** (`SessionSetupDialog`): the centred `Modal` that **Start session with
@@ -204,6 +206,35 @@ Everything else that interrupts the user is a native `Alert` — confirmations, 
 - **Import format menu**: `CSV`, `XML`, `JSON`, `JSONL`. **Only CSV is implemented**; the other
   three alert. Do not describe the app as supporting four formats.
 - **Decks empty state**: `No decks yet`.
+
+## Edit deck screen
+
+Titled `Edit deck`. A scrolling form: the **Deck fields**, then one **Card editor** per card, then
+the **Add card button**. Everything is a draft held on the screen; nothing reaches the store until
+**Save** ([ADR-0011](../../docs/architecture/decisions/0011-deck-editing-is-one-action.md)).
+
+- **Deck fields**: two labelled text fields at the top. **Title** (single line) and **Description**
+  (multi-line, placeholder `Optional`). Followed by a count heading, `{n} card(s)`. The description
+  shows under the card count on the **Deck card** when it is not blank; it is not searched.
+- **Card editor** (`CardEditor`): one card's panel — a `Card {n}` heading with the **Remove card
+  button** at its end, then a multi-line **Question** field and a multi-line **Answer** field, both
+  raw HTML text. Fields are labelled ``Question for card {n}`` and ``Answer for card {n}``. Not the
+  **Flip card** on the Study screen.
+- **Remove card button**: the danger-coloured delete glyph in a Card editor's header, labelled
+  ``Remove card {n}``. Removes the card from the draft at once, with no prompt; the confirmation is
+  at Save.
+- **Add card button**: the secondary Button `Add card` after the last Card editor. Appends an empty
+  card, scrolls to it and focuses its Question field.
+- **Save button**: the `Save` text button at the end of the header, labelled `Save deck`.
+  **Disabled until something differs from the stored deck.** It refuses, with an `Alert`, a blank
+  title (`Title needed`) or a card missing its question or answer (`Card incomplete`, naming the
+  card). If cards were removed, an `Alert` titled `Remove cards?` says how many go with their
+  statistics, with **Cancel** and a destructive **Save**. A successful save goes back to the Decks
+  screen.
+- **Discard prompt**: leaving by the back arrow or the Back button with unsaved changes shows an
+  `Alert` titled `Discard changes?` with **Keep editing** and a destructive **Discard**.
+- **Deck not found state**: the **Empty state** `Deck not found`, with action `Back to decks`, if
+  the deck no longer exists.
 
 ## Learn screen
 

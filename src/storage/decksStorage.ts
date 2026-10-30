@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Deck } from '../types';
+import { parseStoredArray } from '../utils/storedArray';
 
 const DECKS_KEY = '@easy-flashcards/decks/v1';
 
@@ -20,6 +21,7 @@ function normalizeDeck(value: unknown): Deck | null {
   return {
     id: deck.id,
     name: deck.name,
+    description: typeof deck.description === 'string' ? deck.description : '',
     sourceFileName: typeof deck.sourceFileName === 'string' ? deck.sourceFileName : null,
     createdAt: typeof deck.createdAt === 'number' ? deck.createdAt : Date.now(),
     lastStudiedAt: typeof deck.lastStudiedAt === 'number' ? deck.lastStudiedAt : null,
@@ -40,20 +42,9 @@ function normalizeDeck(value: unknown): Deck | null {
 
 export async function loadDecks(): Promise<Deck[]> {
   const raw = await AsyncStorage.getItem(DECKS_KEY);
-  if (!raw) {
-    return [];
-  }
-  const parsed: unknown = JSON.parse(raw);
-  if (!Array.isArray(parsed)) {
-    return [];
-  }
-  return parsed.map(normalizeDeck).filter((deck): deck is Deck => deck !== null);
+  return parseStoredArray(raw).map(normalizeDeck).filter((deck): deck is Deck => deck !== null);
 }
 
 export async function saveDecks(decks: Deck[]): Promise<void> {
   await AsyncStorage.setItem(DECKS_KEY, JSON.stringify(decks));
-}
-
-export async function clearDecks(): Promise<void> {
-  await AsyncStorage.removeItem(DECKS_KEY);
 }

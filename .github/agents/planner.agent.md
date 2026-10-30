@@ -24,17 +24,17 @@ app's own code. Read these before planning:
    and any change to a storage key or its shape). A plan that silently includes one of those is a
    broken plan: surface it as an open question instead.
 2. `docs/architecture/README.md` and `docs/architecture/decisions/` — the ADR index and the
-   decisions themselves. Every one marked `Active` is binding. All ten existing ADRs constrain
-   ordinary work here, not exotic work: they cover the HTML renderer, sessions, the store,
-   persistence, when an answer is written, the launch tab, the Okeish answer, clearing completed
-   sessions, reviewing a session's errors, and a session's direction.
+   decisions themselves. Every one marked `Active` is binding. They constrain
+   ordinary work here, not exotic work, so read the index and then the ones whose subject the
+   feature touches.
 3. `docs/architecture/ARCHITECTURE.md` — the system overview. Its §8 *Known debt* is where to look
    before proposing anything; several obvious improvements are already recorded there with the
    reason they were not made.
 4. `.github/instructions/ui-vocabulary.instructions.md` — canonical UI names. Use them in plans.
-5. `.github/instructions/tests.instructions.md` — in particular, **what is not tested**. Only
-   `src/utils/` has tests. A plan that relies on `npm test` catching a regression in a screen, the
-   reducer, or a storage normaliser is planning a verification that will not happen.
+5. `.github/instructions/tests.instructions.md` — in particular, **what is not tested**. The suite
+   covers `src/utils/`, the reducer and the storage loaders, and nothing renders. A plan that relies
+   on `npm test` catching a regression in a screen, a component, a service, or the wiring in
+   `DecksContext.tsx` is planning a verification that will not happen.
 6. Repository memory at `/memories/repo/easy-flashcards.md` — a short log of traps already paid
    for. Check it for your feature area before planning.
 

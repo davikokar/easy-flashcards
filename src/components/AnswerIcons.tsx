@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 
-export type AnswerIconName = 'tick' | 'cross' | 'question';
+type AnswerIconName = 'tick' | 'cross' | 'question';
 
 type Props = {
   name: AnswerIconName;

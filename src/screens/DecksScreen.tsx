@@ -1,4 +1,4 @@
-import React, { useCallback, useLayoutEffect, useMemo, useState } from 'react';
+import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import type { CompositeScreenProps } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -32,9 +32,12 @@ type Props = CompositeScreenProps<
 
 const showFilterStub = () => Alert.alert('Filter', 'Filtering decks is not available yet.');
 
+const START_DEBOUNCE_MS = 1000;
+
 export default function DecksScreen({ navigation }: Props) {
   const { decks, sessions, error, addDeck, deleteDeck, startSession } = useDecks();
   const [isImporting, setIsImporting] = useState(false);
+  const lastStartAt = useRef(0);
   const [openMenu, setOpenMenu] = useState<'add' | 'format' | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -131,6 +134,11 @@ export default function DecksScreen({ navigation }: Props) {
         Alert.alert('Empty deck', 'This deck has no cards to learn.');
         return;
       }
+      // A double tap would otherwise start two sessions before the navigation lands.
+      if (Date.now() - lastStartAt.current < START_DEBOUNCE_MS) {
+        return;
+      }
+      lastStartAt.current = Date.now();
       const session = startSession(
         deck,
         { inverted },
@@ -242,6 +250,7 @@ export default function DecksScreen({ navigation }: Props) {
           return (
             <DeckCard
               name={item.name}
+              description={item.description}
               cardCount={stats.cardCount}
               shares={answerShares(stats)}
               sessionCount={summary.total}
@@ -257,7 +266,7 @@ export default function DecksScreen({ navigation }: Props) {
                 {
                   label: 'Edit deck',
                   icon: 'edit',
-                  onPress: () => Alert.alert('Edit deck', 'Editing decks is not available yet.'),
+                  onPress: () => navigation.navigate('EditDeck', { deckId: item.id }),
                 },
                 {
                   label: 'Delete deck',
