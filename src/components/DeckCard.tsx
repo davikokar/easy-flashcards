@@ -1,11 +1,14 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+import Button from './Button';
 import KebabMenu from './KebabMenu';
 import MasteryBar from './MasteryBar';
 import { MenuItem } from './MenuSheet';
 import MenuIcon from './MenuIcons';
 import { AnswerShares } from '../types';
 import { colors, radius, spacing } from '../theme';
+
+const renderPlayIcon = (color: string) => <MenuIcon name="play" color={color} />;
 
 type Props = {
   name: string;
@@ -70,14 +73,12 @@ export default function DeckCard({
             Last: <Text style={styles.lastValue}>{lastSession}</Text>
           </Text>
         </View>
-        <Pressable
-          accessibilityRole="button"
+        <Button
+          variant="primary"
           accessibilityLabel={`Start session for ${name}`}
-          hitSlop={6}
+          icon={renderPlayIcon}
           onPress={onStart}
-          style={({ pressed }) => [styles.play, pressed && styles.playPressed]}>
-          <MenuIcon name="play" color={colors.background} size={16} />
-        </Pressable>
+        />
       </View>
     </View>
   );
@@ -112,7 +113,7 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: 13,
   },
-  // Two lines of text beside the play button: one row does not fit 360dp.
+  // Two lines of text beside the Start session button: one row does not fit 360dp.
   meta: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -177,17 +178,5 @@ const styles = StyleSheet.create({
   },
   lastValue: {
     color: colors.textMuted,
-  },
-  play: {
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radius.md,
-    backgroundColor: colors.primary,
-    elevation: 2,
-  },
-  playPressed: {
-    opacity: 0.75,
   },
 });

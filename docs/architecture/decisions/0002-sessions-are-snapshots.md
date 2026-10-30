@@ -104,12 +104,15 @@ does. The decision above is unchanged — a session is still a snapshot, in its 
 
 - **The "review missed cards" subset path no longer exists.** Reviewing a session's missed or
   unsure cards creates no session; it records the cards answered Ok on the original session.
-  `startSession(deck, cardIds?)` still accepts an ordered subset, but no caller passes one. Its
-  callers are now the Decks screen's **Start session button** (no `cardIds`) and **Shuffle and
-  start session** (the whole deck, shuffled), the Learn screen's **Start a new session** (the whole
-  deck), and the Session summary's **Study the whole deck again** (no `cardIds`). A replay does
-  **not** call `startSession`: the **Replay button** calls `replaySession`, which builds its session
-  with the same private `createSession` helper in
+  `startSession(deck, { inverted }, cardIds?)` still accepts an ordered subset, but no caller
+  passes one. Its callers are now the Decks screen's **Start session button** (`inverted: false`,
+  no `cardIds`) and **Start session with options** (the dialog's **Inverted** choice; the whole
+  deck shuffled when **Shuffle** is ticked, otherwise no `cardIds`), the Learn screen's **Start a
+  new session** (the source's `inverted`; the whole deck, in deck order), and the Session summary's
+  **Study the whole deck again** (the source's `inverted`; no `cardIds`). A replay does
+  **not** call `startSession`: the **Replay button** calls
+  `replaySession(sourceSessionId, deck, { inverted }, cardIds)` with the original's `inverted`,
+  which builds its session with the same private `createSession` helper in
   [`src/state/DecksContext.tsx`](../../../src/state/DecksContext.tsx) and passes the original's
   `cardIds` that still resolve in the deck — a subset when the original was one, or when cards
   have since left the deck. The *Positive* consequence that subset sessions make "review the missed
@@ -120,6 +123,12 @@ does. The decision above is unchanged — a session is still a snapshot, in its 
 
 *Correction, 2026-10-30:* this amendment first said a replay calls `startSession` with the
 original's `cardIds`. It never did; the first bullet above now lists the real callers.
+
+*Correction, 2026-10-30 (second):* the first bullet then listed the callers as they were before
+[ADR-0010](0010-inverted-sessions.md) — `startSession(deck, cardIds?)` and the Decks screen's
+**Shuffle and start session**. ADR-0010 (Amendment 3 below) made `{ inverted }` a required
+argument of `startSession` and `replaySession` and replaced that menu item with **Start session
+with options**; the bullet now gives the signatures and callers in the code.
 
 ## Amendment 3 — 2026-10-30
 

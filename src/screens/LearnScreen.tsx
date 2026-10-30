@@ -9,11 +9,11 @@ import SearchBar from '../components/SearchBar';
 import SessionCard from '../components/SessionCard';
 import { useDecks } from '../state/DecksContext';
 import { LearnStackParamList, RootTabParamList } from '../navigation/types';
-import { Deck, Session } from '../types';
+import { Session } from '../types';
 import {
   clearableSessionCount,
   formatDate,
-  getMissedOrUnsureCardIds,
+  getReviewState,
   getSessionTally,
   isSessionActive,
   listedSessions,
@@ -31,9 +31,18 @@ type Props = CompositeScreenProps<
 
 const showFilterStub = () => Alert.alert('Filter', 'Filtering sessions is not available yet.');
 
+const showDeckUnavailable = () =>
+  Alert.alert('Deck unavailable', 'This deck no longer exists or has no cards.');
+
 export default function LearnScreen({ navigation }: Props) {
-  const { sessions, getDeck, startSession, deleteSession, clearSession, clearCompletedSessions } =
-    useDecks();
+  const {
+    sessions,
+    getDeck,
+    replaySession,
+    deleteSession,
+    clearSession,
+    clearCompletedSessions,
+  } = useDecks();
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState('');
   const ordered = useMemo(() => sortSessions(listedSessions(sessions)), [sessions]);
@@ -42,6 +51,13 @@ export default function LearnScreen({ navigation }: Props) {
     [ordered, query],
   );
   const clearableCount = useMemo(() => clearableSessionCount(sessions), [sessions]);
+  const reviewStates = useMemo(() => {
+    const states = new Map<string, ReturnType<typeof getReviewState>>();
+    for (const session of ordered) {
+      states.set(session.id, getReviewState(session, getDeck(session.deckId)));
+    }
+    return states;
+  }, [ordered, getDeck]);
 
   const closeSearch = useCallback(() => {
     setSearchOpen(false);
@@ -122,19 +138,19 @@ export default function LearnScreen({ navigation }: Props) {
     [clearSession, deleteSession],
   );
 
-  // Always starts a new session; the original is never cleared or deleted.
-  const startFrom = useCallback(
-    (session: Session, pickCardIds: (deck: Deck) => string[]) => {
+  // Starts a counted session over the session's own cards and clears the original, atomically.
+  const replay = useCallback(
+    (session: Session) => {
       const deck = getDeck(session.deckId);
-      const cardIds = deck ? resolvableCardIds(pickCardIds(deck), deck) : [];
+      const cardIds = deck ? resolvableCardIds(session.cardIds, deck) : [];
       if (!deck || cardIds.length === 0) {
-        Alert.alert('Deck unavailable', 'This deck no longer exists or has no cards.');
+        showDeckUnavailable();
         return;
       }
-      const next = startSession(deck, { inverted: session.inverted }, cardIds);
+      const next = replaySession(session.id, deck, { inverted: session.inverted }, cardIds);
       navigation.navigate('Study', { sessionId: next.id });
     },
-    [getDeck, navigation, startSession],
+    [getDeck, navigation, replaySession],
   );
 
   return (
@@ -182,7 +198,16 @@ export default function LearnScreen({ navigation }: Props) {
           const isActive = isSessionActive(item);
           const tally = getSessionTally(item);
           const cardCount = item.cardIds.length;
-          const missedCount = isActive ? 0 : getMissedOrUnsureCardIds(item).length;
+          const reviewState = reviewStates.get(item.id);
+          const review =
+            !isActive && reviewState && reviewState.kind !== 'none'
+              ? {
+                  count: reviewState.kind === 'outstanding' ? reviewState.count : 0,
+                  done: reviewState.kind === 'done',
+                  onPress: () =>
+                    navigation.navigate('Study', { sessionId: item.id, mode: 'review' }),
+                }
+              : undefined;
           return (
             <SessionCard
               deckName={item.deckName}
@@ -193,13 +218,7 @@ export default function LearnScreen({ navigation }: Props) {
               tally={tally}
               shares={sessionProgressShares(tally, cardCount)}
               startedLabel={formatDate(item.startedAt)}
-              missedCount={missedCount}
               menuItems={[
-                {
-                  label: 'Start a new session',
-                  icon: 'play',
-                  onPress: () => startFrom(item, deck => deck.cards.map(card => card.id)),
-                },
                 {
                   label: isActive ? 'Discard session' : 'Clear session',
                   icon: 'delete',
@@ -210,12 +229,8 @@ export default function LearnScreen({ navigation }: Props) {
               onResume={
                 isActive ? () => navigation.navigate('Study', { sessionId: item.id }) : undefined
               }
-              onReplay={isActive ? undefined : () => startFrom(item, () => item.cardIds)}
-              onReplayMissed={
-                missedCount > 0
-                  ? () => startFrom(item, () => getMissedOrUnsureCardIds(item))
-                  : undefined
-              }
+              onReplay={isActive ? undefined : () => replay(item)}
+              review={review}
             />
           );
         }}

@@ -207,7 +207,7 @@ not implement one because you noticed it.
 ## Architecture Decisions
 
 - Read relevant active ADRs under `docs/architecture/decisions/` before changing architecture. All
-  nine are about ordinary work here, so "my change is too small to involve an ADR" is usually wrong.
+  ten are about ordinary work here, so "my change is too small to involve an ADR" is usually wrong.
 - Implement approved decisions consistently; do not silently contradict or rewrite an active ADR.
 - If implementation reveals a significant new architectural choice, changed tradeoff, or invalid
   assumption, stop that part of the work and report the decision needed to the Planner or

@@ -43,9 +43,11 @@ Five screens. Three are the roots of their tabs; two are detail screens pushed o
   each. Root of the Decks tab. Aliases: **deck list**, **deck library**
 - **Learn screen** (`LearnScreen`, route `LearnList`): The list of sessions, one **Session card**
   each, unfinished ones first. Root of the Learn tab. Aliases: **session list**
-- **Study screen** (`StudyScreen`, route `Study`, param `sessionId`): One session being studied —
-  the flip card, the answer buttons, the progress header, and the end-of-session summary. Pushed
-  onto the Learn stack. Aliases: **study view**, **the session screen**
+- **Study screen** (`StudyScreen`, route `Study`, params `sessionId` and optional `mode`): One
+  session being studied — the flip card, the answer buttons, the progress header, and the
+  end-of-session summary — or, with `mode: 'review'`, one completed session's errors being
+  reviewed (**review mode**, below). Pushed onto the Learn stack. Aliases: **study view**, **the
+  session screen**
 - **Statistics screen** (`StatsScreen`, route `StatsOverview`): Totals across every deck, then one
   row per deck. Root of the Statistics tab. Aliases: **stats overview**
 - **Deck statistics screen** (`DeckStatsScreen`, route `DeckStats`, param `deckId`): One deck's
@@ -189,9 +191,10 @@ Everything else that interrupts the user is a native `Alert` — confirmations, 
 - **Inverted session**: a session whose faces are swapped — the Flip card's front shows each
   card's answer and its back the question
   ([ADR-0010](../../docs/architecture/decisions/0010-inverted-sessions.md)). The direction is fixed
-  when the session is created and never changes. It is kept by **Replay**, **Replay missed**,
-  **Start a new session** and **Study the whole deck again**. Only starting from a deck chooses a
-  direction; the plain **Start session button** is never inverted. Statistics do not distinguish it.
+  when the session is created and never changes. It is kept by the **Replay button**, **Start a
+  new session** and **Study the whole deck again**, and a **Review pass** shows the faces in the
+  original session's direction. Only starting from a deck chooses a direction; the plain **Start
+  session button** is never inverted. Statistics do not distinguish it.
 - **Add deck button**: the floating action button at the bottom right, a primary rounded square
   labelled `Add a deck`. It is
   the app's only FAB. Shows a spinner while an import is in flight. Opens the **Add deck menu**.
@@ -229,30 +232,54 @@ Everything else that interrupts the user is a native `Alert` — confirmations, 
   **Success bar** or the **Mastery bar**, which are sized by answers as a share of *reviews* or a
   single rate.
 - **Session card footer**: the bottom row of a Session card, under a divider — on the left a clock
-  glyph and `Started {date}`, on the right the replay and resume buttons below, vertically centred.
+  glyph and `Started {date}`, on the right the buttons below, vertically centred: the **Resume
+  button** on an active session; on a completed one the **Review errors button** (when the session
+  ever had errors) to the left of the **Replay button**.
 - **Resume button**: the primary icon-only Button with a play glyph, shown **only on an active
   session**, labelled ``Resume session for {deck name}``. Continues that session in the Study
   screen.
 - **Replay button**: the secondary icon-only Button with a `replay` glyph, shown **only on a
-  completed session**, labelled ``Replay session for {deck name}``. Creates a **new** session over
-  the same cards; the original is never cleared or deleted.
-- **Replay missed button**: the warning icon-only Button with a `replay` glyph, shown **only on a
-  completed session that has missed or unsure cards**, to the left of the Replay button, labelled
-  ``Replay the {n} missed or unsure card(s) for {deck name}``. Creates a **new** session over the
-  not ok and okeish cards. "Unsure" appears in this label as it does in the Study summary's.
+  completed session**, labelled ``Replay session for {deck name}``. In one step (`replaySession`) it
+  creates a **new, active, counted** session over the same cards that still exist in the deck,
+  **clears the original** (a **Cleared session**: the completed Session card leaves the list and a
+  new active one takes its place), keeps the original's **inverted** setting, and opens the
+  new session in the Study screen. No confirmation. If the deck is gone or no card resolves it
+  shows a `Deck unavailable` alert and changes nothing. Not **Start a new session** in the Session
+  options menu, which is also counted and over the whole deck but clears nothing.
+- **Review errors button**: the warning icon-only Button with a `replay` glyph, shown **only on a
+  completed session that ever had missed or unsure cards** (hidden when it never had any, and when
+  its deck no longer resolves), to the left of the Replay button. Labelled ``Review the {n} missed
+  or unsure card(s) for {deck name}`` while any are outstanding, and ``All missed or unsure cards
+  fixed for {deck name}`` when none are. It starts a **review**, not a session: it opens the Study
+  screen in **review mode** and creates nothing, clears nothing and changes no statistic
+  ([ADR-0009](../../docs/architecture/decisions/0009-error-review-marks-cards-fixed.md)). It was
+  the **Replay missed button**, which created a counted session. "Unsure" appears in its label as in
+  the **Review summary** action. It has three parts:
+  - **Review badge**: the small round badge on the button's top-right corner, a sibling of the
+    button so that dimming a disabled button does not fade it, and hidden from accessibility.
+    Warning-ringed and showing the **Review count** while errors are outstanding; success-ringed
+    and showing the **Review done tick** when none are.
+  - **Review count**: the number in the badge — the outstanding missed or unsure cards, the same
+    number a tap would review. Capped at `99+`.
+  - **Review done tick**: the tick (**Answer icon**) in the badge once every missed or unsure card is
+    fixed. The button is then **disabled**, and its label says everything is fixed.
 - **Search button** and **Filter button** on this screen belong to the **Header toolbar**; the
   Search button opens the **Search bar** (placeholder `Search sessions`).
 - **Cleared session**: a completed session the user removed from the Learn list
   ([ADR-0008](../../docs/architecture/decisions/0008-clear-completed-sessions.md)). It is hidden
   from the Learn screen but kept and **still counted everywhere** (Sessions tile, Deck meta row,
-  Deck summary), and there is no way to show it again. Say "clear", never "delete", for this; only
+  Deck summary), and there is no way to show it again. A session becomes cleared in three ways:
+  **Clear session** (one), **Clear completed sessions** (all), and the **Replay button**
+  (the replayed one). Say "clear", never "delete", for this; only
   **Discard session** really deletes. An active session cannot be cleared.
 - **Clear completed sessions**: the destructive item at the top of the **App menu** on the Learn
   screen (delete glyph). With nothing to clear it alerts `No completed sessions to clear.`;
   otherwise an `Alert` says how many completed sessions will be removed from the list and that
   their results stay in Statistics, with **Cancel** and a destructive **Clear**.
 - **Session options menu**: the Kebab menu on a Session card, labelled
-  ``Options for the {deck name} session``. Holds **Start a new session** and a destructive item
+  ``Options for the {deck name} session``. Holds **Start a new session** (a counted session over
+  the whole deck, in deck order, keeping the session's **inverted** setting; it clears nothing and
+  shows `Deck unavailable` when the deck is gone or empty) and a destructive item
   labelled **Discard session** when active (a real delete) and **Clear session** when completed
   (archives it as a **Cleared session**; the confirmation says its results stay in Statistics).
   **Clear session** was **Delete session** before ADR-0008.
@@ -264,18 +291,32 @@ Everything else that interrupts the user is a native `Alert` — confirmations, 
 
 The densest screen in the app, and the one with vocabulary worth being precise about.
 
+- **Review mode**: the Study screen opened with `mode: 'review'` on a **completed** session, by the
+  **Review errors button** or the **Session summary**'s review action. It works through that
+  session's missed or unsure cards in **Review passes**, records an Ok as that card being **fixed**
+  on the session, and otherwise **changes no statistic and creates no session**
+  ([ADR-0009](../../docs/architecture/decisions/0009-error-review-marks-cards-fixed.md)). Unlike
+  an ordinary session its answers are not in `session.results`. It is **a review, not a session**:
+  say "review", not "review session".
+- **Review pass**: one run through the cards outstanding when it began — a snapshot, each card
+  once, in session order, not looping. Fixing a card mid-pass does not shorten the pass on screen.
+  Its answers live only in the screen; leaving mid-pass loses nothing stored, and the next pass
+  holds whatever is still outstanding. It uses the session's direction (**inverted** or not).
 - **Progress header**: `Card {n} of {total}` on the left, `Ok {n}` on the right. Only plain ok
-  answers are counted there, not okeish. On an **inverted session** the **Inverted pill** sits
+  answers are counted there, not okeish. In review mode `{total}` is the **pass length** and `Ok`
+  counts the pass's own answers. On an **inverted session** the **Inverted pill** sits
   between them, labelled `Inverted session: the front shows the answer`; a normal session shows
   nothing there.
 - **Session progress bar**: the thin **Success bar** under the progress header. It shows **how far
-  through the session the user is**, not how well they are doing — the same component, a different
+  through the session the user is** (in review mode, through the pass), not how well they are
+  doing — the same component, a different
   meaning. Say which you mean. Not the **Session results bar** on the Learn screen's Session cards.
   It is drawn in fixed white (`colors.text`, via `SuccessBar`'s `color` prop), **not** the
   success/warning/danger rate colours, so it cannot be read as a rate.
 - **History strip** (`HistoryStrip`, labelled `Answers so far`): the horizontal row of small tiles,
   one per answer — green for ok, yellow (warning) for okeish, red for not ok. The tile for the
-  card on screen is taller and outlined. Auto-scrolls to keep the current card in view.
+  card on screen is taller and outlined. Auto-scrolls to keep the current card in view. In review
+  mode it shows the **pass's own** answers, not the session's.
   Aliases: **the answer tiles**
 - **Flip card** (`FlipCard`): the card itself. Two faces, **Question** and **Answer**, rotated with
   a `rotateY` animation. Its accessibility label is the **action**, not the state — `Show answer`
@@ -291,17 +332,20 @@ The densest screen in the app, and the one with vocabulary worth being precise a
   visible text; the accessibility labels are `Not ok`, `Okeish`, and `Ok`. They are **disabled
   until the user has flipped the current card at least once**, so the answer is read before it is
   graded; the requirement starts over for each new card. They are also **disabled while
-  reviewing**.
+  reviewing** (an already answered card). In review mode they work the same, but only **Ok** writes
+  anything — it marks the card fixed; **Okeish** and **Not ok** are shown in the pass and recorded
+  nowhere, and the card comes back in the next pass.
 - **Okeish**: the third answer — half-remembered, or got with effort. It is stored as `okeish`,
   counts as a review but **earns no credit** in the success rate (`ok / (ok + okeish + not ok)`, so
-  an okeish-only card is 0%, not `--`), and the **Session summary** replays it along with the
+  an okeish-only card is 0%, not `--`), and a **review** treats it as an error along with the
   missed cards ([ADR-0007](../../docs/architecture/decisions/0007-okeish-third-answer.md)). The UI
-  word is always "okeish"; "unsure" appears only in two labels, the Study summary's replay action
-  and the Learn screen's **Replay missed button**.
+  word is always "okeish"; "unsure" appears only in the labels of the **Review errors button** and
+  the review actions (``Review the {n} missed or unsure``).
 - **Swipe hint**: the dim line between the card and the buttons. It is **empty except while
   reviewing**, when it reads `Reviewing an answered card — swipe left to get back to where you were`.
-  Nothing on screen advertises swiping right; the gesture is undiscoverable until tried.
-- **Reviewing**: looking back at a card that was already answered. It is read-only —
+  Nothing on screen advertises swiping right; the gesture is undiscoverable until tried. It reads
+  the same inside a Review pass.
+- **Reviewing** (-ing): looking back at a card that was already answered. It is read-only —
   an answer cannot be changed and the Answer buttons are disabled
   ([ADR-0005](../../docs/architecture/decisions/0005-answers-recorded-immediately.md)). The card
   the user is actually on is the **frontier**. Swiping right **wraps**: from the frontier it goes
@@ -309,12 +353,32 @@ The densest screen in the app, and the one with vocabulary worth being precise a
   (`previousReviewIndex`); it does nothing until a card has been answered. Swiping left steps
   toward the frontier one card at a time and stops there. Do not call reviewing "going back" —
   that is navigation.
-- **Session summary**: what the screen becomes once every card is answered. A large success rate
+- **Review, Reviewing, Reviewed, Reviews** — four words that must not be mixed up:
+  **Reviewing** (-ing) is the swipe-back above. **Review** as a noun, a verb or in a compound
+  (**Review errors button**, **Review pass**, **Review summary**, `Review the {n} missed or
+  unsure`, **review mode**) is the error review of a completed session. **`Reviewed {n}`** (the
+  Session summary) and **`Reviews`** / `{n} reviews` (the Statistics screens, the Mastery bar)
+  are counts of recorded answers, **which a review never adds to**. Never say "reviews" for the
+  error review, nor "reviewing" for it.
+- **Session summary**: what an ordinary session becomes once every card is answered, titled
+  `Session complete`. A large success rate
   and a **Success bar**, then one row of `Ok {n}`, `Okeish {n}`, `Not Ok {n}` (tinted success,
   warning, danger), then `Reviewed {n}` on its own line. Up to three actions:
-  ``Review the {n} missed or unsure`` (the not ok and okeish cards; absent when there are none),
-  **Study the whole deck again**, and **Back to sessions**. Aliases: **end-of-session summary**
-- **Study empty state**: `Nothing to study`, with a **Back to sessions** action.
+  ``Review the {n} missed or unsure`` (the outstanding not ok and okeish cards; **hidden when there
+  are none**) which starts a **review** — it replaces the summary with review mode, creating no
+  session — **Study the whole deck again**, and **Back to sessions**. Aliases: **end-of-session
+  summary**
+- **Review summary**: what review mode becomes when a **Review pass** ends (or at once, when nothing
+  is outstanding), titled `Review complete`. A card, not a rate: the pass's own `Ok {n}`,
+  `Okeish {n}`, `Not Ok {n}` row (omitted when the pass answered nothing), then either
+  `{n} still to fix` or, when none remain, the **All fixed state**. Actions: ``Review the {n}
+  missed or unsure`` (the **next pass**, only while any remain) and **Back to sessions**. There is
+  no success rate, no Success bar and no `Reviewed {n}`, because nothing was recorded.
+- **All fixed state**: the success-coloured tick (**Answer icon**) over `All fixed`, shown in the
+  Review summary in place of `{n} still to fix` once every missed or unsure card is fixed.
+- **Study empty state**: `Nothing to study` (message `This session is no longer available.`), with
+  a **Back to sessions** action. Also what review mode shows for a session that is missing, still
+  active, or whose deck is gone.
 
 ## Statistics screens
 

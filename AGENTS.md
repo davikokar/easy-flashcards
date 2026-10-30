@@ -154,7 +154,10 @@ discovered.
   difficulty rankings all live as pure functions in [src/utils/stats.ts](src/utils/stats.ts) and
   are called from a `useMemo` in the screen. Putting a derived number into the stored shape means
   persisting something that can go stale; the counters on a `Card` are the only stored tallies, and
-  they are raw — one per `Answer`. Okeish is a review that earns no credit in a success rate
+  they are raw — one per `Answer`. A session's `fixedCardIds` is stored too, but it is a list of
+  card ids, not a tally; the outstanding count and whether a review is done come from
+  `getOutstandingReviewCardIds` / `getReviewState` and are never stored. Okeish is a review that
+  earns no credit in a success rate
   ([ADR-0007](docs/architecture/decisions/0007-okeish-third-answer.md)); count answers with the
   three-way helpers in `stats.ts`, never as "Ok, else Not Ok".
 - **Screens are the stateful half; components are the stateless half.** A `*Screen` calls
@@ -168,7 +171,9 @@ discovered.
 - **A `Session` snapshots its direction too.** `inverted` is set from the required
   `{ inverted }` argument of `startSession` / `replaySession` when the session is created, and
   nothing changes it afterwards. A session created from an existing one passes the source's
-  `inverted`; only the Decks screen chooses one. Which face shows first comes only from `cardFaces`
+  `inverted` — the Learn screen's **Replay button** and **Start a new session**, and the Session
+  summary's **Study the whole deck again**; only the Decks screen chooses one. A review pass uses
+  its session's direction. Which face shows first comes only from `cardFaces`
   in [src/utils/cardFaces.ts](src/utils/cardFaces.ts); answers, counters and every `stats.ts`
   function ignore direction
   ([ADR-0010](docs/architecture/decisions/0010-inverted-sessions.md)).
@@ -176,7 +181,11 @@ discovered.
   `clearedAt !== null` (`isSessionCleared` in `stats.ts`): it drops off the Learn screen but stays
   in storage and is still counted by every session statistic. Only a completed session can be
   cleared. **Clear session** on a completed session and **Clear completed sessions** call
-  `clearSession` / `clearCompletedSessions`; **Discard session** on an active session is the only
+  `clearSession` / `clearCompletedSessions`; the **Replay button** clears its original too, through
+  `replaySession`, which starts the new session and clears the source in **one dispatch** — do not
+  rebuild it from `startSession` plus `clearSession`
+  ([ADR-0008](docs/architecture/decisions/0008-clear-completed-sessions.md) Amendment 1).
+  **Discard session** on an active session is the only
   UI path that deletes one, through `deleteSession`. *Delete deck* and *Reset statistics* still
   remove that deck's sessions, cleared ones included
   ([ADR-0008](docs/architecture/decisions/0008-clear-completed-sessions.md)). Do not call
@@ -186,6 +195,16 @@ discovered.
   appends to `session.results` and bumps the card's counters in one dispatch
   ([ADR-0005](docs/architecture/decisions/0005-answers-recorded-immediately.md)). Leaving the Study
   screen mid-session is therefore not a loss of data, and nothing needs an "on exit" save.
+- **Reviewing a session's errors is not studying.** The Learn screen's **Review errors button** and
+  the Session summary's *Review the {n} missed or unsure* open the Study screen with
+  `mode: 'review'` on a **completed** session, over its outstanding missed or unsure cards. Each
+  review answer goes through `recordReviewAnswer`, also the moment it is given: an Ok adds the card
+  to `session.fixedCardIds`, and Okeish or Not ok write nothing. It **never** appends to
+  `session.results`, bumps a card's counters, changes `updatedAt` or a deck's `lastStudiedAt`, or
+  creates a session, so no statistic moves. Do not route a review answer through `recordAnswer`,
+  and do not start a session over a session's missed cards; no path does any more. `fixedCardIds`
+  is always `[]` on an active session, and nothing un-fixes a card
+  ([ADR-0009](docs/architecture/decisions/0009-error-review-marks-cards-fixed.md)).
 
 ### Storage keys
 
@@ -195,7 +214,7 @@ writing, and normalising it.
 | Key | Holds | Module |
 |---|---|---|
 | `@easy-flashcards/decks/v1` | every `Deck`, each with its `Card[]` and their counters | [src/storage/decksStorage.ts](src/storage/decksStorage.ts) |
-| `@easy-flashcards/sessions/v1` | every `Session` — active, completed, and cleared — with its direction (`inverted`) | [src/storage/sessionsStorage.ts](src/storage/sessionsStorage.ts) |
+| `@easy-flashcards/sessions/v1` | every `Session` — active, completed, and cleared — with the cards fixed in its error review (`fixedCardIds`) and its direction (`inverted`) | [src/storage/sessionsStorage.ts](src/storage/sessionsStorage.ts) |
 
 - **Reads are defensive and never throw on bad data.** Each loader drops rows it cannot make sense
   of and fills in defaults for missing timestamps, because the alternative is an app that will not

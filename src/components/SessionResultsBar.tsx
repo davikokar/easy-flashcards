@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { AnswerShares, AnswerTally } from '../types';
-import { colors, spacing } from '../theme';
+import { colors, radius, spacing } from '../theme';
 import { AnswerIcon } from './AnswerIcons';
 
 type Props = {
@@ -54,13 +54,20 @@ export default function SessionResultsBar({ shares, tally, cardCount }: Props) {
 
 const styles = StyleSheet.create({
   container: {
+    backgroundColor: colors.background,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.sm,
     gap: spacing.sm,
   },
-  // The unfilled remainder of the track is the unanswered part of the session.
+  // Same 10-point track as the Mastery bar; the unfilled remainder is the unanswered part.
   track: {
     flexDirection: 'row',
-    height: 8,
-    borderRadius: 4,
+    height: 10,
+    padding: 2,
+    gap: 2,
+    borderRadius: radius.sm,
     backgroundColor: colors.surfaceAlt,
     overflow: 'hidden',
   },
@@ -69,13 +76,17 @@ const styles = StyleSheet.create({
     height: '100%',
     minWidth: 4,
     flexShrink: 1,
+    borderRadius: 3,
   },
   legend: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
+    gap: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    paddingTop: spacing.sm,
   },
   legendItem: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,

@@ -9,7 +9,7 @@ import MenuIcon from './MenuIcons';
 import { MenuItem } from './MenuSheet';
 import SessionResultsBar from './SessionResultsBar';
 
-const renderPlayIcon = (color: string) => <MenuIcon name="play" color={color} />;
+const renderResumeIcon = (color: string) => <MenuIcon name="resume" color={color} />;
 const renderReplayIcon = (color: string) => <MenuIcon name="replay" color={color} />;
 
 // Badge text is capped so two digits and the plus stay inside the badge.
@@ -35,11 +35,8 @@ type Props = {
   /** Already formatted, e.g. by `formatDate`. */
   startedLabel: string;
   menuItems: MenuItem[];
-  /** Not ok and okeish cards in a completed session; the Replay missed button needs more than 0. */
-  missedCount?: number;
   onResume?: () => void;
   onReplay?: () => void;
-  onReplayMissed?: () => void;
   /** The error review button is shown only when this is provided. */
   review?: Review;
 };
@@ -54,10 +51,8 @@ export default function SessionCard({
   shares,
   startedLabel,
   menuItems,
-  missedCount = 0,
   onResume,
   onReplay,
-  onReplayMissed,
   review,
 }: Props) {
   const cards = `card${cardCount === 1 ? '' : 's'}`;
@@ -71,9 +66,6 @@ export default function SessionCard({
           review.count === 1 ? '' : 's'
         } for ${deckName}`
     : '';
-  const replayMissedLabel = `Replay the ${missedCount} missed or unsure card${
-    missedCount === 1 ? '' : 's'
-  } for ${deckName}`;
 
   return (
     <View style={styles.card}>
@@ -128,7 +120,7 @@ export default function SessionCard({
             <Button
               variant="primary"
               accessibilityLabel={`Resume session for ${deckName}`}
-              icon={renderPlayIcon}
+              icon={renderResumeIcon}
               onPress={onResume}
             />
           ) : null}
@@ -156,14 +148,6 @@ export default function SessionCard({
                 )}
               </View>
             </View>
-          ) : null}
-          {!isActive && onReplayMissed && missedCount > 0 ? (
-            <Button
-              variant="warning"
-              accessibilityLabel={replayMissedLabel}
-              icon={renderReplayIcon}
-              onPress={onReplayMissed}
-            />
           ) : null}
           {!isActive && onReplay ? (
             <Button

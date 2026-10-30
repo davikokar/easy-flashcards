@@ -5,6 +5,7 @@ export type MenuIconName =
   | 'edit'
   | 'delete'
   | 'play'
+  | 'resume'
   | 'export'
   | 'import'
   | 'file'
@@ -60,6 +61,13 @@ function Glyph({ name, color }: { name: MenuIconName; color: string }) {
       return (
         <View style={styles.container}>
           <View style={[styles.play, { borderLeftColor: color }]} />
+        </View>
+      );
+    case 'resume':
+      return (
+        <View style={styles.container}>
+          <View style={[styles.resumeBar, { backgroundColor: color }]} />
+          <View style={[styles.resumeTriangle, { borderLeftColor: color }]} />
         </View>
       );
     case 'export':
@@ -208,6 +216,26 @@ const styles = StyleSheet.create({
     borderTopWidth: 6,
     borderBottomWidth: 6,
     borderLeftWidth: 10,
+    borderTopColor: 'transparent',
+    borderBottomColor: 'transparent',
+  },
+  resumeBar: {
+    position: 'absolute',
+    top: 4,
+    left: 3,
+    width: 2.5,
+    height: 12,
+    borderRadius: 1,
+  },
+  resumeTriangle: {
+    position: 'absolute',
+    top: 4,
+    left: 7.5,
+    width: 0,
+    height: 0,
+    borderTopWidth: 6,
+    borderBottomWidth: 6,
+    borderLeftWidth: 9,
     borderTopColor: 'transparent',
     borderBottomColor: 'transparent',
   },

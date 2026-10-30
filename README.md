@@ -13,18 +13,25 @@ card by card, and track how well you know each card.
   - BOM and CRLF tolerant; incomplete rows are skipped and reported.
 - **Study sessions** with an animated card flip, three icon feedback buttons — *Not Ok* (cross),
   *Okeish* (question mark) and *Ok* (tick) — a progress indicator, and an end-of-session summary
-  that offers to replay the cards you missed or were unsure of. Okeish counts as a review but not
-  as a success.
+  that offers to review the cards you missed or were unsure of, or to study the whole deck again.
+  Okeish counts as a review but not as a success.
 - **Inverted sessions**: *Start session with options* in a deck's menu lets you study the deck the
   other way round (each card's answer first, its question on the back), shuffled, or both. A
   session keeps its direction when you resume it, and a session started from it is inverted too.
   Inverted answers count towards the same card statistics as normal ones.
 - **Session list** on the *Learn* tab: every session in progress and every completed one you have
   not cleared, unfinished first, each with its progress split into ok / okeish / not ok. Resume a
-  session in progress; replay a completed one over the same cards, or replay only the cards you
-  missed or were unsure of. A replay is a new session and leaves the original as it was. Completed
-  sessions can be cleared from the list, one at a time or all at once; they still count in
+  session in progress. Replay a completed one to play the same cards again as a new session, which
+  takes the original's place in the list (the original is cleared, and still counts in
+  Statistics). *Start a new session* in a session's menu studies the whole deck again and leaves
+  the session where it is. Either way the new session keeps the original's direction. Completed
+  sessions can also be cleared from the list, one at a time or all at once; they still count in
   Statistics.
+- **Error review**: a completed session with cards you missed or were unsure of shows a review
+  button with the number still to fix. Reviewing goes through those cards once, in the session's
+  order and direction; answering *Ok* marks a card fixed for that session, and the others stay for
+  the next pass, which you can start from the review summary. A review is practice, not a session:
+  it adds no session, changes no statistic, and leaves the session's own results as they were.
 - **Search** on the *Decks*, *Learn* and *Statistics* tabs: the search button opens a search bar
   that narrows the list by deck name as you type. Every word you type must appear in the name, in
   any order and ignoring case. On *Statistics* the overall totals stay unfiltered.
