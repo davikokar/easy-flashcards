@@ -156,9 +156,7 @@ discovered.
   persisting something that can go stale; the counters on a `Card` are the only stored tallies, and
   they are raw — one per `Answer`. Okeish is a review that earns no credit in a success rate
   ([ADR-0007](docs/architecture/decisions/0007-okeish-third-answer.md)); count answers with the
-  three-way helpers in `stats.ts`, never as "Ok, else Not Ok". The error-review count on the Learn
-  screen is derived the same way, by `getReviewState` from a session's `fixedCardIds`, and is never
-  stored ([ADR-0009](docs/architecture/decisions/0009-error-review-marks-cards-fixed.md)).
+  three-way helpers in `stats.ts`, never as "Ok, else Not Ok".
 - **Screens are the stateful half; components are the stateless half.** A `*Screen` calls
   `useDecks()` and `useNavigation()`; a component in `src/components/` takes plain props and
   callbacks and reads neither. Keep that line — it is what would make the components testable the
@@ -166,18 +164,14 @@ discovered.
 - **A `Session` snapshots its deck.** It stores `deckId`, a copy of `deckName`, and a frozen
   `cardIds` array, so changing the deck afterwards does not rewrite history
   ([ADR-0002](docs/architecture/decisions/0002-sessions-are-snapshots.md)). A session is **active**
-  while `completedAt === null`; nothing else means active. Once completed, only its `clearedAt` and
-  `fixedCardIds` can still change.
+  while `completedAt === null`; nothing else means active.
 - **Clearing a session hides it; it does not delete it.** A completed session is **cleared** while
   `clearedAt !== null` (`isSessionCleared` in `stats.ts`): it drops off the Learn screen but stays
   in storage and is still counted by every session statistic. Only a completed session can be
   cleared. **Clear session** on a completed session and **Clear completed sessions** call
-  `clearSession` / `clearCompletedSessions`; the **Replay button** clears too, through
-  `replaySession`, which starts a new session over the original's cards and clears the original in
-  one dispatch ([ADR-0008](docs/architecture/decisions/0008-clear-completed-sessions.md)
-  Amendment 1). *Start a new session* and *Study the whole deck again* clear nothing. **Discard
-  session** on an active session is the only UI path that deletes one, through `deleteSession`.
-  *Delete deck* and *Reset statistics* still remove that deck's sessions, cleared ones included
+  `clearSession` / `clearCompletedSessions`; **Discard session** on an active session is the only
+  UI path that deletes one, through `deleteSession`. *Delete deck* and *Reset statistics* still
+  remove that deck's sessions, cleared ones included
   ([ADR-0008](docs/architecture/decisions/0008-clear-completed-sessions.md)). Do not call
   `deleteSession` on a completed session — nothing in the reducer stops it, and it changes the
   statistics.
@@ -185,13 +179,6 @@ discovered.
   appends to `session.results` and bumps the card's counters in one dispatch
   ([ADR-0005](docs/architecture/decisions/0005-answers-recorded-immediately.md)). Leaving the Study
   screen mid-session is therefore not a loss of data, and nothing needs an "on exit" save.
-- **A review-mode answer is recorded just as immediately, but writes almost nothing.** On the Study
-  screen in Review mode, `recordReviewAnswer` appends an Ok to the session's `fixedCardIds` and
-  writes nothing for Okeish or Not ok. It never touches `results`, a card's counters, `updatedAt` or
-  the deck's `lastStudiedAt`, and it creates no session, so going over a session's errors changes no
-  statistic ([ADR-0009](docs/architecture/decisions/0009-error-review-marks-cards-fixed.md)). Do not
-  send a review answer through `recordAnswer`, or pass a session's missed or unsure cards to
-  `startSession`: either makes practice count in Statistics.
 
 ### Storage keys
 
@@ -201,7 +188,7 @@ writing, and normalising it.
 | Key | Holds | Module |
 |---|---|---|
 | `@easy-flashcards/decks/v1` | every `Deck`, each with its `Card[]` and their counters | [src/storage/decksStorage.ts](src/storage/decksStorage.ts) |
-| `@easy-flashcards/sessions/v1` | every `Session` — active, completed, and cleared, each completed one with its `fixedCardIds` (cards answered Ok in an error review) | [src/storage/sessionsStorage.ts](src/storage/sessionsStorage.ts) |
+| `@easy-flashcards/sessions/v1` | every `Session` — active, completed, and cleared | [src/storage/sessionsStorage.ts](src/storage/sessionsStorage.ts) |
 
 - **Reads are defensive and never throw on bad data.** Each loader drops rows it cannot make sense
   of and fills in defaults for missing timestamps, because the alternative is an app that will not
