@@ -95,6 +95,32 @@ screen. The decision above is unchanged — a session is still a snapshot, in it
   is still counted by every statistic that counts sessions, still renamed by `renameDeck`, and
   still removed by `deleteDeck` and *Reset statistics*.
 
+## Amendment 2 — 2026-10-30
+
+[ADR-0009](0009-error-review-marks-cards-fixed.md) changes how a session's missed or unsure cards
+are gone over, and [ADR-0008](0008-clear-completed-sessions.md) Amendment 1 changes what a replay
+does. The decision above is unchanged — a session is still a snapshot, in its own key, and its
+`cardIds` and `results` are frozen once it is complete. Two details moved:
+
+- **The "review missed cards" subset path no longer exists.** Reviewing a session's missed or
+  unsure cards creates no session; it records the cards answered Ok on the original session.
+  `startSession(deck, cardIds?)` still accepts an ordered subset, but no caller passes one. Its
+  callers are now the Decks screen's **Start session button** (no `cardIds`) and **Shuffle and
+  start session** (the whole deck, shuffled), the Learn screen's **Start a new session** (the whole
+  deck), and the Session summary's **Study the whole deck again** (no `cardIds`). A replay does
+  **not** call `startSession`: the **Replay button** calls `replaySession`, which builds its session
+  with the same private `createSession` helper in
+  [`src/state/DecksContext.tsx`](../../../src/state/DecksContext.tsx) and passes the original's
+  `cardIds` that still resolve in the deck — a subset when the original was one, or when cards
+  have since left the deck. The *Positive* consequence that subset sessions make "review the missed
+  cards" a one-line call no longer applies.
+- **A completed session has one more piece of state that can change after completion:**
+  `fixedCardIds`, alongside `clearedAt`. Neither changes what the session's snapshot says about the
+  pass it records.
+
+*Correction, 2026-10-30:* this amendment first said a replay calls `startSession` with the
+original's `cardIds`. It never did; the first bullet above now lists the real callers.
+
 ## References
 
 - [`src/types.ts`](../../../src/types.ts) — `Session`, `SessionResult`
@@ -103,4 +129,5 @@ screen. The decision above is unchanged — a session is still a snapshot, in it
 - [`src/storage/sessionsStorage.ts`](../../../src/storage/sessionsStorage.ts)
 - [ADR-0005](0005-answers-recorded-immediately.md) — what writing into a session looks like
 - [ADR-0008](0008-clear-completed-sessions.md) — the cleared state (Amendment 1)
+- [ADR-0009](0009-error-review-marks-cards-fixed.md) — reviewing without a session (Amendment 2)
 - [ARCHITECTURE.md §2, §5](../ARCHITECTURE.md)

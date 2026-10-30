@@ -7,17 +7,21 @@ import { colors, radius, spacing } from '../theme';
 
 type Props = {
   onSearch: () => void;
-  onFilter: () => void;
   searchLabel: string;
-  filterLabel: string;
+  /** True while the Search bar is open; tints the Search button and sets it expanded. */
+  searchActive?: boolean;
+  /** The Filter button is rendered only when both of these are given. */
+  onFilter?: () => void;
+  filterLabel?: string;
   /** Passed to the App menu as its extra items. */
   menuItems?: MenuItem[];
 };
 
 export default function HeaderToolbar({
   onSearch,
-  onFilter,
   searchLabel,
+  searchActive = false,
+  onFilter,
   filterLabel,
   menuItems,
 }: Props) {
@@ -26,19 +30,26 @@ export default function HeaderToolbar({
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={searchLabel}
+        accessibilityState={{ expanded: searchActive }}
         hitSlop={6}
         onPress={onSearch}
-        style={({ pressed }) => [styles.button, pressed && styles.pressed]}>
-        <MenuIcon name="search" color={colors.textMuted} />
+        style={({ pressed }) => [
+          styles.button,
+          searchActive && styles.buttonActive,
+          pressed && styles.pressed,
+        ]}>
+        <MenuIcon name="search" color={searchActive ? colors.primary : colors.textMuted} />
       </Pressable>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={filterLabel}
-        hitSlop={6}
-        onPress={onFilter}
-        style={({ pressed }) => [styles.button, pressed && styles.pressed]}>
-        <MenuIcon name="filter" color={colors.textMuted} />
-      </Pressable>
+      {onFilter && filterLabel ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={filterLabel}
+          hitSlop={6}
+          onPress={onFilter}
+          style={({ pressed }) => [styles.button, pressed && styles.pressed]}>
+          <MenuIcon name="filter" color={colors.textMuted} />
+        </Pressable>
+      ) : null}
       <AppMenu variant="boxed" extraItems={menuItems} />
     </View>
   );
@@ -59,6 +70,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
+  },
+  buttonActive: {
+    borderColor: colors.primary,
   },
   pressed: {
     opacity: 0.5,

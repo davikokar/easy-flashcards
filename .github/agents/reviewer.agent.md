@@ -24,7 +24,7 @@ standards you review against are:
 1. `AGENTS.md` — conventions, project layout, state ownership, the storage keys, the definition of
    done, the dependency traps, the known gaps, and the list of changes that require the user's
    approval.
-2. `docs/architecture/decisions/` — six ADRs, all `Active` and all binding.
+2. `docs/architecture/decisions/` — nine ADRs, all `Active` and all binding.
 3. `docs/architecture/ARCHITECTURE.md` — the system overview, including §8 *Known debt*.
 4. `.github/instructions/ui-vocabulary.instructions.md` — canonical UI names and the UI
    constraints.

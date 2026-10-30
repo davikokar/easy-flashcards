@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Session, SessionResult } from '../types';
+import { normalizeFixedCardIds } from '../utils/stats';
 
 const SESSIONS_KEY = '@easy-flashcards/sessions/v1';
 
@@ -39,16 +40,19 @@ function normalizeSession(value: unknown): Session | null {
       ? session.clearedAt
       : null;
 
+  const cutResults = results.slice(0, cardIds.length);
+
   return {
     id: session.id,
     deckId: session.deckId,
     deckName: typeof session.deckName === 'string' ? session.deckName : 'Deck',
     cardIds,
-    results: results.slice(0, cardIds.length),
+    results: cutResults,
     startedAt,
     updatedAt: typeof session.updatedAt === 'number' ? session.updatedAt : startedAt,
     completedAt,
     clearedAt,
+    fixedCardIds: normalizeFixedCardIds(session.fixedCardIds, cutResults, completedAt),
   };
 }
 

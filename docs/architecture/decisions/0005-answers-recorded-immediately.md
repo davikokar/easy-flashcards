@@ -98,6 +98,23 @@ An Okeish answer is an answer like the other two in every other respect: it is a
 the deck's `lastStudiedAt`. The *no undo* consequence applies to it unchanged — a mis-tapped Okeish
 is already in the counters.
 
+## Amendment 2 — 2026-10-30
+
+[ADR-0009](0009-error-review-marks-cards-fixed.md) adds a second kind of answer, given on the Study
+screen in **review mode** over a completed session's missed or unsure cards. The decision above is
+unchanged and still governs every answer given in a session. A review answer follows the same
+principle — written the moment it is given, in one dispatch, with no commit step and no "end of
+pass" save — but it writes far less:
+
+- an **Ok** adds the card to the session's `fixedCardIds`, and nothing else;
+- an **Okeish** or **Not ok** writes nothing at all;
+- it **never** appends to `session.results`, changes completion or `updatedAt`, or touches a card's
+  counters or the deck's `lastStudiedAt`.
+
+The Study screen still has no save responsibility: a pass's position and its non-Ok answers are
+view state. *Reviewing* in the sense of this record — swiping back to look at an answered card —
+is still read-only, in a session and in a review pass alike.
+
 ## References
 
 - [`src/state/DecksContext.tsx`](../../../src/state/DecksContext.tsx) — the `recordAnswer` case
@@ -105,4 +122,5 @@ is already in the counters.
 - [`src/utils/stats.ts`](../../../src/utils/stats.ts) — `isSessionActive`, `getSessionStats`
 - [ADR-0002](0002-sessions-are-snapshots.md) — what is being written into
 - [ADR-0007](0007-okeish-third-answer.md) — the third answer (Amendment 1)
+- [ADR-0009](0009-error-review-marks-cards-fixed.md) — the review answer (Amendment 2)
 - [ARCHITECTURE.md §2](../ARCHITECTURE.md)

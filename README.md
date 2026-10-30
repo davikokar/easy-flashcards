@@ -13,14 +13,20 @@ card by card, and track how well you know each card.
   - BOM and CRLF tolerant; incomplete rows are skipped and reported.
 - **Study sessions** with an animated card flip, three icon feedback buttons — *Not Ok* (cross),
   *Okeish* (question mark) and *Ok* (tick) — a progress indicator, and an end-of-session summary
-  that offers to replay the cards you missed or were unsure of. Okeish counts as a review but not
+  that offers to review the cards you missed or were unsure of. Okeish counts as a review but not
   as a success.
+- **Error review** of a completed session: go over its missed or unsure cards again, one pass at a
+  time, until each has been answered Ok. A review is practice — it creates no session and changes
+  no statistic; it only remembers which of the session's errors you have since fixed.
 - **Session list** on the *Learn* tab: every session in progress and every completed one you have
   not cleared, unfinished first, each with its progress split into ok / okeish / not ok. Resume a
-  session in progress; replay a completed one over the same cards, or replay only the cards you
-  missed or were unsure of. A replay is a new session and leaves the original as it was. Completed
-  sessions can be cleared from the list, one at a time or all at once; they still count in
-  Statistics.
+  session in progress. On a completed one, review its errors — the button shows how many are still
+  to fix, or a tick once all are — or replay it over the same cards: a replay is a new session, and
+  it takes the original's place in the list (the original is cleared). Completed sessions can also
+  be cleared from the list, one at a time or all at once; they still count in Statistics.
+- **Search** on the *Decks*, *Learn* and *Statistics* tabs: the search button opens a search bar
+  that narrows the list by deck name as you type. Every word you type must appear in the name, in
+  any order and ignoring case. On *Statistics* the overall totals stay unfiltered.
 - **HTML formatting** on both sides of a card: `<b>`, `<i>`, `<u>`, `<s>`, `<br />`, `<p>`,
   `<ul>`/`<ol>`/`<li>`, `<h1>`-`<h6>`, `<code>`, `<mark>`, `<font color="...">`, HTML entities.
 - **Statistics** persisted locally: per-deck review counts, success rate and session counts, plus a

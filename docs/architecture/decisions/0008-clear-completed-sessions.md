@@ -176,6 +176,33 @@ changes four numbers.
 - `DecksContextValue` gains two functions and `Session` gains a field. Every screen consumes the
   context value, so the blast radius is wider than the diff.
 
+## Amendment 1 — 2026-10-30
+
+The project owner decided that replaying a completed session should feel like playing the same
+session again, rather than adding a row to the Learn list each time. The decision above is
+unchanged — clearing is still archiving, and nothing that is a statistic changes when a session is
+cleared. One more path now clears a session:
+
+- **Replay clears its original.** The **Replay button** on a completed Session card starts a new
+  session over the original's cards that still exist in the deck, in the original's order, **and
+  clears the original**, in **one reducer action, `replaySession`**, exposed on
+  `DecksContextValue`. One dispatch means there is no state, and no save, in which both sessions or
+  neither are listed.
+- **The new session is an ordinary session.** It is active, counts in every session statistic, and
+  its answers bump card counters like any other. The Sessions tile and the deck's session count go
+  up by one per replay; only the Learn list stays the same length.
+- **The original is cleared with exactly `clearSessionAt` semantics** — the same guard: an unknown,
+  active, or already cleared session is left as it is. The new session is started regardless.
+- **No clear without a replay.** When none of the original's cards still exists, the Learn screen
+  alerts and dispatches nothing.
+- A cleared original takes its error-review state ([ADR-0009](0009-error-review-marks-cards-fixed.md))
+  with it; since there is no restore, that state is no longer visible anywhere.
+- **Unchanged:** *Start a new session* in the Session options menu, *Study the whole deck again* on
+  the Session summary, and the Decks screen's start actions clear nothing.
+
+Two existing consequences become more frequent: storage grows by one session per replay, as
+before, and a downgrade un-clears every replayed original along with every hand-cleared session.
+
 ## References
 
 - [ADR-0002](0002-sessions-are-snapshots.md) — amended by this record (Amendment 1)
@@ -186,6 +213,8 @@ changes four numbers.
   hidden
 - [ADR-0007](0007-okeish-third-answer.md) — the precedent for an additive field and its downgrade
   cost
+- [ADR-0009](0009-error-review-marks-cards-fixed.md) — the review state a cleared original keeps
+  (Amendment 1)
 - [`src/types.ts`](../../../src/types.ts) — `Session`
 - [`src/storage/sessionsStorage.ts`](../../../src/storage/sessionsStorage.ts)
 - [`src/state/DecksContext.tsx`](../../../src/state/DecksContext.tsx) — `deleteSession`,

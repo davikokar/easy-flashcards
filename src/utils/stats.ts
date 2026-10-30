@@ -2,9 +2,12 @@ import {
   AnswerShares,
   AnswerTally,
   Card,
+  Answer,
   Deck,
   DeckStats,
+  ReviewState,
   Session,
+  SessionResult,
   SessionStats,
   SessionSummary,
 } from '../types';
@@ -170,10 +173,95 @@ export function previousReviewIndex(viewIndex: number, frontier: number): number
   return viewIndex > 0 ? viewIndex - 1 : frontier;
 }
 
+function missedOrUnsureIds(results: SessionResult[]): string[] {
+  const missed = results.filter(result => result.answer !== 'ok');
+  return [...new Set(missed.map(result => result.cardId))];
+}
+
 /** Cards answered Not Ok or Okeish, once each, in the order they were answered. */
 export function getMissedOrUnsureCardIds(session: Session): string[] {
-  const missed = session.results.filter(result => result.answer !== 'ok');
-  return [...new Set(missed.map(result => result.cardId))];
+  return missedOrUnsureIds(session.results);
+}
+
+/** Missed or unsure cards that still exist in the session's deck; [] when the deck is gone. */
+export function getReviewableCardIds(session: Session, deck: Deck | undefined): string[] {
+  return deck ? resolvableCardIds(getMissedOrUnsureCardIds(session), deck) : [];
+}
+
+/** Reviewable cards not yet fixed, in session order. */
+export function getOutstandingReviewCardIds(session: Session, deck: Deck | undefined): string[] {
+  const fixed = new Set(session.fixedCardIds);
+  return getReviewableCardIds(session, deck).filter(id => !fixed.has(id));
+}
+
+/** None while active or with nothing reviewable; outstanding while any remain; done once all are fixed. */
+export function getReviewState(session: Session, deck: Deck | undefined): ReviewState {
+  if (isSessionActive(session)) {
+    return { kind: 'none' };
+  }
+  const reviewable = getReviewableCardIds(session, deck);
+  if (reviewable.length === 0) {
+    return { kind: 'none' };
+  }
+  const outstanding = getOutstandingReviewCardIds(session, deck);
+  return outstanding.length === 0
+    ? { kind: 'done' }
+    : { kind: 'outstanding', count: outstanding.length };
+}
+
+/**
+ * The loader's rule for `fixedCardIds`: strings only, first occurrence wins, only ids missed or
+ * unsure in `results`, and always [] for an active session. `results` must already be cut to the
+ * session's card count.
+ */
+export function normalizeFixedCardIds(
+  value: unknown,
+  results: SessionResult[],
+  completedAt: number | null,
+): string[] {
+  if (completedAt === null || !Array.isArray(value)) {
+    return [];
+  }
+  const missed = new Set(missedOrUnsureIds(results));
+  const fixed = value.filter((id): id is string => typeof id === 'string' && missed.has(id));
+  return [...new Set(fixed)];
+}
+
+/**
+ * Applies one review answer. Only Ok on a missed or unsure, not yet fixed card of a completed
+ * session changes anything; every other case returns the same array.
+ */
+export function applyReviewAnswer(
+  sessions: Session[],
+  sessionId: string,
+  cardId: string,
+  answer: Answer,
+): Session[] {
+  if (answer !== 'ok') {
+    return sessions;
+  }
+  const target = sessions.find(session => session.id === sessionId);
+  if (
+    !target ||
+    isSessionActive(target) ||
+    target.fixedCardIds.includes(cardId) ||
+    !getMissedOrUnsureCardIds(target).includes(cardId)
+  ) {
+    return sessions;
+  }
+  return sessions.map(session =>
+    session === target ? { ...session, fixedCardIds: [...session.fixedCardIds, cardId] } : session,
+  );
+}
+
+/** Prepends a replay session and clears its source, with `clearSessionAt` semantics. */
+export function prependSessionClearing(
+  sessions: Session[],
+  newSession: Session,
+  sourceSessionId: string,
+  at: number,
+): Session[] {
+  return [newSession, ...clearSessionAt(sessions, sourceSessionId, at)];
 }
 
 export function getSessionStats(session: Session): SessionStats {

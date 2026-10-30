@@ -11,7 +11,12 @@ import { Answer, Deck, Session } from '../types';
 import { ParsedCard } from '../utils/csv';
 import { loadDecks, saveDecks } from '../storage/decksStorage';
 import { loadSessions, saveSessions } from '../storage/sessionsStorage';
-import { clearCompletedSessionsAt, clearSessionAt } from '../utils/stats';
+import {
+  applyReviewAnswer,
+  clearCompletedSessionsAt,
+  clearSessionAt,
+  prependSessionClearing,
+} from '../utils/stats';
 
 type State = {
   decks: Deck[];
@@ -27,7 +32,9 @@ type Action =
   | { type: 'deleteDeck'; deckId: string }
   | { type: 'renameDeck'; deckId: string; name: string }
   | { type: 'startSession'; session: Session }
+  | { type: 'replaySession'; session: Session; sourceSessionId: string; at: number }
   | { type: 'recordAnswer'; sessionId: string; cardId: string; answer: Answer; at: number }
+  | { type: 'recordReviewAnswer'; sessionId: string; cardId: string; answer: Answer }
   | { type: 'deleteSession'; sessionId: string }
   | { type: 'clearCompletedSessions'; at: number }
   | { type: 'clearSession'; sessionId: string; at: number }
@@ -61,6 +68,25 @@ function reducer(state: State, action: Action): State {
       };
     case 'startSession':
       return { ...state, sessions: [action.session, ...state.sessions] };
+    case 'replaySession':
+      return {
+        ...state,
+        sessions: prependSessionClearing(
+          state.sessions,
+          action.session,
+          action.sourceSessionId,
+          action.at,
+        ),
+      };
+    case 'recordReviewAnswer': {
+      const sessions = applyReviewAnswer(
+        state.sessions,
+        action.sessionId,
+        action.cardId,
+        action.answer,
+      );
+      return sessions === state.sessions ? state : { ...state, sessions };
+    }
     case 'recordAnswer': {
       const session = state.sessions.find(item => item.id === action.sessionId);
       if (!session || session.completedAt !== null) {
@@ -143,7 +169,9 @@ type DecksContextValue = State & {
   deleteDeck: (deckId: string) => void;
   renameDeck: (deckId: string, name: string) => void;
   startSession: (deck: Deck, cardIds?: string[]) => Session;
+  replaySession: (sourceSessionId: string, deck: Deck, cardIds: string[]) => Session;
   recordAnswer: (sessionId: string, cardId: string, answer: Answer) => void;
+  recordReviewAnswer: (sessionId: string, cardId: string, answer: Answer) => void;
   deleteSession: (sessionId: string) => void;
   clearCompletedSessions: () => void;
   clearSession: (sessionId: string) => void;
@@ -154,6 +182,22 @@ const DecksContext = createContext<DecksContextValue | null>(null);
 
 function createId(prefix: string): string {
   return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function createSession(deck: Deck, cardIds: string[] | undefined): Session {
+  const now = Date.now();
+  return {
+    id: createId('session'),
+    deckId: deck.id,
+    deckName: deck.name,
+    cardIds: cardIds ?? deck.cards.map(card => card.id),
+    results: [],
+    startedAt: now,
+    updatedAt: now,
+    completedAt: null,
+    clearedAt: null,
+    fixedCardIds: [],
+  };
 }
 
 export function DecksProvider({ children }: { children: React.ReactNode }) {
@@ -216,21 +260,19 @@ export function DecksProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const startSession = useCallback<DecksContextValue['startSession']>((deck, cardIds) => {
-    const now = Date.now();
-    const session: Session = {
-      id: createId('session'),
-      deckId: deck.id,
-      deckName: deck.name,
-      cardIds: cardIds ?? deck.cards.map(card => card.id),
-      results: [],
-      startedAt: now,
-      updatedAt: now,
-      completedAt: null,
-      clearedAt: null,
-    };
+    const session = createSession(deck, cardIds);
     dispatch({ type: 'startSession', session });
     return session;
   }, []);
+
+  const replaySession = useCallback<DecksContextValue['replaySession']>(
+    (sourceSessionId, deck, cardIds) => {
+      const session = createSession(deck, cardIds);
+      dispatch({ type: 'replaySession', session, sourceSessionId, at: session.startedAt });
+      return session;
+    },
+    [],
+  );
 
   const value = useMemo<DecksContextValue>(
     () => ({
@@ -241,14 +283,17 @@ export function DecksProvider({ children }: { children: React.ReactNode }) {
       deleteDeck: deckId => dispatch({ type: 'deleteDeck', deckId }),
       renameDeck: (deckId, name) => dispatch({ type: 'renameDeck', deckId, name }),
       startSession,
+      replaySession,
       recordAnswer: (sessionId, cardId, answer) =>
         dispatch({ type: 'recordAnswer', sessionId, cardId, answer, at: Date.now() }),
+      recordReviewAnswer: (sessionId, cardId, answer) =>
+        dispatch({ type: 'recordReviewAnswer', sessionId, cardId, answer }),
       deleteSession: sessionId => dispatch({ type: 'deleteSession', sessionId }),
       clearCompletedSessions: () => dispatch({ type: 'clearCompletedSessions', at: Date.now() }),
       clearSession: sessionId => dispatch({ type: 'clearSession', sessionId, at: Date.now() }),
       resetDeckStats: deckId => dispatch({ type: 'resetDeckStats', deckId }),
     }),
-    [state, addDeck, startSession],
+    [state, addDeck, startSession, replaySession],
   );
 
   return <DecksContext.Provider value={value}>{children}</DecksContext.Provider>;

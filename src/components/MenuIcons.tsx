@@ -13,7 +13,8 @@ export type MenuIconName =
   | 'filter'
   | 'clock'
   | 'shuffle'
-  | 'replay';
+  | 'replay'
+  | 'close';
 
 type Props = { name: MenuIconName; color: string; size?: number };
 
@@ -137,6 +138,13 @@ function Glyph({ name, color }: { name: MenuIconName; color: string }) {
           />
           <View style={[styles.replayHead, styles.replayHeadTop, { borderLeftColor: color }]} />
           <View style={[styles.replayHead, styles.replayHeadBottom, { borderLeftColor: color }]} />
+        </View>
+      );
+    case 'close':
+      return (
+        <View style={styles.container}>
+          <View style={[styles.closeBar, styles.closeBarRising, { backgroundColor: color }]} />
+          <View style={[styles.closeBar, styles.closeBarFalling, { backgroundColor: color }]} />
         </View>
       );
   }
@@ -410,5 +418,17 @@ const styles = StyleSheet.create({
     top: 9,
     left: 1.5,
     transform: [{ rotate: '225deg' }],
+  },
+  closeBar: {
+    position: 'absolute',
+    width: 16,
+    height: 2,
+    borderRadius: 1,
+  },
+  closeBarRising: {
+    transform: [{ rotate: '45deg' }],
+  },
+  closeBarFalling: {
+    transform: [{ rotate: '-45deg' }],
   },
 });

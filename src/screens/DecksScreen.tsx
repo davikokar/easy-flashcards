@@ -7,6 +7,7 @@ import DeckCard from '../components/DeckCard';
 import EmptyState from '../components/EmptyState';
 import HeaderToolbar from '../components/HeaderToolbar';
 import MenuSheet from '../components/MenuSheet';
+import SearchBar from '../components/SearchBar';
 import { useDecks } from '../state/DecksContext';
 import { DecksStackParamList, RootTabParamList } from '../navigation/types';
 import { Deck } from '../types';
@@ -18,6 +19,7 @@ import {
   summarizeSessionsByDeck,
 } from '../utils/stats';
 import { CsvImportError } from '../utils/csv';
+import { filterByTitle } from '../utils/search';
 import { shuffle } from '../utils/shuffle';
 import { ImportCancelledError, pickAndParseCsv } from '../services/importDeck';
 import { colors, radius, spacing } from '../theme';
@@ -27,30 +29,49 @@ type Props = CompositeScreenProps<
   BottomTabScreenProps<RootTabParamList>
 >;
 
-const showSearchStub = () => Alert.alert('Search', 'Searching decks is not available yet.');
 const showFilterStub = () => Alert.alert('Filter', 'Filtering decks is not available yet.');
-const renderToolbar = () => (
-  <HeaderToolbar
-    onSearch={showSearchStub}
-    onFilter={showFilterStub}
-    searchLabel="Search decks"
-    filterLabel="Filter decks"
-  />
-);
 
 export default function DecksScreen({ navigation }: Props) {
   const { decks, sessions, error, addDeck, deleteDeck, startSession } = useDecks();
   const [isImporting, setIsImporting] = useState(false);
   const [openMenu, setOpenMenu] = useState<'add' | 'format' | null>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [query, setQuery] = useState('');
   const sessionsByDeck = useMemo(() => summarizeSessionsByDeck(sessions), [sessions]);
+  const visibleDecks = useMemo(() => filterByTitle(decks, query, deck => deck.name), [decks, query]);
+
+  const closeSearch = useCallback(() => {
+    setSearchOpen(false);
+    setQuery('');
+  }, []);
+  const toggleSearch = useCallback(() => {
+    if (searchOpen) {
+      closeSearch();
+    } else {
+      setSearchOpen(true);
+    }
+  }, [searchOpen, closeSearch]);
+
+  const toolbar = useMemo(
+    () => (
+      <HeaderToolbar
+        onSearch={toggleSearch}
+        searchActive={searchOpen}
+        onFilter={showFilterStub}
+        searchLabel="Search decks"
+        filterLabel="Filter decks"
+      />
+    ),
+    [toggleSearch, searchOpen],
+  );
 
   useLayoutEffect(() => {
     navigation.setOptions({
       headerStyle: { backgroundColor: colors.background },
       headerTitleStyle: { color: colors.text, fontSize: 24, fontWeight: '700' },
-      headerRight: renderToolbar,
+      headerRight: () => toolbar,
     });
-  }, [navigation]);
+  }, [navigation, toolbar]);
 
   const handleImport = useCallback(async () => {
     setIsImporting(true);
@@ -148,16 +169,39 @@ export default function DecksScreen({ navigation }: Props) {
 
   return (
     <View style={styles.container}>
+      {searchOpen ? (
+        <SearchBar
+          value={query}
+          onChangeText={setQuery}
+          onClose={closeSearch}
+          placeholder="Search decks"
+        />
+      ) : null}
       <FlatList
-        data={decks}
+        data={visibleDecks}
         keyExtractor={deck => deck.id}
-        contentContainerStyle={[styles.listContent, decks.length === 0 && styles.listContentEmpty]}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        contentContainerStyle={[
+          styles.listContent,
+          // No matches stays top-aligned: the keyboard overlays the bottom half of the list.
+          visibleDecks.length === 0 && decks.length === 0 && styles.listContentEmpty,
+        ]}
         ListHeaderComponent={error ? <Text style={styles.error}>{error}</Text> : undefined}
         ListEmptyComponent={
-          <EmptyState
-            title="No decks yet"
-            message="Use the + button to import a deck file and create your first deck."
-          />
+          decks.length === 0 ? (
+            <EmptyState
+              title="No decks yet"
+              message="Use the + button to import a deck file and create your first deck."
+            />
+          ) : (
+            <EmptyState
+              title="No matches"
+              message={`Nothing matches "${query.trim()}".`}
+              actionLabel="Clear search"
+              onAction={() => setQuery('')}
+            />
+          )
         }
         renderItem={({ item }) => {
           const stats = getDeckStats(item);

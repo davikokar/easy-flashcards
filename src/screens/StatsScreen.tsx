@@ -1,7 +1,9 @@
-import React, { useMemo } from 'react';
+import React, { useCallback, useLayoutEffect, useMemo, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import EmptyState from '../components/EmptyState';
+import HeaderToolbar from '../components/HeaderToolbar';
+import SearchBar from '../components/SearchBar';
 import SuccessBar from '../components/SuccessBar';
 import { useDecks } from '../state/DecksContext';
 import { StatsStackParamList } from '../navigation/types';
@@ -13,6 +15,7 @@ import {
   getGlobalStats,
   summarizeSessionsByDeck,
 } from '../utils/stats';
+import { filterByTitle } from '../utils/search';
 import { colors, radius, spacing } from '../theme';
 
 type Props = NativeStackScreenProps<StatsStackParamList, 'StatsOverview'>;
@@ -21,13 +24,56 @@ export default function StatsScreen({ navigation }: Props) {
   const { decks, sessions } = useDecks();
   const global = useMemo(() => getGlobalStats(decks), [decks]);
   const sessionsByDeck = useMemo(() => summarizeSessionsByDeck(sessions), [sessions]);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const visibleDecks = useMemo(() => filterByTitle(decks, query, deck => deck.name), [decks, query]);
+
+  const closeSearch = useCallback(() => {
+    setSearchOpen(false);
+    setQuery('');
+  }, []);
+  const toggleSearch = useCallback(() => {
+    if (searchOpen) {
+      closeSearch();
+    } else {
+      setSearchOpen(true);
+    }
+  }, [searchOpen, closeSearch]);
+
+  const toolbar = useMemo(
+    () => (
+      <HeaderToolbar onSearch={toggleSearch} searchActive={searchOpen} searchLabel="Search decks" />
+    ),
+    [toggleSearch, searchOpen],
+  );
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerStyle: { backgroundColor: colors.background },
+      headerTitleStyle: { color: colors.text, fontSize: 24, fontWeight: '700' },
+      headerRight: () => toolbar,
+    });
+  }, [navigation, toolbar]);
 
   return (
     <View style={styles.container}>
+      {searchOpen ? (
+        <SearchBar
+          value={query}
+          onChangeText={setQuery}
+          onClose={closeSearch}
+          placeholder="Search decks"
+        />
+      ) : null}
       <FlatList
-        data={decks}
+        data={visibleDecks}
         keyExtractor={deck => deck.id}
-        contentContainerStyle={[styles.listContent, decks.length === 0 && styles.listContentEmpty]}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        contentContainerStyle={[
+          styles.listContent,
+          visibleDecks.length === 0 && styles.listContentEmpty,
+        ]}
         ListHeaderComponent={
           decks.length === 0 ? undefined : (
             <View style={styles.summary}>
@@ -59,10 +105,19 @@ export default function StatsScreen({ navigation }: Props) {
           )
         }
         ListEmptyComponent={
-          <EmptyState
-            title="No statistics yet"
-            message="Import a deck and study it; results will show up here."
-          />
+          decks.length === 0 ? (
+            <EmptyState
+              title="No statistics yet"
+              message="Import a deck and study it; results will show up here."
+            />
+          ) : (
+            <EmptyState
+              title="No matches"
+              message={`Nothing matches "${query.trim()}".`}
+              actionLabel="Clear search"
+              onAction={() => setQuery('')}
+            />
+          )
         }
         renderItem={({ item }) => {
           const stats = getDeckStats(item);

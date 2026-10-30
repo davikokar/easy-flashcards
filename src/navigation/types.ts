@@ -6,7 +6,7 @@ export type DecksStackParamList = {
 
 export type LearnStackParamList = {
   LearnList: undefined;
-  Study: { sessionId: string };
+  Study: { sessionId: string; mode?: 'review' };
 };
 
 export type StatsStackParamList = {

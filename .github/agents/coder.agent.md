@@ -26,9 +26,10 @@ rendered by the app's own code. Read these before you write anything:
    yourself. If your change leaves it inaccurate, name the stale section in your report and let the
    Orchestrator route the edit. Its §8 *Known debt* is worth reading first: several obvious
    improvements are already recorded there with the reason they were not made.
-4. `docs/architecture/decisions/` — six active ADRs, all binding and all about ordinary work here:
+4. `docs/architecture/decisions/` — nine active ADRs, all binding and all about ordinary work here:
    the in-repo HTML renderer, sessions as snapshots, the single store, versioned defensive storage,
-   recording an answer immediately, and the launch tab.
+   recording an answer immediately, the launch tab, the Okeish answer, clearing completed
+   sessions, and reviewing a session's errors.
 5. `.github/instructions/ui-vocabulary.instructions.md` — canonical names for screens, areas and
    controls, and the constraints on writing UI here. Use them in code and in your report.
 6. `.github/instructions/tests.instructions.md` — and in particular **what is not tested**.
@@ -206,7 +207,7 @@ not implement one because you noticed it.
 ## Architecture Decisions
 
 - Read relevant active ADRs under `docs/architecture/decisions/` before changing architecture. All
-  six are about ordinary work here, so "my change is too small to involve an ADR" is usually wrong.
+  nine are about ordinary work here, so "my change is too small to involve an ADR" is usually wrong.
 - Implement approved decisions consistently; do not silently contradict or rewrite an active ADR.
 - If implementation reveals a significant new architectural choice, changed tradeoff, or invalid
   assumption, stop that part of the work and report the decision needed to the Planner or

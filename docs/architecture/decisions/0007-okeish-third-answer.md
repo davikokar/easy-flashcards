@@ -140,11 +140,26 @@ theme change: Okeish uses the existing `colors.warning`.
 - The Okeish counter is one more field the normaliser duplicates from `src/types.ts` — the existing
   cost recorded in ADR-0004, made slightly larger.
 
+## Amendment 1 — 2026-10-30
+
+[ADR-0009](0009-error-review-marks-cards-fixed.md) changes what the Session summary's replay action
+is. The decision above is unchanged: Okeish cards are still gone over together with the Not ok
+ones, and the success rate is still `ok / (ok + okeish + notOk)`. One detail moved:
+
+- **The action is a review, not a replay.** *Review the {n} missed or unsure* — and the Learn
+  screen's button that does the same — opens the Study screen in review mode over the outstanding
+  Not ok and Okeish cards. It creates no session and changes no counter.
+- **An Okeish answer given in a review changes nothing.** Only Ok fixes a card; Okeish and Not ok
+  leave it outstanding for the next pass, and neither is counted anywhere. Okeish keeps its meaning
+  in a session exactly as decided above.
+
 ## References
 
 - [ADR-0004](0004-versioned-defensive-storage.md) — amended by this record (Amendment 1)
 - [ADR-0005](0005-answers-recorded-immediately.md) — amended by this record (Amendment 1)
 - [ADR-0002](0002-sessions-are-snapshots.md) — what a `SessionResult` is written into
+- [ADR-0009](0009-error-review-marks-cards-fixed.md) — the review of missed or unsure cards
+  (Amendment 1)
 - [`src/types.ts`](../../../src/types.ts) — `Answer`, `Card`, `SessionResult`
 - [`src/storage/decksStorage.ts`](../../../src/storage/decksStorage.ts),
   [`src/storage/sessionsStorage.ts`](../../../src/storage/sessionsStorage.ts)

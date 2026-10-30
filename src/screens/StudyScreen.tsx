@@ -9,11 +9,12 @@ import HistoryStrip from '../components/HistoryStrip';
 import SuccessBar from '../components/SuccessBar';
 import { useDecks } from '../state/DecksContext';
 import { LearnStackParamList } from '../navigation/types';
-import { Answer } from '../types';
+import { Answer, SessionResult } from '../types';
 import {
   formatRate,
-  getMissedOrUnsureCardIds,
+  getOutstandingReviewCardIds,
   getSessionTally,
+  isSessionActive,
   previousReviewIndex,
   successRate,
 } from '../utils/stats';
@@ -30,26 +31,50 @@ const renderQuestionIcon = (color: string) => (
 const renderTickIcon = (color: string) => <AnswerIcon name="tick" color={color} size={32} />;
 
 export default function StudyScreen({ route, navigation }: Props) {
-  const { sessionId } = route.params;
-  const { getSession, getDeck, startSession, recordAnswer } = useDecks();
+  const { sessionId, mode } = route.params;
+  const { getSession, getDeck, startSession, recordAnswer, recordReviewAnswer } = useDecks();
   const session = getSession(sessionId);
   const deck = session ? getDeck(session.deckId) : undefined;
+  const isReviewMode = mode === 'review';
+  const reviewUnavailable =
+    isReviewMode && (!session || !deck || isSessionActive(session));
 
-  const queue = useMemo(() => session?.cardIds ?? [], [session?.cardIds]);
-  const results = useMemo(() => session?.results ?? [], [session?.results]);
+  // Live, so it also drives the summaries; a review pass copies it once, when the pass starts.
+  const outstandingIds = useMemo(
+    () => (session ? getOutstandingReviewCardIds(session, deck) : []),
+    [session, deck],
+  );
+  // A review pass is a snapshot of the cards outstanding when it began, shown once each; its answers live here, not in the store.
+  const [passIds, setPassIds] = useState<string[]>(() => (isReviewMode ? outstandingIds : []));
+  const [passResults, setPassResults] = useState<SessionResult[]>([]);
+  const [passNumber, setPassNumber] = useState(0);
+
+  const queue = useMemo(
+    () => (isReviewMode ? passIds : session?.cardIds ?? []),
+    [isReviewMode, passIds, session?.cardIds],
+  );
+  const results = useMemo(
+    () => (isReviewMode ? passResults : session?.results ?? []),
+    [isReviewMode, passResults, session?.results],
+  );
   // `index` is the frontier: the first card that has not been answered yet.
   const index = results.length;
   // `viewIndex` is the card on screen, which may be an already answered one.
   const [viewIndex, setViewIndex] = useState(index);
   const [shownSessionId, setShownSessionId] = useState(sessionId);
+  const [shownMode, setShownMode] = useState(mode);
   const [flipped, setFlipped] = useState(false);
   // The card whose answer side has been shown; keyed by id so it survives flipping back and swiping away.
   const [revealedCardId, setRevealedCardId] = useState<string | null>(null);
 
-  // The screen can be reused for another session, so follow the new session's progress.
-  if (shownSessionId !== sessionId) {
+  // The screen can be reused for another session or mode, so follow the new one's progress.
+  if (shownSessionId !== sessionId || shownMode !== mode) {
     setShownSessionId(sessionId);
-    setViewIndex(index);
+    setShownMode(mode);
+    setPassIds(isReviewMode ? outstandingIds : []);
+    setPassResults([]);
+    setPassNumber(0);
+    setViewIndex(isReviewMode ? 0 : session?.results.length ?? 0);
     setFlipped(false);
     setRevealedCardId(null);
   }
@@ -62,7 +87,8 @@ export default function StudyScreen({ route, navigation }: Props) {
     () => new Map((deck?.cards ?? []).map(card => [card.id, card])),
     [deck?.cards],
   );
-  const isFinished = queue.length > 0 && index >= queue.length;
+  // An empty review pass is finished at once: there was nothing left to fix.
+  const isFinished = (isReviewMode || queue.length > 0) && index >= queue.length;
   const isReviewing = viewIndex < index;
   const currentCard = isFinished ? undefined : cardsById.get(queue[viewIndex]);
   const hasSeenAnswer = currentCard !== undefined && currentCard.id === revealedCardId;
@@ -82,12 +108,36 @@ export default function StudyScreen({ route, navigation }: Props) {
       if (!cardId || viewIndex !== index || cardId !== revealedCardId) {
         return;
       }
-      recordAnswer(sessionId, cardId, value);
+      if (isReviewMode) {
+        recordReviewAnswer(sessionId, cardId, value);
+        setPassResults(previous => [...previous, { cardId, answer: value }]);
+      } else {
+        recordAnswer(sessionId, cardId, value);
+      }
       setFlipped(false);
       setViewIndex(index + 1);
     },
-    [queue, index, viewIndex, revealedCardId, recordAnswer, sessionId],
+    [
+      queue,
+      index,
+      viewIndex,
+      revealedCardId,
+      isReviewMode,
+      recordAnswer,
+      recordReviewAnswer,
+      sessionId,
+    ],
   );
+
+  const startNextPass = useCallback(() => {
+    setPassIds(outstandingIds);
+    setPassResults([]);
+    setPassNumber(previous => previous + 1);
+    setViewIndex(0);
+    setFlipped(false);
+    setRevealedCardId(null);
+    translateX.setValue(0);
+  }, [outstandingIds, translateX]);
 
   // Slides the current card out, swaps it, then slides the new one in from the other side.
   const slideTo = useCallback(
@@ -150,18 +200,15 @@ export default function StudyScreen({ route, navigation }: Props) {
     [slideTo, translateX, windowWidth],
   );
 
-  const startAgain = useCallback(
-    (cardIds?: string[]) => {
-      if (!deck) {
-        return;
-      }
-      const next = startSession(deck, cardIds);
-      navigation.replace('Study', { sessionId: next.id });
-    },
-    [deck, navigation, startSession],
-  );
+  const startAgain = useCallback(() => {
+    if (!deck) {
+      return;
+    }
+    const next = startSession(deck);
+    navigation.replace('Study', { sessionId: next.id });
+  }, [deck, navigation, startSession]);
 
-  if (!session || !deck || queue.length === 0) {
+  if (!session || !deck || reviewUnavailable || (!isReviewMode && queue.length === 0)) {
     return (
       <View style={styles.container}>
         <EmptyState
@@ -174,10 +221,45 @@ export default function StudyScreen({ route, navigation }: Props) {
     );
   }
 
-  const { okCount, okeishCount, notOkCount } = getSessionTally(session);
+  // Tally of what is on screen: the session's results, or the review pass's own.
+  const { okCount, okeishCount, notOkCount } = getSessionTally({ ...session, results });
+
+  if (isFinished && isReviewMode) {
+    return (
+      <View style={[styles.container, styles.summaryContainer]}>
+        <Text style={styles.summaryTitle}>Review complete</Text>
+        <View style={styles.summaryCard}>
+          {results.length > 0 ? (
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryOk}>Ok {okCount}</Text>
+              <Text style={styles.summaryOkeish}>Okeish {okeishCount}</Text>
+              <Text style={styles.summaryNotOk}>Not Ok {notOkCount}</Text>
+            </View>
+          ) : null}
+          {outstandingIds.length > 0 ? (
+            <Text style={styles.summaryMeta}>{outstandingIds.length} still to fix</Text>
+          ) : (
+            <View style={styles.fixedState}>
+              <AnswerIcon name="tick" color={colors.success} size={44} />
+              <Text style={styles.summaryFixed}>All fixed</Text>
+            </View>
+          )}
+        </View>
+
+        <View style={styles.summaryActions}>
+          {outstandingIds.length > 0 ? (
+            <Button
+              label={`Review the ${outstandingIds.length} missed or unsure`}
+              onPress={startNextPass}
+            />
+          ) : null}
+          <Button label="Back to sessions" variant="secondary" onPress={() => navigation.goBack()} />
+        </View>
+      </View>
+    );
+  }
 
   if (isFinished) {
-    const missedIds = getMissedOrUnsureCardIds(session);
     const rate = successRate(okCount, okeishCount, notOkCount);
 
     return (
@@ -195,16 +277,16 @@ export default function StudyScreen({ route, navigation }: Props) {
         </View>
 
         <View style={styles.summaryActions}>
-          {missedIds.length > 0 ? (
+          {outstandingIds.length > 0 ? (
             <Button
-              label={`Review the ${missedIds.length} missed or unsure`}
-              onPress={() => startAgain(missedIds)}
+              label={`Review the ${outstandingIds.length} missed or unsure`}
+              onPress={() => navigation.replace('Study', { sessionId, mode: 'review' })}
             />
           ) : null}
           <Button
             label="Study the whole deck again"
             variant="secondary"
-            onPress={() => startAgain()}
+            onPress={startAgain}
           />
           <Button label="Back to sessions" variant="secondary" onPress={() => navigation.goBack()} />
         </View>
@@ -230,7 +312,7 @@ export default function StudyScreen({ route, navigation }: Props) {
         {currentCard ? (
           <FlipCard
             // A fresh mount starts face-up; reusing one would show the old card's flip state on the new card.
-            key={`${sessionId}-${viewIndex}`}
+            key={`${sessionId}-${mode ?? 'session'}-${passNumber}-${viewIndex}`}
             question={currentCard.question}
             answer={currentCard.answer}
             flipped={flipped}
@@ -356,6 +438,15 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: 15,
     textAlign: 'center',
+  },
+  fixedState: {
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  summaryFixed: {
+    color: colors.success,
+    fontSize: 24,
+    fontWeight: '700',
   },
   summaryActions: {
     gap: spacing.sm,

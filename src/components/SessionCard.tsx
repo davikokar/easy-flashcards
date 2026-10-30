@@ -12,6 +12,17 @@ import SessionResultsBar from './SessionResultsBar';
 const renderPlayIcon = (color: string) => <MenuIcon name="play" color={color} />;
 const renderReplayIcon = (color: string) => <MenuIcon name="replay" color={color} />;
 
+// Badge text is capped so two digits and the plus stay inside the badge.
+const BADGE_MAX = 99;
+
+type Review = {
+  /** Missed or unsure cards still outstanding. */
+  count: number;
+  /** Everything that needed review is fixed: the button is disabled and shows a tick. */
+  done: boolean;
+  onPress: () => void;
+};
+
 type Props = {
   deckName: string;
   isActive: boolean;
@@ -21,13 +32,11 @@ type Props = {
   shares: AnswerShares;
   /** Already formatted, e.g. by `formatDate`. */
   startedLabel: string;
-  /** Not ok plus okeish answers: what the replay-missed button would study. */
-  missedCount: number;
   menuItems: MenuItem[];
   onResume?: () => void;
   onReplay?: () => void;
-  /** The replay-missed button is shown only when this is provided. */
-  onReplayMissed?: () => void;
+  /** The error review button is shown only when this is provided. */
+  review?: Review;
 };
 
 export default function SessionCard({
@@ -38,16 +47,22 @@ export default function SessionCard({
   tally,
   shares,
   startedLabel,
-  missedCount,
   menuItems,
   onResume,
   onReplay,
-  onReplayMissed,
+  review,
 }: Props) {
   const cards = `card${cardCount === 1 ? '' : 's'}`;
   const status = isActive
     ? `In progress \u2014 ${answeredCount}/${cardCount} ${cards}`
     : `Completed \u2014 ${cardCount} ${cards}`;
+  const reviewLabel = review
+    ? review.done
+      ? `All missed or unsure cards fixed for ${deckName}`
+      : `Review the ${review.count} missed or unsure card${
+          review.count === 1 ? '' : 's'
+        } for ${deckName}`
+    : '';
 
   return (
     <View style={styles.card}>
@@ -94,15 +109,30 @@ export default function SessionCard({
               onPress={onResume}
             />
           ) : null}
-          {!isActive && onReplayMissed ? (
-            <Button
-              variant="warning"
-              accessibilityLabel={`Replay the ${missedCount} missed or unsure card${
-                missedCount === 1 ? '' : 's'
-              } for ${deckName}`}
-              icon={renderReplayIcon}
-              onPress={onReplayMissed}
-            />
+          {!isActive && review ? (
+            <View>
+              <Button
+                variant="warning"
+                accessibilityLabel={reviewLabel}
+                icon={renderReplayIcon}
+                disabled={review.done}
+                onPress={review.onPress}
+              />
+              {/* A sibling of the button, so its disabled dimming does not fade the badge. */}
+              <View
+                pointerEvents="none"
+                accessibilityElementsHidden
+                importantForAccessibility="no-hide-descendants"
+                style={[styles.badge, review.done ? styles.badgeDone : styles.badgeCount]}>
+                {review.done ? (
+                  <AnswerIcon name="tick" color={colors.success} size={12} />
+                ) : (
+                  <Text style={styles.badgeText} allowFontScaling={false} numberOfLines={1}>
+                    {review.count > BADGE_MAX ? `${BADGE_MAX}+` : review.count}
+                  </Text>
+                )}
+              </View>
+            </View>
           ) : null}
           {!isActive && onReplay ? (
             <Button
@@ -204,5 +234,31 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
+  },
+  // Sits on the button's top-right corner, inside the 8-point gap and the footer padding.
+  badge: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    minWidth: 20,
+    height: 20,
+    paddingHorizontal: spacing.xs,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    // Solid card colour so the ring reads against the orange button and the card alike.
+    backgroundColor: colors.surface,
+  },
+  badgeCount: {
+    borderColor: colors.warning,
+  },
+  badgeDone: {
+    borderColor: colors.success,
+  },
+  badgeText: {
+    color: colors.warning,
+    fontSize: 11,
+    fontWeight: '700',
   },
 });

@@ -36,7 +36,15 @@ export type Session = {
   completedAt: number | null;
   /** When a completed session was hidden from the Learn list; null while listed. Never set on an active session. */
   clearedAt: number | null;
+  /** Missed or unsure cards since answered Ok in a review of this session; always [] while active. */
+  fixedCardIds: string[];
 };
+
+/** A completed session's error review: hidden, still has cards to go over, or finished. */
+export type ReviewState =
+  | { kind: 'none' }
+  | { kind: 'outstanding'; count: number }
+  | { kind: 'done' };
 
 export type DeckStats = {
   cardCount: number;
