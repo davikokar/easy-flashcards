@@ -69,4 +69,26 @@ describe('loadDecks', () => {
 
     expect(decks.map(d => d.description)).toEqual(['', '', 'About C']);
   });
+
+  it('reads a missing, non-string or empty categoryId as null and keeps any other string', async () => {
+    stored([
+      { id: 'a', name: 'A', cards: [] },
+      { id: 'b', name: 'B', categoryId: 3, cards: [] },
+      { id: 'c', name: 'C', categoryId: '', cards: [] },
+      { id: 'd', name: 'D', categoryId: null, cards: [] },
+      { id: 'e', name: 'E', categoryId: 'default_law', cards: [] },
+      { id: 'f', name: 'F', categoryId: 'category_unknown', cards: [] },
+    ]);
+
+    const decks = await loadDecks();
+
+    expect(decks.map(d => d.categoryId)).toEqual([
+      null,
+      null,
+      null,
+      null,
+      'default_law',
+      'category_unknown',
+    ]);
+  });
 });

@@ -13,8 +13,8 @@ specialist subagents. You coordinate work but NEVER implement anything yourself.
 
 This is **Easy Flashcards**, a React Native app in TypeScript, built and tested on Android. The
 user imports a deck from a CSV file, studies it card by card, and the app records how well each
-card is known. There is no account, no network, and no backend: everything it owns is two
-AsyncStorage keys, written by one React Context reducer. Both sides of a card are HTML, parsed and
+card is known. There is no account, no network, and no backend: everything it stores is in
+AsyncStorage, written by one React Context reducer. Both sides of a card are HTML, parsed and
 rendered by the app's own code.
 
 Read `AGENTS.md` before planning any delegation — in particular its definition of done and its

@@ -1,11 +1,12 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Button from './Button';
+import CategorySquare from './CategorySquare';
 import KebabMenu from './KebabMenu';
 import MasteryBar from './MasteryBar';
 import { MenuItem } from './MenuSheet';
 import MenuIcon from './MenuIcons';
-import { AnswerShares } from '../types';
+import { AnswerShares, Category } from '../types';
 import { colors, radius, spacing } from '../theme';
 
 const renderPlayIcon = (color: string) => <MenuIcon name="play" color={color} />;
@@ -14,6 +15,8 @@ type Props = {
   name: string;
   /** Shown under the card count when not blank. */
   description: string;
+  /** Drawn at the top left, before the title. Nothing, and no gap, when absent. */
+  category?: Category | null;
   cardCount: number;
   shares: AnswerShares | null;
   sessionCount: number;
@@ -26,6 +29,7 @@ type Props = {
 export default function DeckCard({
   name,
   description,
+  category,
   cardCount,
   shares,
   sessionCount,
@@ -39,6 +43,7 @@ export default function DeckCard({
   return (
     <View style={styles.card}>
       <View style={styles.header}>
+        {category ? <CategorySquare category={category} /> : null}
         <View style={styles.title}>
           <Text style={styles.name} numberOfLines={1}>
             {name}
@@ -54,6 +59,7 @@ export default function DeckCard({
         </View>
         <KebabMenu
           title={name}
+          category={category}
           accessibilityLabel={`Options for ${name}`}
           items={menuItems}
         />

@@ -1,7 +1,9 @@
 import React from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import CategorySquare from './CategorySquare';
 import MenuIcon, { MenuIconName } from './MenuIcons';
+import type { Category } from '../types';
 import { colors, radius, spacing } from '../theme';
 
 export type MenuItem = {
@@ -16,9 +18,13 @@ type Props = {
   items: MenuItem[];
   onClose: () => void;
   title?: string;
+  /** Drawn before the title; ignored without a title. Nothing, and no gap, when absent. */
+  category?: Category | null;
 };
 
-export default function MenuSheet({ visible, items, onClose, title }: Props) {
+const TITLE_SQUARE_SIZE = 28;
+
+export default function MenuSheet({ visible, items, onClose, title, category }: Props) {
   const insets = useSafeAreaInsets();
 
   return (
@@ -29,9 +35,12 @@ export default function MenuSheet({ visible, items, onClose, title }: Props) {
           onStartShouldSetResponder={() => true}>
           {title ? (
             <>
-              <Text style={styles.title} numberOfLines={2}>
-                {title}
-              </Text>
+              <View style={styles.titleRow}>
+                {category ? <CategorySquare category={category} size={TITLE_SQUARE_SIZE} /> : null}
+                <Text style={styles.title} numberOfLines={2}>
+                  {title}
+                </Text>
+              </View>
               <View style={styles.separator} />
             </>
           ) : null}
@@ -77,13 +86,19 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     paddingTop: spacing.sm,
   },
-  title: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: '700',
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.sm,
     paddingBottom: spacing.md,
+  },
+  title: {
+    flex: 1,
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: '700',
   },
   separator: {
     height: StyleSheet.hairlineWidth,

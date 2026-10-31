@@ -26,3 +26,28 @@ export const radius = {
   md: 12,
   lg: 20,
 };
+
+// 21 category colours, ordered by hue from red (0) down through violet (276), yellow (58) to orange (25); each is >= 4.5:1 against colors.background.
+export const categoryPalette: readonly string[] = [
+  '#ed6e6e',
+  '#e14772',
+  '#ec79b9',
+  '#db57c6',
+  '#dd87e8',
+  '#b065e2',
+  '#ab89f0',
+  '#736df3',
+  '#829ef7',
+  '#2891f6',
+  '#6ccce5',
+  '#16cabd',
+  '#88ddbf',
+  '#3db86b',
+  '#77cf7f',
+  '#49bc2f',
+  '#aadd7e',
+  '#98c11f',
+  '#f1ed55',
+  '#f0af19',
+  '#f29c5f',
+];

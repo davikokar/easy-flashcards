@@ -97,10 +97,40 @@ details moved:
   `replaySession`, `recordReviewAnswer`, `clearCompletedSessions` and `clearSession` were added;
   the reducer's `Action` union is the current list.
 
+## Amendment 2 — 2026-10-30
+
+[ADR-0012](0012-custom-categories-third-storage-key.md) adds custom categories. The decision above
+is unchanged — they go into the same store, not a second one. Three details moved:
+
+- **`State` gains a third array, `categories`**, holding the user's custom categories only. The 21
+  default categories are constants in code and never enter the state; the full list the app shows
+  is derived by a pure function, as every other derived value is.
+- **The action set gains `addCategory` and `deleteCategory`**, and `loaded` carries the categories
+  alongside the decks and sessions. `DecksContextValue` gains `categories` and one function per new
+  action; `addCategory` mints the id, as `addDeck` and `startSession` do. No existing action touches
+  categories.
+- **"One effect watching the two arrays"** in *Positive* is now one effect watching three, and it
+  writes all three keys ([ADR-0004](0004-versioned-defensive-storage.md) Amendment 3). The store
+  keeps its name, `DecksContext`.
+
+## Amendment 3 — 2026-10-30
+
+[ADR-0014](0014-deck-belongs-to-one-category.md) lets a deck refer to a category. The decision above
+is unchanged — still one store — but Amendment 2's "no existing action touches categories" no longer
+holds, in either direction:
+
+- **`updateDeck` reads `state.categories`.** It resolves the edit's `categoryId` against the
+  defaults and the stored custom categories, and writes `null` for an id that resolves to neither.
+- **`deleteCategory` writes `state.decks`.** In the same dispatch that removes the category it sets
+  `categoryId` to `null` on every deck that used it. It is the first category action whose effect
+  reaches another array, which a single store makes one atomic step rather than two saves.
+
 ## References
 
 - [`src/state/reducer.ts`](../../../src/state/reducer.ts)
 - [`src/state/DecksContext.tsx`](../../../src/state/DecksContext.tsx)
 - [`src/utils/stats.ts`](../../../src/utils/stats.ts)
 - [ADR-0004](0004-versioned-defensive-storage.md) — the persistence this store drives
+- [ADR-0012](0012-custom-categories-third-storage-key.md) — the third array (Amendment 2)
+- [ADR-0014](0014-deck-belongs-to-one-category.md) — decks refer to categories (Amendment 3)
 - [ARCHITECTURE.md §2, §3](../ARCHITECTURE.md)

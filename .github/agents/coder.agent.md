@@ -10,8 +10,8 @@ model: Claude Sonnet 5.5
 
 This is **Easy Flashcards**, a React Native app in TypeScript, built and tested on Android. The
 user imports a deck from a CSV file, studies it card by card, and the app records how well each
-card is known. There is no account, no network, and no backend; everything the app owns is two
-AsyncStorage keys written by one React Context reducer. Both sides of a card are HTML, parsed and
+card is known. There is no account, no network, and no backend; everything the app stores is in
+AsyncStorage, written by one React Context reducer. Both sides of a card are HTML, parsed and
 rendered by the app's own code. Read these before you write anything:
 
 1. `AGENTS.md` — tech stack, project layout, state-ownership rules, the storage keys, the
@@ -97,8 +97,9 @@ These coding principles are mandatory:
 
 7. Platform Use
 - Use React Native primitives directly and simply. **There is no component library and no icon
-  font** — every glyph is drawn from nested `View`s. A design that needs a new icon needs one
-  drawn.
+  font** — every glyph is drawn from nested `View`s, except the category icons, which are Android
+  vector drawables (ADR-0013; `AGENTS.md` *Tech stack* states the exception). A design that needs
+  a new non-category icon needs one drawn.
 - Follow the layering in `AGENTS.md`: screens call `useDecks()` and `useNavigation()`; components
   take plain props and callbacks and read neither. A screen never reads state and writes it back —
   it calls a function the context exposes.

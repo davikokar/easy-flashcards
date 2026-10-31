@@ -88,6 +88,19 @@ format: how a title and description are exported is deliberately left for later.
   is used with and would need virtualised editing beyond it.
 - Deck order is now editable only by deleting and re-adding; there is no reorder control.
 
+## Amendment 1 — 2026-10-30
+
+[ADR-0014](0014-deck-belongs-to-one-category.md) gives a deck a category, chosen on the Edit deck
+screen. The decision above is unchanged — a deck is still edited by **one** `updateDeck` action,
+committed once by **Save**. Two details moved:
+
+- **The payload carries the category.** `DeckEdit` — and so the `updateDeck` action — carries
+  `categoryId: string | null` beside `name`, `description` and the cards. The reducer writes it to
+  the deck in the same case, and writes `null` for an id that does not resolve to a default or
+  stored custom category at dispatch time. Sessions are not touched by it.
+- **The changed-check includes it.** `isDeckEditChanged` reports a change when `categoryId` differs
+  from the deck's, so choosing only a category enables **Save**.
+
 ## References
 
 - [`src/types.ts`](../../../src/types.ts) — `Deck.description`
@@ -97,3 +110,4 @@ format: how a title and description are exported is deliberately left for later.
 - [ADR-0002](0002-sessions-are-snapshots.md) — snapshots; Amendment 4's rename rule is met here
 - [ADR-0004](0004-versioned-defensive-storage.md) — Amendment 1, new fields under `/v1`
 - [ADR-0005](0005-answers-recorded-immediately.md) — card counters
+- [ADR-0014](0014-deck-belongs-to-one-category.md) — the deck's category (Amendment 1)

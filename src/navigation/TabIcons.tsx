@@ -21,6 +21,18 @@ export function LearnIcon({ color }: Props) {
   );
 }
 
+export function CategoriesIcon({ color }: Props) {
+  return (
+    <View style={styles.container}>
+      <View style={styles.grid}>
+        {[0, 1, 2, 3].map(cell => (
+          <View key={cell} style={[styles.gridCell, { borderColor: color }]} />
+        ))}
+      </View>
+    </View>
+  );
+}
+
 export function StatsIcon({ color }: Props) {
   return (
     <View style={[styles.container, styles.bars]}>
@@ -55,6 +67,19 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     bottom: 2,
     right: 2,
+  },
+  grid: {
+    width: 20,
+    height: 20,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 2,
+  },
+  gridCell: {
+    width: 9,
+    height: 9,
+    borderWidth: 1.5,
+    borderRadius: 3,
   },
   bars: {
     flexDirection: 'row',

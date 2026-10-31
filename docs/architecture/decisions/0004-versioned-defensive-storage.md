@@ -130,6 +130,28 @@ The decision above is unchanged. Three details moved:
   consequence "they are untested" no longer holds. The unused `clearDecks` and `clearSessions` were
   removed; each module now owns `load*`, `save*` and its normalisation.
 
+## Amendment 3 — 2026-10-30
+
+[ADR-0012](0012-custom-categories-third-storage-key.md) adds a **third key**,
+`@easy-flashcards/categories/v1`, owned by
+[`src/storage/categoriesStorage.ts`](../../../src/storage/categoriesStorage.ts). The decision above
+is unchanged and applies to it in full:
+
+- **The same `/v1` rule.** The key starts at `/v1`; a shape change its normaliser cannot absorb
+  takes a new key, and an additive field whose default is the true value for every older record
+  stays under `/v1` (Amendment 1).
+- **The same defensive read.** The loader drops what it cannot use and repairs what it can, and a
+  key that does not parse reads as `[]` through `parseStoredArray`. Its rules are listed in
+  ADR-0012.
+- **The same no-save-after-failed-load rule, across all three keys.** The mount load reads the three
+  keys together, and if any one rejects the whole load fails: the store starts empty with `error`
+  set, and the save effect writes **none** of the three for that run (Amendment 2). One save effect
+  writes all three keys, each as a whole array.
+
+**Downgrades are safe for this key**, unlike the fields Amendment 1 describes: an older build never
+reads or writes `@easy-flashcards/categories/v1`, so its saves cannot overwrite it, and the custom
+categories are intact when the newer build is reinstalled.
+
 ## References
 
 - [`src/storage/decksStorage.ts`](../../../src/storage/decksStorage.ts),
@@ -138,5 +160,6 @@ The decision above is unchanged. Three details moved:
 - [`src/types.ts`](../../../src/types.ts)
 - [ADR-0003](0003-single-context-reducer-store.md) — the store that drives these writes
 - [ADR-0007](0007-okeish-third-answer.md) — the first shape change under `/v1` (Amendment 1)
+- [ADR-0012](0012-custom-categories-third-storage-key.md) — the third key (Amendment 3)
 - [ARCHITECTURE.md §5](../ARCHITECTURE.md)
 - [AGENTS.md](../../../AGENTS.md) — *Storage keys*, and *What to ask before doing*

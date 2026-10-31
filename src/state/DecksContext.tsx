@@ -7,9 +7,10 @@ import React, {
   useReducer,
   useRef,
 } from 'react';
-import { Answer, Deck, Session } from '../types';
+import { Answer, Category, CategoryIcon, Deck, Session } from '../types';
 import { ParsedCard } from '../utils/csv';
 import { DeckEdit } from '../utils/deckEdit';
+import { loadCategories, saveCategories } from '../storage/categoriesStorage';
 import { loadDecks, saveDecks } from '../storage/decksStorage';
 import { loadSessions, saveSessions } from '../storage/sessionsStorage';
 import { State, initialState, reducer } from './reducer';
@@ -35,6 +36,9 @@ type DecksContextValue = State & {
   clearCompletedSessions: () => void;
   clearSession: (sessionId: string) => void;
   resetDeckStats: (deckId: string) => void;
+  /** The caller validates the name first (validateCategoryName); this trims it and mints the id. */
+  addCategory: (input: { name: string; color: string; icon: CategoryIcon }) => Category;
+  deleteCategory: (categoryId: string) => void;
 };
 
 const DecksContext = createContext<DecksContextValue | null>(null);
@@ -70,10 +74,10 @@ export function DecksProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([loadDecks(), loadSessions()])
-      .then(([decks, sessions]) => {
+    Promise.all([loadDecks(), loadSessions(), loadCategories()])
+      .then(([decks, sessions, categories]) => {
         if (!cancelled) {
-          dispatch({ type: 'loaded', decks, sessions });
+          dispatch({ type: 'loaded', decks, sessions, categories });
         }
       })
       .catch((error: unknown) => {
@@ -98,16 +102,21 @@ export function DecksProvider({ children }: { children: React.ReactNode }) {
       hasLoaded.current = true;
       return;
     }
-    Promise.all([saveDecks(state.decks), saveSessions(state.sessions)]).catch(() => {
+    Promise.all([
+      saveDecks(state.decks),
+      saveSessions(state.sessions),
+      saveCategories(state.categories),
+    ]).catch(() => {
       // Persistence failures must not break the running session.
     });
-  }, [state.decks, state.sessions, state.isLoading, state.error]);
+  }, [state.decks, state.sessions, state.categories, state.isLoading, state.error]);
 
   const addDeck = useCallback<DecksContextValue['addDeck']>(input => {
     const deck: Deck = {
       id: createId('deck'),
       name: input.name,
       description: '',
+      categoryId: null,
       sourceFileName: input.sourceFileName,
       createdAt: Date.now(),
       lastStudiedAt: null,
@@ -131,6 +140,7 @@ export function DecksProvider({ children }: { children: React.ReactNode }) {
       deckId,
       name: edit.name,
       description: edit.description,
+      categoryId: edit.categoryId,
       cards: edit.cards.map(card => ({ ...card, id: card.id ?? createId('card') })),
       at: Date.now(),
     });
@@ -154,6 +164,18 @@ export function DecksProvider({ children }: { children: React.ReactNode }) {
     [],
   );
 
+  const addCategory = useCallback<DecksContextValue['addCategory']>(input => {
+    const category: Category = {
+      id: createId('category'),
+      name: input.name.trim(),
+      color: input.color,
+      icon: input.icon,
+      createdAt: Date.now(),
+    };
+    dispatch({ type: 'addCategory', category });
+    return category;
+  }, []);
+
   const value = useMemo<DecksContextValue>(
     () => ({
       ...state,
@@ -172,8 +194,10 @@ export function DecksProvider({ children }: { children: React.ReactNode }) {
       clearCompletedSessions: () => dispatch({ type: 'clearCompletedSessions', at: Date.now() }),
       clearSession: sessionId => dispatch({ type: 'clearSession', sessionId, at: Date.now() }),
       resetDeckStats: deckId => dispatch({ type: 'resetDeckStats', deckId }),
+      addCategory,
+      deleteCategory: categoryId => dispatch({ type: 'deleteCategory', categoryId }),
     }),
-    [state, addDeck, updateDeck, startSession, replaySession],
+    [state, addDeck, updateDeck, startSession, replaySession, addCategory],
   );
 
   return <DecksContext.Provider value={value}>{children}</DecksContext.Provider>;

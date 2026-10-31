@@ -22,6 +22,7 @@ function normalizeDeck(value: unknown): Deck | null {
     id: deck.id,
     name: deck.name,
     description: typeof deck.description === 'string' ? deck.description : '',
+    categoryId: typeof deck.categoryId === 'string' && deck.categoryId !== '' ? deck.categoryId : null,
     sourceFileName: typeof deck.sourceFileName === 'string' ? deck.sourceFileName : null,
     createdAt: typeof deck.createdAt === 'number' ? deck.createdAt : Date.now(),
     lastStudiedAt: typeof deck.lastStudiedAt === 'number' ? deck.lastStudiedAt : null,

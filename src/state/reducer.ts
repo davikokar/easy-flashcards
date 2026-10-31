@@ -1,4 +1,5 @@
-import { Answer, Deck, Session } from '../types';
+import { Answer, Category, Deck, Session } from '../types';
+import { findCategory } from '../utils/categories';
 import { SavedCardDraft, applyDeckEdit, reconcileSession, removedCardIds } from '../utils/deckEdit';
 import {
   applyReviewAnswer,
@@ -11,12 +12,14 @@ import {
 export type State = {
   decks: Deck[];
   sessions: Session[];
+  /** Custom categories only; the defaults are constants. */
+  categories: Category[];
   isLoading: boolean;
   error: string | null;
 };
 
 export type Action =
-  | { type: 'loaded'; decks: Deck[]; sessions: Session[] }
+  | { type: 'loaded'; decks: Deck[]; sessions: Session[]; categories: Category[] }
   | { type: 'loadFailed'; message: string }
   | { type: 'addDeck'; deck: Deck }
   | {
@@ -24,6 +27,7 @@ export type Action =
       deckId: string;
       name: string;
       description: string;
+      categoryId: string | null;
       cards: SavedCardDraft[];
       at: number;
     }
@@ -35,14 +39,28 @@ export type Action =
   | { type: 'deleteSession'; sessionId: string }
   | { type: 'clearCompletedSessions'; at: number }
   | { type: 'clearSession'; sessionId: string; at: number }
-  | { type: 'resetDeckStats'; deckId: string };
+  | { type: 'resetDeckStats'; deckId: string }
+  | { type: 'addCategory'; category: Category }
+  | { type: 'deleteCategory'; categoryId: string };
 
-export const initialState: State = { decks: [], sessions: [], isLoading: true, error: null };
+export const initialState: State = {
+  decks: [],
+  sessions: [],
+  categories: [],
+  isLoading: true,
+  error: null,
+};
 
 export function reducer(state: State, action: Action): State {
   switch (action.type) {
     case 'loaded':
-      return { decks: action.decks, sessions: action.sessions, isLoading: false, error: null };
+      return {
+        decks: action.decks,
+        sessions: action.sessions,
+        categories: action.categories,
+        isLoading: false,
+        error: null,
+      };
     case 'loadFailed':
       return { ...state, isLoading: false, error: action.message };
     case 'addDeck':
@@ -53,10 +71,13 @@ export function reducer(state: State, action: Action): State {
         return state;
       }
       const removed = removedCardIds(deck, action.cards);
+      const categoryId = findCategory(action.categoryId, state.categories)?.id ?? null;
       return {
         ...state,
         decks: state.decks.map(item =>
-          item === deck ? applyDeckEdit(deck, action.name, action.description, action.cards) : item,
+          item === deck
+            ? applyDeckEdit(deck, action.name, action.description, categoryId, action.cards)
+            : item,
         ),
         sessions: state.sessions.flatMap(session => {
           if (session.deckId !== deck.id) {
@@ -164,6 +185,21 @@ export function reducer(state: State, action: Action): State {
             : deck,
         ),
       };
+    case 'addCategory':
+      return { ...state, categories: [...state.categories, action.category] };
+    case 'deleteCategory': {
+      // Defaults are not in state, so a default id falls through to the same state.
+      if (!state.categories.some(category => category.id === action.categoryId)) {
+        return state;
+      }
+      return {
+        ...state,
+        categories: state.categories.filter(category => category.id !== action.categoryId),
+        decks: state.decks.map(deck =>
+          deck.categoryId === action.categoryId ? { ...deck, categoryId: null } : deck,
+        ),
+      };
+    }
     default:
       return state;
   }

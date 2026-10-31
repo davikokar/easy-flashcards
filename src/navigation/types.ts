@@ -10,6 +10,11 @@ export type LearnStackParamList = {
   Study: { sessionId: string; mode?: 'review' };
 };
 
+export type CategoriesStackParamList = {
+  CategoriesList: undefined;
+  NewCategory: undefined;
+};
+
 export type StatsStackParamList = {
   StatsOverview: undefined;
   DeckStats: { deckId: string };
@@ -18,5 +23,6 @@ export type StatsStackParamList = {
 export type RootTabParamList = {
   DecksTab: NavigatorScreenParams<DecksStackParamList>;
   LearnTab: NavigatorScreenParams<LearnStackParamList>;
+  CategoriesTab: NavigatorScreenParams<CategoriesStackParamList>;
   StatsTab: NavigatorScreenParams<StatsStackParamList>;
 };

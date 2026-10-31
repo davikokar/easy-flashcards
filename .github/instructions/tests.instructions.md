@@ -20,8 +20,13 @@ The suite is **unit tests, and nothing renders**. It covers:
 
 - the pure logic in `src/utils/`;
 - the reducer in `src/state/reducer.ts`, called directly with a state and an action;
-- the two storage loaders, with `@react-native-async-storage/async-storage` replaced by a
-  `jest.mock` in each test file. That is the only mock in the suite.
+- the storage loaders, one test file per module in `src/storage/`, with
+  `@react-native-async-storage/async-storage` replaced by a `jest.mock` in each test file. That is
+  the only mock in the suite;
+- the category drawables in `src/assets/category-icons/`, read as text by
+  `__tests__/categories.test.ts`: their file names must be exactly `CATEGORY_ICONS`, and none may
+  contain `android:tint`. That checks the files against the key list, not that they render — a
+  drawable AAPT rejects or draws wrongly still passes.
 
 There are no component tests and no end-to-end tests. Specifically:
 
@@ -52,8 +57,11 @@ make a brief easier.
 
 - **Build the input literally in the test.** No fixture files, no shared `beforeEach` setup object.
   A small builder per shape (`card()`, `deck()`, `session()`) is fine when it takes its varying
-  values as arguments. The one file read from disk is `samples/sample-deck.csv`, in
-  `sampleDeck.test.ts`, because the test exists to check that the shipped copy matches it.
+  values as arguments. A test reads a file from disk only when it exists to check that a shipped
+  file matches the code, and there are two: `samples/sample-deck.csv`, in `sampleDeck.test.ts`,
+  against the built-in copy, and the drawables in `src/assets/category-icons/`, in
+  `categories.test.ts`, against `CATEGORY_ICONS`. Both read with Node's `fs` and mock nothing. Never
+  read a file to supply a test's input.
 - **Assert on returned values**, never on how a function got there.
 - Test the failure path as well as the happy one. `parseFlashcardsCsv` throws `CsvImportError` on
   a file it cannot use, and that is part of its contract — assert on the throw, not just on the
@@ -110,3 +118,12 @@ apply, recorded now so they are not rediscovered:
   test ids.
 - `FlipCard`, `HistoryStrip` and `MenuSheet` use `Animated`, `ScrollView.scrollTo` and `Modal`
   respectively. Each needs its own handling under a test renderer, and none of it exists yet.
+- `CategoryIcon` `require`s `.xml` vector drawables, and `@react-native/jest-preset` has no
+  transform for `.xml`, so anything that imports it, directly or through another component, fails
+  to load until one is mapped
+  ([ADR-0013](../../docs/architecture/decisions/0013-category-icons-are-android-vector-drawables.md)).
+  Since decks carry a category, that reaches well beyond the Categories tab: `CategoryTile`,
+  `CategoryIconPicker`, `CategorySquare`, `CategoryField`, `CategoryPicker`, `DeckCard` and
+  `SessionCard`, and every screen that renders one of them. Check a component's imports before
+  assuming it loads. Logic that a test needs belongs in `src/utils/categories.ts`, which imports no
+  drawable.

@@ -3,21 +3,24 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { DefaultTheme, NavigationContainer, Theme } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import CategoriesScreen from '../screens/CategoriesScreen';
 import DecksScreen from '../screens/DecksScreen';
 import EditDeckScreen from '../screens/EditDeckScreen';
 import LearnScreen from '../screens/LearnScreen';
+import NewCategoryScreen from '../screens/NewCategoryScreen';
 import StudyScreen from '../screens/StudyScreen';
 import StatsScreen from '../screens/StatsScreen';
 import DeckStatsScreen from '../screens/DeckStatsScreen';
 import { useDecks } from '../state/DecksContext';
 import { isSessionActive } from '../utils/stats';
 import {
+  CategoriesStackParamList,
   DecksStackParamList,
   LearnStackParamList,
   RootTabParamList,
   StatsStackParamList,
 } from './types';
-import { DecksIcon, LearnIcon, StatsIcon } from './TabIcons';
+import { CategoriesIcon, DecksIcon, LearnIcon, StatsIcon } from './TabIcons';
 import { colors } from '../theme';
 
 const navigationTheme: Theme = {
@@ -36,6 +39,7 @@ const navigationTheme: Theme = {
 
 const DecksStack = createNativeStackNavigator<DecksStackParamList>();
 const LearnStack = createNativeStackNavigator<LearnStackParamList>();
+const CategoriesStack = createNativeStackNavigator<CategoriesStackParamList>();
 const StatsStack = createNativeStackNavigator<StatsStackParamList>();
 const Tabs = createBottomTabNavigator<RootTabParamList>();
 
@@ -76,6 +80,23 @@ function LearnNavigator() {
   );
 }
 
+function CategoriesNavigator() {
+  return (
+    <CategoriesStack.Navigator screenOptions={screenOptions}>
+      <CategoriesStack.Screen
+        name="CategoriesList"
+        component={CategoriesScreen}
+        options={{ title: 'Categories' }}
+      />
+      <CategoriesStack.Screen
+        name="NewCategory"
+        component={NewCategoryScreen}
+        options={{ title: 'New category' }}
+      />
+    </CategoriesStack.Navigator>
+  );
+}
+
 function StatsNavigator() {
   return (
     <StatsStack.Navigator screenOptions={screenOptions}>
@@ -95,6 +116,7 @@ function StatsNavigator() {
 
 const renderDecksIcon = ({ color }: { color: string }) => <DecksIcon color={color} />;
 const renderLearnIcon = ({ color }: { color: string }) => <LearnIcon color={color} />;
+const renderCategoriesIcon = ({ color }: { color: string }) => <CategoriesIcon color={color} />;
 const renderStatsIcon = ({ color }: { color: string }) => <StatsIcon color={color} />;
 
 export default function RootNavigator() {
@@ -135,6 +157,14 @@ export default function RootNavigator() {
           options={{
             title: 'Learn',
             tabBarIcon: renderLearnIcon,
+          }}
+        />
+        <Tabs.Screen
+          name="CategoriesTab"
+          component={CategoriesNavigator}
+          options={{
+            title: 'Categories',
+            tabBarIcon: renderCategoriesIcon,
           }}
         />
         <Tabs.Screen

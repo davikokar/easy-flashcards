@@ -12,6 +12,8 @@ import {
 import type { NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
 import Button from '../components/Button';
 import CardEditor from '../components/CardEditor';
+import CategoryField from '../components/CategoryField';
+import CategoryPicker from '../components/CategoryPicker';
 import EmptyState from '../components/EmptyState';
 import FormField from '../components/FormField';
 import { useDecks } from '../state/DecksContext';
@@ -25,6 +27,7 @@ import {
   isDeckEditChanged,
   removedCardIds,
 } from '../utils/deckEdit';
+import { findCategory, getAllCategories } from '../utils/categories';
 import { colors, spacing } from '../theme';
 
 type Props = NativeStackScreenProps<DecksStackParamList, 'EditDeck'>;
@@ -58,9 +61,11 @@ function DeckEditor({
   deck: Deck;
   navigation: NativeStackNavigationProp<DecksStackParamList, 'EditDeck'>;
 }) {
-  const { updateDeck } = useDecks();
+  const { updateDeck, categories } = useDecks();
   const [name, setName] = useState(deck.name);
   const [description, setDescription] = useState(deck.description);
+  const [draftCategoryId, setDraftCategoryId] = useState<string | null>(deck.categoryId);
+  const [pickerVisible, setPickerVisible] = useState(false);
   const [cards, setCards] = useState<KeyedDraft[]>(() =>
     draftsOf(deck).map(draft => ({ ...draft, key: draft.id as string })),
   );
@@ -71,15 +76,31 @@ function DeckEditor({
   // Set once the edit is saved, so leaving the screen afterwards is not treated as discarding it.
   const saved = useRef(false);
 
+  // A category deleted elsewhere mid-edit resolves to null, for the draft and for the deck's own id alike.
+  const category = useMemo(
+    () => findCategory(draftCategoryId, categories),
+    [draftCategoryId, categories],
+  );
+  const categoryId = category ? category.id : null;
+  const storedCategoryId = useMemo(() => {
+    const stored = findCategory(deck.categoryId, categories);
+    return stored ? stored.id : null;
+  }, [deck.categoryId, categories]);
+  const allCategories = useMemo(() => getAllCategories(categories), [categories]);
+
   const edit = useMemo<DeckEdit>(
     () => ({
       name: name.trim(),
       description: description.trim(),
+      categoryId,
       cards: cards.map(({ id, question, answer }) => ({ id, question, answer })),
     }),
-    [name, description, cards],
+    [name, description, categoryId, cards],
   );
-  const isChanged = useMemo(() => isDeckEditChanged(deck, edit), [deck, edit]);
+  const isChanged = useMemo(
+    () => isDeckEditChanged({ ...deck, categoryId: storedCategoryId }, edit),
+    [deck, storedCategoryId, edit],
+  );
 
   const save = useCallback(() => {
     if (edit.name === '') {
@@ -186,6 +207,13 @@ function DeckEditor({
         multiline
         placeholder="Optional"
       />
+      <CategoryField
+        category={category}
+        onPress={() => {
+          Keyboard.dismiss();
+          setPickerVisible(true);
+        }}
+      />
       <Text style={styles.sectionTitle}>
         {cards.length} card{cards.length === 1 ? '' : 's'}
       </Text>
@@ -223,6 +251,13 @@ function DeckEditor({
             onRemove={removeCard}
           />
         )}
+      />
+      <CategoryPicker
+        visible={pickerVisible}
+        categories={allCategories}
+        selectedId={categoryId}
+        onSelect={setDraftCategoryId}
+        onClose={() => setPickerVisible(false)}
       />
     </KeyboardAvoidingView>
   );

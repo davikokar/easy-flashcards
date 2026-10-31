@@ -21,13 +21,15 @@ called out. Use the canonical name in prose; use the real symbol in code.
 
 ## Tabs
 
-The app has **three tabs**, in this order. They are peers — switching tab is not navigation into a
+The app has **four tabs**, in this order. They are peers — switching tab is not navigation into a
 hierarchy, and each tab keeps its own stack.
 
 - **Decks tab** (`DecksTab`): where decks are imported, started, and deleted.
   Aliases: **decks**, **library**
 - **Learn tab** (`LearnTab`): where sessions live. Also holds the Study screen.
   Aliases: **sessions**, **study tab**
+- **Categories tab** (`CategoriesTab`): where categories are shown and the user's own are created and
+  deleted. Described under **Categories tab** below. Aliases: **categories**
 - **Statistics tab** (`StatsTab`): where results are read. Never writes anything except the reset.
   Aliases: **stats**, **statistics**
 
@@ -37,13 +39,14 @@ Say "the app launches on the tab with unfinished work", not "the app defaults to
 
 ## Screens
 
-Six screens. Three are the roots of their tabs; three are detail screens pushed onto a stack.
+Each tab has one **root screen**; every other screen is a **detail screen** pushed onto that tab's
+stack. The two Categories screens are described in more detail under **Categories tab** below.
 
 - **Decks screen** (`DecksScreen`, route `DecksList`): The list of imported decks, one **Deck card**
   each. Root of the Decks tab. Aliases: **deck list**, **deck library**
 - **Edit deck screen** (`EditDeckScreen`, route `EditDeck`, param `deckId`): One deck's title,
-  description and cards as editable fields. Pushed onto the Decks stack from **Edit deck** in the
-  Deck options menu. Aliases: **deck editor**
+  description, category and cards as editable fields. Pushed onto the Decks stack from **Edit deck**
+  in the Deck options menu. Aliases: **deck editor**
 - **Learn screen** (`LearnScreen`, route `LearnList`): The list of sessions, one **Session card**
   each, unfinished ones first. Root of the Learn tab. Aliases: **session list**
 - **Study screen** (`StudyScreen`, route `Study`, params `sessionId` and optional `mode`): One
@@ -51,13 +54,17 @@ Six screens. Three are the roots of their tabs; three are detail screens pushed 
   end-of-session summary — or, with `mode: 'review'`, one completed session's errors being
   reviewed (**review mode**, below). Pushed onto the Learn stack. Aliases: **study view**, **the
   session screen**
+- **Categories screen** (`CategoriesScreen`, route `CategoriesList`): The built-in and custom
+  categories as tiles. Root of the Categories tab.
+- **New category screen** (`NewCategoryScreen`, route `NewCategory`): The form that creates a
+  custom category. Pushed onto the Categories stack. Aliases: **category editor**
 - **Statistics screen** (`StatsScreen`, route `StatsOverview`): Totals across every deck, then one
   row per deck. Root of the Statistics tab. Aliases: **stats overview**
 - **Deck statistics screen** (`DeckStatsScreen`, route `DeckStats`, param `deckId`): One deck's
   totals, and every card in it ordered hardest first. Pushed onto the Statistics stack.
   Aliases: **per-deck statistics**, **card breakdown**
 
-Use **screen** only for a route in a navigator. Use **tab** for the three above, **dialog** for
+Use **screen** only for a route in a navigator. Use **tab** for the four above, **dialog** for
 modal content, **sheet** for the bottom sheet, and **area** for a region inside a screen.
 
 **There is no Settings screen.** The *Settings* menu item shows a "not available yet" alert. Do not
@@ -73,17 +80,19 @@ The split here is by **folder, not by suffix** — there is no `*Screen` / `*Con
   and no navigator.
 
 `AppMenu` is the one exception and a deliberate one: it calls `exportSampleDeck` directly because
-it has no screen to belong to — the **Header toolbar** mounts it (boxed) on the Decks, Learn and
-Statistics screens; the navigator sets no default `headerRight`). It takes optional `extraItems` so a screen can add items without `AppMenu` gaining
-store knowledge: each of those screens overrides `headerRight` itself (via
-`navigation.setOptions`), and the Learn screen's Header toolbar passes `menuItems` that supply
-**Clear completed sessions**.
+it has no screen to belong to. The **Header toolbar** mounts it (boxed) on the Decks, Learn and
+Statistics screens; the Categories screen mounts it (boxed) directly, with no Search button and no
+Filter button; the navigator sets no default `headerRight`. It takes optional `extraItems` so a
+screen can add items without `AppMenu` gaining store knowledge: each root screen overrides
+`headerRight` itself (via `navigation.setOptions`), and the Learn screen's Header toolbar passes
+`menuItems` that supply **Clear completed sessions**.
 
 ## Header and menus
 
 - **App menu** (`AppMenu`, labelled `App menu`): the three-dot control at the right of the header
-  on the three root screens (inside the **Header toolbar** on all three, boxed). Holds **Export
-  sample deck** and **Settings**; on the Learn screen it also holds **Clear completed sessions**,
+  on every tab's root screen — inside the **Header toolbar** on the Decks, Learn and Statistics
+  screens, and on its own on the Categories screen (boxed in both). Holds **Export sample deck**
+  and **Settings**; on the Learn screen it also holds **Clear completed sessions**,
   first. Detail screens do not show it. Aliases: **the
   header menu**, **the overflow menu**
 - **Kebab menu** (`KebabMenu`): the reusable three-dot control. Default label `More options`;
@@ -94,17 +103,21 @@ store knowledge: each of those screens overrides `headerRight` itself (via
   of **Menu items**, each with an optional **Menu icon** and an optional `destructive` flag that
   colours it danger. This is the app's only menu surface (a **menu** is a list of actions; the
   **Session setup dialog** is a dialog, not a second menu). Aliases: **bottom sheet**, **action
-  sheet**
+  sheet**. A sheet with a title can also show a **Category square** (28-point) on the same row,
+  before the title; only the **Deck options menu** and the **Session options menu** pass one, and
+  with no category the title is unchanged. The square keeps its own label (``Category: {name}``),
+  read before the title, since the title never names the category.
 - **Menu icon** (`MenuIcon`): the small glyph on a menu item, and also used outside menus (the
-  **Header toolbar**, the **Deck meta row**, and the **Session card footer**). The available names
+  **Header toolbar**, the **Search bar**, the **Deck meta row**, the **Session card footer**, and
+  the **Remove card button**). The available names
   are the `MenuIconName` type in
   [src/components/MenuIcons.tsx](../../src/components/MenuIcons.tsx), and every glyph is drawn from
   nested `View`s. An optional `size` scales a glyph from its 20-point grid. **Reuse an existing
   name rather than adding a second glyph for an existing idea**, and remember that adding one means
   drawing it, not importing it.
 - **Export sample deck dialog** (in `AppMenu`): the centred `Modal` explaining the CSV format,
-  with **Share** and **Cancel**. One of the two dialogs in the app that are not an `Alert`; the
-  other is the **Session setup dialog**.
+  with **Share** and **Cancel**. One of the three dialogs in the app that are not an `Alert`; the
+  others are the **Session setup dialog** and the **Category picker**.
 
 Everything else that interrupts the user is a native `Alert` — confirmations, failures, and the
 "not available yet" stubs.
@@ -118,8 +131,8 @@ Everything else that interrupts the user is a native `Alert` — confirmations, 
   Search button and the App menu alone**. Each screen sets the toolbar as `headerRight` itself,
   supplying the button labels and, optionally, `menuItems` for the App menu. All three screens use
   the same header style: a `colors.background` header (not the `surface` default of the other
-  screens) and a 24-point, 700-weight title. It was the **Decks toolbar** before the Learn screen
-  used it.
+  screens) and a 24-point, 700-weight title; the Categories screen uses that header style too but
+  not the toolbar. It was the **Decks toolbar** before the Learn screen used it.
 - **Search button**: labelled `Search decks` on the Decks and Statistics screens and `Search
   sessions` on the Learn screen. **Toggles the Search bar**: pressing it opens the bar, and
   pressing it while the bar is open behaves exactly like the **Close search button** — clears the
@@ -152,8 +165,10 @@ Everything else that interrupts the user is a native `Alert` — confirmations, 
 
 ## Decks screen
 
-- **Deck card** (`DeckCard`): one deck's row — a header (its name on one truncated line, its card
-  count, and the **Deck options menu**), a **Mastery bar**, and a **Deck meta row**.
+- **Deck card** (`DeckCard`): one deck's row — a header (the **Category square** at the top left
+  when the deck has a category, then its name on one truncated line, its card count, its
+  description when it has one, and the **Deck options menu**), a **Mastery bar**, and a **Deck meta
+  row**. A deck with no category shows no square and leaves no gap.
 - **Mastery bar** (`MasteryBar`): the darker inset panel on a Deck card — a segmented track with one
   segment per answer, then a three-column legend of **Answer icon** (tick, question mark, cross) and
   percentage, with no text label. Segments and icons are green `Ok`, amber `Okeish`, red `Not ok`,
@@ -171,8 +186,9 @@ Everything else that interrupts the user is a native `Alert` — confirmations, 
   the Deck meta row, labelled ``Start session for {deck name}``. Icon-only, with no visible text.
   Creates a **new** session over the whole deck, in deck order, **not inverted and not shuffled**,
   and navigates across tabs into the Study screen; it does not resume an active one.
-- **Deck options menu**: the Kebab menu on a Deck card, labelled ``Options for {deck name}``.
-  Holds **Start session with options** (play glyph; opens the **Session setup dialog**), **Edit
+- **Deck options menu**: the Kebab menu on a Deck card, labelled ``Options for {deck name}``. Its
+  Menu sheet is titled with the deck name, after the deck's **Category square** when it has a
+  category. Holds **Start session with options** (play glyph; opens the **Session setup dialog**), **Edit
   deck** (opens the **Edit deck screen**) and **Delete deck** (destructive, confirmed by an `Alert`). It was **Shuffle and
   start session** before
   [ADR-0010](../../docs/architecture/decisions/0010-inverted-sessions.md).
@@ -209,13 +225,35 @@ Everything else that interrupts the user is a native `Alert` — confirmations, 
 
 ## Edit deck screen
 
-Titled `Edit deck`. A scrolling form: the **Deck fields**, then one **Card editor** per card, then
-the **Add card button**. Everything is a draft held on the screen; nothing reaches the store until
-**Save** ([ADR-0011](../../docs/architecture/decisions/0011-deck-editing-is-one-action.md)).
+Titled `Edit deck`. A scrolling form: the **Deck fields**, the **Category field**, then one **Card
+editor** per card, then the **Add card button**. Everything is a draft held on the screen; nothing
+reaches the store until **Save**
+([ADR-0011](../../docs/architecture/decisions/0011-deck-editing-is-one-action.md)).
 
 - **Deck fields**: two labelled text fields at the top. **Title** (single line) and **Description**
-  (multi-line, placeholder `Optional`). Followed by a count heading, `{n} card(s)`. The description
-  shows under the card count on the **Deck card** when it is not blank; it is not searched.
+  (multi-line, placeholder `Optional`). Followed by the **Category field** and then a count heading,
+  `{n} card(s)`. The description shows under the card count on the **Deck card** when it is not
+  blank; it is not searched.
+- **Category field** (`CategoryField`): the labelled row under Description, in the same style as the
+  text fields — the label `Category`, then a row holding the **Category square** and the
+  category's name on one truncated line, with a right-pointing chevron at its end. With no
+  category it shows the dimmed text `No category` and no square, and the row is no shorter. A
+  button, labelled ``Category: {name}`` or `Category: none`, with the hint `Opens the category
+  picker`; it opens the **Category picker**. Stateless: the screen holds the draft category.
+- **Category picker** (`CategoryPicker`, group labelled `Category picker`): the centred `Modal`
+  the Category field opens, titled `Category`, over a scrolling three-column grid of **category
+  tiles** and a **Cancel** button below it that stays in view. The **No category choice** comes
+  first; then every category, default and custom alike, in **one** alphabetical list. A radio
+  group: each tile is a `radio` labelled with the category's name, with its state in
+  `accessibilityState.selected`, and the selected one has a ring and a tick. Choosing a tile
+  changes the **draft** only and closes the picker; **Cancel**, the backdrop and the Back button
+  close it with no change. The third dialog in the app that is not an `Alert`, after the **Export
+  sample deck dialog** and the **Session setup dialog**. Not the **Colour picker** or the **Icon
+  picker**, which sit inline on the New category screen.
+- **No category choice**: the first tile of the Category picker, labelled `No category` — a dashed
+  square with a `close` glyph rather than a category's colour and pictogram. Picking it clears the
+  draft's category. It is selected whenever the draft has none, which includes a deck whose stored
+  category no longer exists.
 - **Card editor** (`CardEditor`): one card's panel — a `Card {n}` heading with the **Remove card
   button** at its end, then a multi-line **Question** field and a multi-line **Answer** field, both
   raw HTML text. Fields are labelled ``Question for card {n}`` and ``Answer for card {n}``. Not the
@@ -226,7 +264,7 @@ the **Add card button**. Everything is a draft held on the screen; nothing reach
 - **Add card button**: the secondary Button `Add card` after the last Card editor. Appends an empty
   card, scrolls to it and focuses its Question field.
 - **Save button**: the `Save` text button at the end of the header, labelled `Save deck`.
-  **Disabled until something differs from the stored deck.** It refuses, with an `Alert`, a blank
+  **Disabled until something differs from the stored deck** — the category included. It refuses, with an `Alert`, a blank
   title (`Title needed`) or a card missing its question or answer (`Card incomplete`, naming the
   card). If cards were removed, an `Alert` titled `Remove cards?` says how many go with their
   statistics, with **Cancel** and a destructive **Save**. A successful save goes back to the Decks
@@ -238,11 +276,14 @@ the **Add card button**. Everything is a draft held on the screen; nothing reach
 
 ## Learn screen
 
-- **Session card** (`SessionCard`): one session's row — a header (the deck name on one truncated
-  line over the **Session status pill**, and the **Session options menu**), a **Session results
-  bar**, and a **Session card footer**. Active and completed cards share this structure and the
-  same neutral border; the pill and the footer buttons are what differ. Only **listed** sessions
-  get one — active, or completed and not cleared.
+- **Session card** (`SessionCard`): one session's row — a header (the **Category square** at the top
+  left when the session's deck has a category, then the deck name on one truncated line over the
+  **Session status pill**, and the **Session options menu**), a **Session results bar**, and a
+  **Session card footer**. Active and completed cards share this structure and the same neutral
+  border; the pill and the footer buttons are what differ. Only **listed** sessions get one —
+  active, or completed and not cleared. The square shows the deck's category **as it is now**, not
+  as it was when the session was studied, and a session whose deck is gone shows none
+  ([ADR-0014](../../docs/architecture/decisions/0014-deck-belongs-to-one-category.md)).
 - **Session status pill**: the small rounded pill under the deck name, whose text is
   ``In progress — {answered}/{total} cards`` on an active session and ``Completed — {n} cards`` on a
   completed one. Active is tinted primary with a dot; completed is tinted success with a tick
@@ -308,8 +349,9 @@ the **Add card button**. Everything is a draft held on the screen; nothing reach
   otherwise an `Alert` says how many completed sessions will be removed from the list and that
   their results stay in Statistics, with **Cancel** and a destructive **Clear**.
 - **Session options menu**: the Kebab menu on a Session card, labelled
-  ``Options for the {deck name} session``. Holds **Start a new session** (a counted session over
-  the whole deck, in deck order, keeping the session's **inverted** setting; it clears nothing and
+  ``Options for the {deck name} session``. Its Menu sheet is titled with the deck name, after the
+  session's deck's **Category square** when it has a category. Holds **Start a new session** (a
+  counted session over the whole deck, in deck order, keeping the session's **inverted** setting; it clears nothing and
   shows `Deck unavailable` when the deck is gone or empty) and a destructive item
   labelled **Discard session** when active (a real delete) and **Clear session** when completed
   (archives it as a **Cleared session**; the confirmation says its results stay in Statistics).
@@ -411,6 +453,93 @@ The densest screen in the app, and the one with vocabulary worth being precise a
   a **Back to sessions** action. Also what review mode shows for a session that is missing, still
   active, or whose deck is gone.
 
+## Categories tab
+
+Added by [ADR-0012](../../docs/architecture/decisions/0012-custom-categories-third-storage-key.md)
+and [ADR-0013](../../docs/architecture/decisions/0013-category-icons-are-android-vector-drawables.md).
+A deck belongs to at most one category
+([ADR-0014](../../docs/architecture/decisions/0014-deck-belongs-to-one-category.md)), chosen in the
+**Category field** on the Edit deck screen and shown as the **Category square** on its Deck card and
+on the Session cards of its sessions. No tile shows a deck count yet.
+
+- **Categories tab** (`CategoriesTab`): the fourth tab, **between the Learn tab and the Statistics
+  tab**, with its own stack. Where the categories are shown and the user's own are created and
+  deleted. Aliases: **categories**
+- **Categories screen** (`CategoriesScreen`, route `CategoriesList`): root of the Categories tab.
+  Its header carries the boxed **App menu** only — no Search button, no Filter button, so it does
+  not use the **Header toolbar**. One scrolling column of two sections, with the **New category
+  button** pinned below it.
+- **New category screen** (`NewCategoryScreen`, route `NewCategory`): pushed onto the Categories
+  stack by the New category button. A scrolling form: a **category tile** preview, the **Name
+  field**, the **Colour picker** and the **Icon picker**. Modelled on the Edit deck screen — a draft
+  held on the screen, nothing reaches the store until **Save**, with the same **Discard prompt**.
+  Aliases: **category editor**
+- **Custom categories section**: the first section — the heading `Custom categories`, the subtitle
+  `{n} available`, then the user's own categories as **category tiles**, alphabetical. With none it
+  shows the hint `Your own categories will appear here.` instead of tiles.
+- **Default categories section**: the second section — `Default categories`, `{n} built in`, then
+  the built-in categories alphabetically, each coloured along the palette's red, violet, blue,
+  green, yellow, orange ramp. Not pressable and not editable.
+- **Category tile** (`CategoryTile`): a coloured rounded square with the category's icon centred in
+  `colors.background`, and its name below on up to two lines. The sections lay them out as a
+  wrapping three-column grid. A tile is a **button only in the Custom categories section**,
+  labelled ``Options for {name}``, which opens the **Category options menu**; a default tile has
+  no press behaviour. The **preview** on the New category screen is the same component, labelled
+  ``Preview: {name}``, and shows the dimmed placeholder `Category name` while the name is blank.
+  The **Category picker** reuses it as a radio: a `selected` tile gets a light ring and a tick in
+  its corner (the **Answer icon** `tick` on a light disc), so it is not marked by colour alone, and
+  the **No category choice** is its `none` look — a dashed `surfaceAlt` square with a `close`
+  **Menu icon** instead of a category colour and pictogram.
+- **Category icon** (`CategoryIcon`): the pictogram on a tile, in the **Category square** or in the
+  Icon picker — an Android
+  vector drawable drawn with `Image` and tinted, hidden from accessibility. The one icon
+  mechanism that is **not** drawn from `View`s, for category icons only
+  ([ADR-0013](../../docs/architecture/decisions/0013-category-icons-are-android-vector-drawables.md)).
+  Not a **Menu icon**; do not add a category pictogram to `MenuIcon`.
+- **New category button**: the full-width primary Button `New category`, pinned at the bottom of
+  the Categories screen **under** the scrolling content, not over it, so it never hides a tile. It
+  is **not a second FAB**: the **Add deck button** stays the app's only one.
+- **Category options menu**: the **Menu sheet** a custom tile opens, titled with the category's
+  name. Holds **Delete category** and nothing else.
+- **Delete category**: the destructive item (delete glyph) in the Category options menu. Confirmed
+  by an `Alert` titled `Delete category?` with **Cancel** and a destructive **Delete**. Deleting
+  **detaches** every deck in the category: each becomes *no category*, in the same step, and its
+  cards, statistics and sessions are untouched. The alert says how many decks lose the category
+  ([ADR-0014](../../docs/architecture/decisions/0014-deck-belongs-to-one-category.md)). Defaults
+  cannot be deleted.
+- **Category square** (`CategorySquare`, labelled ``Category: {name}``): the small (32-point)
+  rounded square in a category's colour with its **Category icon** (about 20 points, tinted
+  `colors.background`) centred in it — the category made small enough to sit beside a title. Shown
+  at the top left of a **Deck card** and a **Session card**, inside the **Category field**, and in
+  28-point size before the title in the Menu sheet of the **Deck options menu** and the **Session
+  options menu**. It is
+  an image for accessibility and has no press behaviour. Not the **Category tile**, which is larger
+  and carries the name below it. Do not call it a "badge" (that is the **Review badge**) or a "chip".
+- **Name field**: the `Name` text field on the New category screen (a **FormField**), at most 30
+  characters — typing stops at the limit. Beneath it a helper line holds the error and a `{n}/30`
+  counter. The error appears only **after the user has typed**, never on first render: `Enter a
+  name.`, `Use 30 characters or fewer.` or `A category with this name already exists.` (compared
+  ignoring case, against defaults and custom categories alike).
+- **Colour picker** (`CategoryColorPicker`, labelled `Colour picker`): the grid of swatches, one per
+  `categoryPalette` colour, six to a row. A radio group; each swatch is a `radio` labelled ``Colour
+  {n} of {total}`` with its state in `accessibilityState.selected`. The selected one has a light ring and a tick
+  (the **Answer icon** `tick`), so it is not marked by colour alone.
+- **Icon picker** (`CategoryIconPicker`, labelled `Icon picker`): every category icon
+  (`CATEGORY_ICONS`) in a plain wrapping grid of 48-point cells, six to a row, on a neutral
+  `surface` panel, inside the form's scroll — no inner scroll, search or grouping. The default
+  categories' icons come first, then the extra icons sorted by label. A radio group; each icon is a
+  `radio` labelled by `getCategoryIconLabel` — a default icon with its category's name
+  (`Computer science`, `Astronomy`), an extra icon with what it shows (`Anchor`, `Rocket`) — and its
+  state in `accessibilityState.selected`. The selected one has a primary border and a `surfaceAlt`
+  fill.
+- **Save button** (on the New category screen): the `Save` text button at the end of the header,
+  labelled `Save category` (not `Save deck`, which is the Edit deck screen's). **Disabled until the
+  name is valid.** Saving adds the category and goes back to the Categories screen. A fresh form is
+  an empty name, the first palette colour and the fallback icon; leaving it with any change shows
+  the **Discard prompt**.
+- **Categories tab icon** (`CategoriesIcon`, in `TabIcons.tsx`): a two-by-two grid of outlined
+  rounded squares, drawn from `View`s like the other tab icons.
+
 ## Statistics screens
 
 - The **Statistics screen** has a **Header toolbar** with the **Search button** (`Search decks`) and
@@ -467,23 +596,29 @@ The densest screen in the app, and the one with vocabulary worth being precise a
   `<br>`, `<hr>`, and `<font color>`; **there is no block layout, no images, and no tables**
   ([ADR-0001](../../docs/architecture/decisions/0001-own-the-html-renderer.md)). Honours
   `numberOfLines`, which is what the Card stats rows use.
-- **Tab icons** (`DecksIcon`, `LearnIcon`, `StatsIcon`): the three tab glyphs, drawn from `View`s.
+- **Tab icons** (`DecksIcon`, `LearnIcon`, `CategoriesIcon`, `StatsIcon`, in `TabIcons.tsx`): one
+  glyph per tab, drawn from `View`s.
 
 ## Writing UI
 
 These are constraints, not suggestions. Each one is load-bearing somewhere.
 
 - **There is no icon library.** Every glyph in the app is composed from nested `View`s with
-  borders and radii — `MenuIcons.tsx`, `TabIcons.tsx`, and `AnswerIcons.tsx` are the three files of
+  borders and radii — `MenuIcons.tsx`, `TabIcons.tsx`, and `AnswerIcons.tsx` are the files of
   them. A design that needs a new icon is asking for one to be drawn. Check `MenuIcon` and
   `AnswerIcon` first — reusing an existing glyph for a related idea is nearly always better than a
-  new one.
-- **Every token comes from [`src/theme.ts`](../../src/theme.ts).** `colors`, `spacing`, `radius` —
-  twelve colours, five spacings, three radii, and no second source of styling. A raw hex or a
-  magic number in a `StyleSheet` is a finding, with three existing exceptions: `mark`'s foreground in
-  `RichText` and the FAB's spinner colour, both of which need contrast against a fixed background,
+  new one. **The one exception is the category pictograms**
+  ([ADR-0013](../../docs/architecture/decisions/0013-category-icons-are-android-vector-drawables.md)):
+  they are Android vector drawables in `src/assets/category-icons/`, rendered and tinted by
+  **Category icon** (`CategoryIcon`), and used for categories only. Do not use one for anything else,
+  and do not draw a category pictogram from `View`s.
+- **Every token comes from [`src/theme.ts`](../../src/theme.ts).** `colors`, `spacing`, `radius`, and
+  `categoryPalette` (the colours a category can take) — and no second source of styling. A raw hex
+  or a magic number in a `StyleSheet` is a finding, with existing exceptions: `mark`'s foreground in
+  `RichText`, the FAB's spinner colour and the foreground on a filled `Button` (`FOREGROUND_ON_FILL`),
+  all of which need contrast against a fixed background,
   and the **modal backdrop scrim** (`#000000aa`) behind the Menu sheet, the Export sample deck
-  dialog and the Session setup dialog — a translucent black has to dim whatever is underneath, so
+  dialog, the Session setup dialog and the Category picker — a translucent black has to dim whatever is underneath, so
   it cannot be one of the opaque theme colours. Reuse that value for any new modal; do not pick a
   second one.
 - **Every control needs an accessibility label on the same element as its press handler**, not on

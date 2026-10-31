@@ -16,9 +16,9 @@ materially harm the user experience instead of ignoring them.
 ## Project context
 
 This is **Easy Flashcards**, a React Native app built with plain React Native primitives — **no
-component library, no icon font, no SVG**. It is **dark-only**: there is no light scheme and no
-theme switch. The design system is one file, [`src/theme.ts`](../../src/theme.ts): colour, spacing and radius
-tokens, and nothing else. The accent is `colors.primary` (`#4f8cff`).
+component library, no icon font, no SVG library**. It is **dark-only**: there is no light scheme and no
+theme switch. The design system is one file, [`src/theme.ts`](../../src/theme.ts): its tokens, and
+nothing else — read it rather than a copy. The accent is `colors.primary`.
 
 Read these before designing anything:
 
@@ -47,8 +47,10 @@ You are a subagent and start with no memory of earlier phases. Spend the time to
 ## Platform constraints worth knowing
 
 - **There is no icon library.** Every glyph — the tab icons, the menu icons, the kebab dots, the
-  FAB's plus — is composed from nested `View`s with borders and radii. A design that needs a new
-  icon is asking for one to be *drawn*, and the set is deliberately small. The glyphs that exist
+  FAB's plus — is composed from nested `View`s with borders and radii, **except the category
+  icons**: those are Android vector drawables, one tint each, Android-only, and a new one needs a
+  native rebuild (ADR-0013; the UI vocabulary says where the line is). A design that needs a new
+  non-category icon is asking for one to be *drawn*, and the set is deliberately small. The glyphs that exist
   are whatever `MenuIconName` in [`src/components/MenuIcons.tsx`](../../src/components/MenuIcons.tsx)
   lists — read it rather than trusting a copy — and `MenuIcon` takes an optional `size` that
   scales its 20-point grid. Reuse one before adding another.

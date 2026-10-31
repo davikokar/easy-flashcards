@@ -17,6 +17,7 @@ function deck(cardIds: string[]): Deck {
     id: 'd',
     name: 'Deck',
     description: 'About',
+    categoryId: null,
     sourceFileName: null,
     createdAt: 0,
     lastStudiedAt: null,
@@ -42,7 +43,12 @@ function session(overrides: Partial<Session> = {}): Session {
 }
 
 describe('isDeckEditChanged', () => {
-  const unchanged = () => ({ name: 'Deck', description: 'About', cards: draftsOf(deck(['a', 'b'])) });
+  const unchanged = () => ({
+    name: 'Deck',
+    description: 'About',
+    categoryId: null as string | null,
+    cards: draftsOf(deck(['a', 'b'])),
+  });
 
   it('is false for an edit that matches the deck', () => {
     expect(isDeckEditChanged(deck(['a', 'b']), unchanged())).toBe(false);
@@ -51,6 +57,21 @@ describe('isDeckEditChanged', () => {
   it('is true when the title or description differs', () => {
     expect(isDeckEditChanged(deck(['a', 'b']), { ...unchanged(), name: 'Other' })).toBe(true);
     expect(isDeckEditChanged(deck(['a', 'b']), { ...unchanged(), description: '' })).toBe(true);
+  });
+
+  it('is true when only the category differs, in either direction or to another id', () => {
+    const uncategorised = deck(['a', 'b']);
+    const categorised = { ...uncategorised, categoryId: 'category_a' };
+
+    expect(isDeckEditChanged(uncategorised, { ...unchanged(), categoryId: 'category_a' })).toBe(true);
+    expect(isDeckEditChanged(categorised, { ...unchanged(), categoryId: null })).toBe(true);
+    expect(isDeckEditChanged(categorised, { ...unchanged(), categoryId: 'default_law' })).toBe(true);
+  });
+
+  it('is false when the category is the same', () => {
+    const categorised = { ...deck(['a', 'b']), categoryId: 'category_a' };
+
+    expect(isDeckEditChanged(categorised, { ...unchanged(), categoryId: 'category_a' })).toBe(false);
   });
 
   it('is true when a card is edited, added, removed or reordered', () => {
@@ -96,7 +117,7 @@ describe('firstIncompleteCard', () => {
 
 describe('applyDeckEdit', () => {
   it('keeps an existing card’s counters, zeroes a new card’s, and follows the given order', () => {
-    const result = applyDeckEdit(deck(['a', 'b']), 'New', 'Desc', [
+    const result = applyDeckEdit(deck(['a', 'b']), 'New', 'Desc', 'default_law', [
       { id: 'n', question: 'nq', answer: 'na' },
       { id: 'b', question: 'edited', answer: 'ab' },
     ]);
@@ -104,7 +125,23 @@ describe('applyDeckEdit', () => {
     expect(result.cards.map(c => c.id)).toEqual(['n', 'b']);
     expect(result.cards[0]).toMatchObject({ okCount: 0, lastReviewedAt: null });
     expect(result.cards[1]).toMatchObject({ question: 'edited', okCount: 1, lastReviewedAt: 5 });
-    expect(result).toMatchObject({ name: 'New', description: 'Desc', id: 'd' });
+    expect(result).toMatchObject({
+      name: 'New',
+      description: 'Desc',
+      categoryId: 'default_law',
+      id: 'd',
+    });
+  });
+
+  it('writes a null category', () => {
+    const categorised = { ...deck(['a']), categoryId: 'category_a' };
+
+    const result = applyDeckEdit(categorised, 'Deck', 'About', null, [
+      { id: 'a', question: 'qa', answer: 'aa' },
+    ]);
+
+    expect(result.categoryId).toBeNull();
+    expect(result.cards[0]).toMatchObject({ okCount: 1, lastReviewedAt: 5 });
   });
 });
 

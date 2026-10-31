@@ -48,7 +48,7 @@ command writes, do not run it — say in your report what you would have needed 
 ## Project context
 
 This is **Easy Flashcards**, a React Native app in TypeScript, built and tested on Android. No
-account, no network, no backend; everything the app owns is two AsyncStorage keys written by one
+account, no network, no backend; everything the app stores is in AsyncStorage, written by one
 React Context reducer.
 
 You are not required to read the whole standards set before answering — that is the Reviewer's
@@ -82,7 +82,7 @@ the answers usually are:
   side and let the difference speak. Do not rule on which is wrong. The UI vocabulary quotes real
   UI strings, so "does this label still say that?" is a common and answerable version of this.
 - **What the test suite actually covers.** `__tests__/` holds unit tests of `src/utils/`,
-  `src/state/reducer.ts` and the two storage loaders, and nothing renders. If asked whether
+  `src/state/reducer.ts` and the storage loaders, and nothing renders. If asked whether
   something is tested, name the files and let the caller conclude.
 - **Whether a device is attached.** `adb devices`, reported verbatim. `adb` is not on `PATH` here;
   use `"$HOME/AppData/Local/Android/Sdk/platform-tools/adb.exe"`.

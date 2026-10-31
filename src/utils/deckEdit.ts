@@ -4,7 +4,12 @@ import { isSessionActive } from './stats';
 /** A card as the editor holds it; `id` is null until the card is first saved. */
 export type CardDraft = { id: string | null; question: string; answer: string };
 
-export type DeckEdit = { name: string; description: string; cards: CardDraft[] };
+export type DeckEdit = {
+  name: string;
+  description: string;
+  categoryId: string | null;
+  cards: CardDraft[];
+};
 
 /** A card as `updateDeck` receives it: every card has an id by then. */
 export type SavedCardDraft = { id: string; question: string; answer: string };
@@ -15,7 +20,11 @@ export function draftsOf(deck: Deck): CardDraft[] {
 
 /** True when saving the edit would change anything about the deck. */
 export function isDeckEditChanged(deck: Deck, edit: DeckEdit): boolean {
-  if (edit.name !== deck.name || edit.description !== deck.description) {
+  if (
+    edit.name !== deck.name ||
+    edit.description !== deck.description ||
+    edit.categoryId !== deck.categoryId
+  ) {
     return true;
   }
   if (edit.cards.length !== deck.cards.length) {
@@ -44,6 +53,7 @@ export function applyDeckEdit(
   deck: Deck,
   name: string,
   description: string,
+  categoryId: string | null,
   cards: SavedCardDraft[],
 ): Deck {
   const existing = new Map(deck.cards.map(card => [card.id, card]));
@@ -51,6 +61,7 @@ export function applyDeckEdit(
     ...deck,
     name,
     description,
+    categoryId,
     cards: cards.map((draft): Card => {
       const current = existing.get(draft.id);
       return current

@@ -1,4 +1,4 @@
-import { Card, Deck, Session } from '../src/types';
+import { Card, Category, Deck, Session } from '../src/types';
 import { State, initialState, reducer } from '../src/state/reducer';
 
 function card(id: string): Card {
@@ -10,6 +10,7 @@ function deck(id: string, cardIds: string[]): Deck {
     id,
     name: id,
     description: '',
+    categoryId: null,
     sourceFileName: null,
     createdAt: 0,
     lastStudiedAt: null,
@@ -34,23 +35,38 @@ function session(id: string, deckId: string, overrides: Partial<Session> = {}): 
   };
 }
 
-function stateOf(decks: Deck[], sessions: Session[]): State {
-  return { decks, sessions, isLoading: false, error: null };
+function category(id: string): Category {
+  return { id, name: id, color: '#ed6e6e', icon: 'history', createdAt: 1 };
+}
+
+function stateOf(decks: Deck[], sessions: Session[], categories: Category[] = []): State {
+  return { decks, sessions, categories, isLoading: false, error: null };
 }
 
 describe('reducer: loading', () => {
   it('replaces the state and clears the error on loaded', () => {
     const failed: State = { ...initialState, isLoading: false, error: 'boom' };
 
-    const next = reducer(failed, { type: 'loaded', decks: [deck('d', ['a'])], sessions: [] });
+    const next = reducer(failed, {
+      type: 'loaded',
+      decks: [deck('d', ['a'])],
+      sessions: [],
+      categories: [category('c')],
+    });
 
-    expect(next).toEqual({ decks: [deck('d', ['a'])], sessions: [], isLoading: false, error: null });
+    expect(next).toEqual(stateOf([deck('d', ['a'])], [], [category('c')]));
   });
 
   it('keeps the empty data and records the message on loadFailed', () => {
     const next = reducer(initialState, { type: 'loadFailed', message: 'boom' });
 
-    expect(next).toEqual({ decks: [], sessions: [], isLoading: false, error: 'boom' });
+    expect(next).toEqual({
+      decks: [],
+      sessions: [],
+      categories: [],
+      isLoading: false,
+      error: 'boom',
+    });
   });
 });
 
@@ -82,8 +98,19 @@ describe('reducer: addDeck and deleteDeck', () => {
 
 describe('reducer: updateDeck', () => {
   const counted: Card = { ...card('a'), okCount: 2, notOkCount: 1, lastReviewedAt: 7 };
-  const edited = (cards: { id: string; question: string; answer: string }[]) =>
-    ({ type: 'updateDeck', deckId: 'd', name: 'New', description: 'About', cards, at: 100 }) as const;
+  const edited = (
+    cards: { id: string; question: string; answer: string }[],
+    categoryId: string | null = null,
+  ) =>
+    ({
+      type: 'updateDeck',
+      deckId: 'd',
+      name: 'New',
+      description: 'About',
+      categoryId,
+      cards,
+      at: 100,
+    }) as const;
 
   it('changes the title, description and card text and keeps the counters', () => {
     const state = stateOf([{ ...deck('d', []), cards: [counted, card('b')] }], []);
@@ -171,6 +198,40 @@ describe('reducer: updateDeck', () => {
     const state = stateOf([deck('x', ['a'])], []);
 
     expect(reducer(state, edited([]))).toBe(state);
+  });
+
+  it('writes a default or stored custom category id, and null', () => {
+    const state = stateOf([deck('d', ['a'])], [], [category('category_a')]);
+    const cards = [{ id: 'a', question: 'a', answer: 'a' }];
+
+    const withDefault = reducer(state, edited(cards, 'default_law'));
+    const withCustom = reducer(state, edited(cards, 'category_a'));
+    const cleared = reducer(withCustom, edited(cards, null));
+
+    expect(withDefault.decks[0].categoryId).toBe('default_law');
+    expect(withCustom.decks[0].categoryId).toBe('category_a');
+    expect(cleared.decks[0].categoryId).toBeNull();
+  });
+
+  it('writes null for an id that is neither a default nor a stored custom category', () => {
+    const state = stateOf([{ ...deck('d', ['a']), categoryId: 'category_a' }], [], []);
+
+    const next = reducer(state, edited([{ id: 'a', question: 'a', answer: 'a' }], 'category_gone'));
+
+    expect(next.decks[0].categoryId).toBeNull();
+  });
+
+  it('leaves sessions alone when only the category changes', () => {
+    const s = session('s1', 'd', { deckName: 'New' });
+    const state = stateOf([deck('d', ['a', 'b'])], [s], []);
+    const cards = [
+      { id: 'a', question: 'a', answer: 'a' },
+      { id: 'b', question: 'b', answer: 'b' },
+    ];
+
+    const next = reducer(state, edited(cards, 'default_law'));
+
+    expect(next.sessions[0]).toBe(s);
   });
 });
 
@@ -402,13 +463,19 @@ describe('reducer: deleteSession and clearing', () => {
 describe('reducer: resetDeckStats', () => {
   it('zeroes the deck, drops its sessions and leaves other decks alone', () => {
     const counted: Card = { ...card('a'), okCount: 2, okeishCount: 1, notOkCount: 3, lastReviewedAt: 7 };
-    const target: Deck = { ...deck('d1', []), cards: [counted], lastStudiedAt: 7 };
+    const target: Deck = {
+      ...deck('d1', []),
+      cards: [counted],
+      lastStudiedAt: 7,
+      categoryId: 'category_a',
+    };
     const other: Deck = { ...deck('d2', []), cards: [counted], lastStudiedAt: 7 };
     const state = stateOf([target, other], [session('s1', 'd1'), session('s2', 'd2')]);
 
     const next = reducer(state, { type: 'resetDeckStats', deckId: 'd1' });
 
     expect(next.decks[0].lastStudiedAt).toBeNull();
+    expect(next.decks[0].categoryId).toBe('category_a');
     expect(next.decks[0].cards[0]).toMatchObject({
       okCount: 0,
       okeishCount: 0,
@@ -417,5 +484,66 @@ describe('reducer: resetDeckStats', () => {
     });
     expect(next.decks[1]).toBe(other);
     expect(next.sessions.map(s => s.id)).toEqual(['s2']);
+  });
+});
+
+describe('reducer: addCategory and deleteCategory', () => {
+  it('appends a new custom category', () => {
+    const state = stateOf([], [], [category('category_a')]);
+
+    const next = reducer(state, { type: 'addCategory', category: category('category_b') });
+
+    expect(next.categories.map(c => c.id)).toEqual(['category_a', 'category_b']);
+  });
+
+  it('removes a custom category by id and leaves the rest of the state alone', () => {
+    const d = deck('d', ['a']);
+    const state = stateOf([d], [], [category('category_a'), category('category_b')]);
+
+    const next = reducer(state, { type: 'deleteCategory', categoryId: 'category_a' });
+
+    expect(next.categories.map(c => c.id)).toEqual(['category_b']);
+    expect(next.decks[0]).toBe(d);
+  });
+
+  it('returns the same state for an unknown id', () => {
+    const state = stateOf([], [], [category('category_a')]);
+
+    expect(reducer(state, { type: 'deleteCategory', categoryId: 'category_zzz' })).toBe(state);
+  });
+
+  it('returns the same state for a default id', () => {
+    const state = stateOf([], [], [category('category_a')]);
+
+    expect(reducer(state, { type: 'deleteCategory', categoryId: 'default_astronomy' })).toBe(state);
+  });
+
+  it('detaches only the decks that used the category and leaves sessions alone', () => {
+    const users: Deck = { ...deck('d1', ['a']), categoryId: 'category_a' };
+    const others: Deck = { ...deck('d2', ['a']), categoryId: 'category_b' };
+    const none = deck('d3', ['a']);
+    const sessions = [session('s1', 'd1'), session('s2', 'd2')];
+    const state = stateOf([users, others, none], sessions, [
+      category('category_a'),
+      category('category_b'),
+    ]);
+
+    const next = reducer(state, { type: 'deleteCategory', categoryId: 'category_a' });
+
+    expect(next.decks[0]).toEqual({ ...users, categoryId: null });
+    expect(next.decks[1]).toBe(others);
+    expect(next.decks[2]).toBe(none);
+    expect(next.sessions).toBe(sessions);
+  });
+
+  it('returns the same state for a default or unknown id even when decks use a default id', () => {
+    const state = stateOf(
+      [{ ...deck('d1', ['a']), categoryId: 'default_astronomy' }],
+      [],
+      [category('category_a')],
+    );
+
+    expect(reducer(state, { type: 'deleteCategory', categoryId: 'default_astronomy' })).toBe(state);
+    expect(reducer(state, { type: 'deleteCategory', categoryId: 'category_zzz' })).toBe(state);
   });
 });

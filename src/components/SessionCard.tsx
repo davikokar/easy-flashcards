@@ -1,9 +1,10 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { AnswerShares, AnswerTally } from '../types';
+import { AnswerShares, AnswerTally, Category } from '../types';
 import { colors, radius, spacing } from '../theme';
 import { AnswerIcon } from './AnswerIcons';
 import Button from './Button';
+import CategorySquare from './CategorySquare';
 import KebabMenu from './KebabMenu';
 import MenuIcon from './MenuIcons';
 import { MenuItem } from './MenuSheet';
@@ -25,6 +26,8 @@ type Review = {
 
 type Props = {
   deckName: string;
+  /** Drawn at the top left, before the deck name. Nothing, and no gap, when absent. */
+  category?: Category | null;
   isActive: boolean;
   /** Shows the Inverted pill beside the status pill. */
   inverted?: boolean;
@@ -43,6 +46,7 @@ type Props = {
 
 export default function SessionCard({
   deckName,
+  category,
   isActive,
   inverted = false,
   answeredCount,
@@ -70,6 +74,7 @@ export default function SessionCard({
   return (
     <View style={styles.card}>
       <View style={styles.header}>
+        {category ? <CategorySquare category={category} /> : null}
         <View style={styles.title}>
           <Text style={styles.name} numberOfLines={1}>
             {deckName}
@@ -101,6 +106,7 @@ export default function SessionCard({
         </View>
         <KebabMenu
           title={deckName}
+          category={category}
           accessibilityLabel={`Options for the ${deckName} session`}
           items={menuItems}
         />

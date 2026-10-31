@@ -6,8 +6,8 @@ Guidance for AI agents working in this repository.
 
 **Easy Flashcards** is a React Native flashcards app, built and tested on Android. The user
 imports a deck from a local CSV file, studies it card by card, and the app records how well each
-card is known. It has no account, no network calls, and no backend: everything the app owns lives
-in two AsyncStorage keys on the device. Both sides of a card carry a small subset of HTML, which
+card is known. It has no account, no network calls, and no backend: everything the app stores lives
+in AsyncStorage on the device, one key per module (see *Storage keys*). Both sides of a card carry a small subset of HTML, which
 the app parses and renders itself. Prefer clear, conventional code over clever abstractions, and
 explain non-obvious decisions in short commit messages.
 
@@ -20,14 +20,20 @@ explain non-obvious decisions in short commit messages.
   `Animated`). There is **no UI component library and no icon font** — every icon in the app is
   drawn from nested `View`s in [src/components/MenuIcons.tsx](src/components/MenuIcons.tsx),
   [src/components/AnswerIcons.tsx](src/components/AnswerIcons.tsx) and
-  [src/navigation/TabIcons.tsx](src/navigation/TabIcons.tsx).
+  [src/navigation/TabIcons.tsx](src/navigation/TabIcons.tsx), **except the category icons**. Those
+  are Android XML vector drawables in [src/assets/category-icons/](src/assets/category-icons/),
+  rendered with `Image` by [src/components/CategoryIcon.tsx](src/components/CategoryIcon.tsx),
+  which holds the only `require` map of them
+  ([ADR-0013](docs/architecture/decisions/0013-category-icons-are-android-vector-drawables.md)).
+  The exception is for category icons only: any other new icon is still drawn from `View`s, and a
+  change to a drawable needs a native rebuild, not a Metro reload.
 - **Navigation:** React Navigation — one bottom tab navigator, one native stack per tab.
 - **State:** one React Context over `useReducer` — the provider in
   [src/state/DecksContext.tsx](src/state/DecksContext.tsx), the reducer in
   [src/state/reducer.ts](src/state/reducer.ts). No Redux, no Zustand, no MobX
   ([ADR-0003](docs/architecture/decisions/0003-single-context-reducer-store.md)).
-- **Persistence:** AsyncStorage, two keys, written whole on every state change. See *Storage keys*
-  below.
+- **Persistence:** AsyncStorage, one key per module in `src/storage/`, every key written whole on
+  every state change. See *Storage keys* below.
 - **Dependency injection:** none. Modules import each other directly, and pure logic is kept in
   Android-free files so it can be tested without mocking anything.
 - **CSV:** PapaParse, wrapped by [src/utils/csv.ts](src/utils/csv.ts).
@@ -49,15 +55,16 @@ explain non-obvious decisions in short commit messages.
 App.tsx                 # SafeAreaProvider > DecksProvider > RootNavigator
 index.js                # AppRegistry entry point
 src/
-  types.ts              # Deck, Card, Session, Answer, and the derived stats types
-  theme.ts              # colors / spacing / radius tokens — the whole design system
+  types.ts              # Deck, Card, Session, Answer, Category, and the derived stats types
+  theme.ts              # colour / spacing / radius tokens and the category palette — the whole design system
+  assets/               # category-icons/: Android vector drawables + their licence NOTICE (ADR-0013)
   state/                # DecksContext (provider) + reducer.ts (pure): the single store
   storage/              # AsyncStorage read/write + normalisation, one file per key
   navigation/           # RootNavigator, per-tab stacks, param lists, tab icons
   screens/              # One file per screen
   components/           # Reusable presentational components
   services/             # Device-boundary operations: picking and saving files
-  utils/                # Pure TypeScript: csv, html, fileUri, stats, and more
+  utils/                # Pure TypeScript: csv, html, fileUri, stats, categories, and more
 __tests__/              # Jest unit tests: utils, the reducer, the storage loaders
 docs/                   # Architecture, decisions, and the original requirements
 samples/                # Example CSV decks
@@ -150,7 +157,8 @@ the owning document instead, so that adding an ADR or a screen does not touch an
 
 ### State ownership
 
-- **`DecksContext` is the only store.** It holds `decks`, `sessions`, `isLoading` and `error`, and
+- **`DecksContext` is the only store.** It holds `decks`, `sessions`, `categories`, `isLoading` and
+  `error`, and
   it exposes one function per operation. There is no second provider and no global singleton; do
   not add one ([ADR-0003](docs/architecture/decisions/0003-single-context-reducer-store.md)).
 - **A new operation is a new reducer action** in [src/state/reducer.ts](src/state/reducer.ts), not
@@ -216,7 +224,25 @@ the owning document instead, so that adding an ADR or a screen does not touch an
   edit; a removed card takes them with it; the new title is written to every session's `deckName`;
   and removed cards leave the unanswered part of an active session's `cardIds`
   ([ADR-0011](docs/architecture/decisions/0011-deck-editing-is-one-action.md)). A deck's
-  `description` is `''` when it has none, and is not part of the CSV format yet.
+  `description` is `''` when it has none, and is not part of the CSV format yet. The deck's
+  category travels in the same edit: `updateDeck` writes `null` for an id that `findCategory` does
+  not resolve, and does not touch sessions for it (ADR-0011 Amendment 1).
+- **Only custom categories are state.** The built-in categories are `DEFAULT_CATEGORIES` in
+  [src/utils/categories.ts](src/utils/categories.ts): constants, never in the store and never
+  stored, with permanent `default_<icon key>` ids — never change or reuse one, because decks
+  store them. `state.categories` holds the user's own, changed only by `addCategory` and
+  `deleteCategory`; `deleteCategory` ignores any id that is not a stored custom category.
+  `addCategory` trims and mints the id but does **not** validate: call `validateCategoryName` first,
+  as the New category screen does.
+- **A deck refers to at most one category; a session refers to none.** `Deck.categoryId` is a
+  default or custom id, or `null`, and an imported deck starts at `null`. Resolve it only with
+  `findCategory` in [src/utils/categories.ts](src/utils/categories.ts): an id that matches neither a
+  default nor a stored custom category displays as *no category* everywhere, and is not rewritten
+  on load. `deleteCategory` sets `categoryId` to `null` on every deck that used the category, in the
+  same dispatch; a default or unknown id leaves state unchanged, decks included. A session's
+  category is its deck's, looked up at render time — do not add one to `Session`
+  ([ADR-0014](docs/architecture/decisions/0014-deck-belongs-to-one-category.md),
+  [ADR-0002](docs/architecture/decisions/0002-sessions-are-snapshots.md) Amendment 6).
 
 ### Storage keys
 
@@ -225,8 +251,9 @@ writing, and normalising it.
 
 | Key | Holds | Module |
 |---|---|---|
-| `@easy-flashcards/decks/v1` | every `Deck`, each with its `Card[]` and their counters | [src/storage/decksStorage.ts](src/storage/decksStorage.ts) |
+| `@easy-flashcards/decks/v1` | every `Deck`, each with its `description`, its `categoryId` ([ADR-0014](docs/architecture/decisions/0014-deck-belongs-to-one-category.md)), its `Card[]` and their counters | [src/storage/decksStorage.ts](src/storage/decksStorage.ts) |
 | `@easy-flashcards/sessions/v1` | every `Session` — active, completed, and cleared — with the cards fixed in its error review (`fixedCardIds`) and its direction (`inverted`) | [src/storage/sessionsStorage.ts](src/storage/sessionsStorage.ts) |
+| `@easy-flashcards/categories/v1` | every custom `Category`; never the built-in ones ([ADR-0012](docs/architecture/decisions/0012-custom-categories-third-storage-key.md)) | [src/storage/categoriesStorage.ts](src/storage/categoriesStorage.ts) |
 
 - **Reads are defensive and never throw on bad data.** Each loader drops rows it cannot make sense
   of and fills in defaults for missing timestamps, and a corrupt key reads as `[]`, because the
@@ -235,16 +262,20 @@ writing, and normalising it.
 - **Nothing is saved after a failed load.** If loading rejects, the store starts empty with `error`
   set, and the save effect stays off for that run so the empty state cannot overwrite the stored
   data ([ADR-0004](docs/architecture/decisions/0004-versioned-defensive-storage.md) Amendment 2).
+  Every key is loaded together, so any one failing — the categories key included — blocks saving
+  all of them.
 - **The `/v1` suffix is the migration mechanism.** A shape change that the normaliser cannot absorb
   takes a new key, with the old one read once and converted. Do not change what `/v1` means. A new
   field whose default is the *true* value for every older record stays under `/v1`
   ([ADR-0004](docs/architecture/decisions/0004-versioned-defensive-storage.md) Amendment 1) — but
   still needs an ADR and approval, and an older build reading it loses it on its first save.
-- Both keys are written together, as whole arrays, by one `useEffect` in `DecksContext`. There is
+- Every key is loaded together and written together, as whole arrays, by one `useEffect` each in
+  `DecksContext`. There is
   no partial write and no write queue, and a failed write is swallowed deliberately so it cannot
   break a running session.
-- Adding a third key means a new module in `src/storage/`, a row in this table, and an entry in
-  the overview's persistence section. Say so in your report.
+- Adding a key means a new module in `src/storage/`, a row in this table, its load and save in
+  `DecksContext`, and an entry in the overview's persistence section. It needs an ADR and approval
+  (see *What to ask before doing*). Say so in your report.
 
 ### Strings and formatting
 
@@ -338,6 +369,15 @@ Recorded here so they are not rediscovered as surprises. The full list, with rea
   *Add deck manually*, the XML / JSON / JSONL import formats, *Settings*, and the Header toolbar's
   **Filter button** on both the Decks and Learn screens. They are intentional stubs, not bugs — do
   not "fix" one into existence without being asked.
+- **Categories are add-and-delete only, and only the Edit deck screen uses them.** A custom
+  category cannot be edited. A deck's category shows on its Deck card, its sessions' Session
+  cards, the titles of their Deck options menu and Session options menu sheets, and the Edit deck
+  screen's Category field, and nowhere else: a deck count on the Categories tiles, filtering by
+  category, the category in Statistics and a CSV column for it are deliberate follow-ups
+  ([ADR-0014](docs/architecture/decisions/0014-deck-belongs-to-one-category.md) *Not decided
+  here*, Amendment 1). Category icons render on Android only. On iOS (never built) the icon would be
+  blank but a Category square or tile still paints the category's colour, so a categorised deck
+  would show a coloured square with no glyph, not look uncategorised.
 
 ## What to ask before doing
 
@@ -359,7 +399,9 @@ is wider than the diff looks:
 - Changing a `src/utils/stats.ts` signature. Every screen imports it, as do the navigator, some
   components, and the tests — search for its importers before changing one.
 - Changing `theme.ts`. Nearly every component and screen imports it, and there is no second source
-  of styling.
+  of styling. `src/utils/categories.ts` and the categories loader import it too: a default
+  category's colour is its position in `categoryPalette`, so reordering the palette recolours the
+  defaults.
 
 ## Memory
 

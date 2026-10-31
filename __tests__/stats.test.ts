@@ -41,6 +41,7 @@ function deck(id: string, cards: Card[]): Deck {
     id,
     name: id,
     description: '',
+    categoryId: null,
     sourceFileName: null,
     createdAt: 0,
     lastStudiedAt: null,

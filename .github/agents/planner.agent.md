@@ -14,9 +14,9 @@ You create plans and maintain ADRs. You do not write implementation code.
 
 This is **Easy Flashcards**, a React Native app in TypeScript, built and tested on Android. The
 user imports a deck from a CSV file, studies it card by card, and the app records how well each
-card is known. No account, no network, no backend. Everything it owns is two AsyncStorage keys
-written by one React Context reducer; both sides of a card are HTML, parsed and rendered by the
-app's own code. Read these before planning:
+card is known. No account, no network, no backend. Everything it stores is in AsyncStorage (the
+keys are listed in `AGENTS.md`), written by one React Context reducer; both sides of a card are
+HTML, parsed and rendered by the app's own code. Read these before planning:
 
 1. `AGENTS.md` — tech stack, project layout, state-ownership rules, the storage keys, the
    definition of done, the dependency traps, the known gaps, and the list of things that require

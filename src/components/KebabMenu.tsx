@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import MenuSheet, { MenuItem } from './MenuSheet';
+import type { Category } from '../types';
 import { colors, radius } from '../theme';
 
 type Props = {
   items: MenuItem[];
   title?: string;
+  /** Shown before the Menu sheet's title. */
+  category?: Category | null;
   accessibilityLabel?: string;
   /** `boxed` is the rounded-square trigger used in the Header toolbar. */
   variant?: 'plain' | 'boxed';
@@ -14,6 +17,7 @@ type Props = {
 export default function KebabMenu({
   items,
   title,
+  category,
   accessibilityLabel = 'More options',
   variant = 'plain',
 }: Props) {
@@ -36,7 +40,13 @@ export default function KebabMenu({
         <View style={styles.dot} />
       </Pressable>
 
-      <MenuSheet visible={isOpen} items={items} title={title} onClose={() => setIsOpen(false)} />
+      <MenuSheet
+        visible={isOpen}
+        items={items}
+        title={title}
+        category={category}
+        onClose={() => setIsOpen(false)}
+      />
     </>
   );
 }

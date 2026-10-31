@@ -2,7 +2,7 @@
 
 This directory holds the architectural documentation for Easy Flashcards.
 
-[ARCHITECTURE.md](ARCHITECTURE.md) describes the current system: the three tabs and six screens,
+[ARCHITECTURE.md](ARCHITECTURE.md) describes the current system: the tabs and their screens,
 the one-way data flow through the single store, the layer responsibilities, persistence, and the
 HTML rendering path. Read it before changing how state is owned, how a screen gets its data, or
 how anything is persisted. It is maintained by the Planner and updated in the same change as the
@@ -39,7 +39,15 @@ for the required format and status rules.
 > ARCHITECTURE.md links to it now that the work has landed. ADR-0010 was recorded ahead of its
 > work, together with Amendment 3 to ADR-0002, and ARCHITECTURE.md links to it now that the work
 > has landed. ADR-0011 was recorded ahead of its work, together with Amendment 5 to ADR-0002, and
-> ARCHITECTURE.md links to it now that the work has landed.
+> ARCHITECTURE.md links to it now that the work has landed. ADR-0012 and ADR-0013 were recorded
+> ahead of their work, together with Amendment 2 to ADR-0003 and Amendment 3 to ADR-0004, and
+> ARCHITECTURE.md links to them now that the work has landed; ADR-0013 carries an amendment
+> recording what landed differently. ADR-0014 was recorded ahead of its work, together with
+> Amendment 6 to ADR-0002, Amendment 1 to ADR-0011 and Amendment 1 to ADR-0012, and
+> ARCHITECTURE.md links to it now that the work has landed; ADR-0003 gained Amendment 3 when it
+> did, and ADR-0014 carries Amendment 1 for the category in the options-menu titles and a corrected
+> iOS consequence. ADR-0012 and ADR-0013 each carry an Amendment 2, recorded ahead of the work that
+> adds the extra category icons; ARCHITECTURE.md links to them now that the work has landed.
 
 ### Index
 
@@ -56,3 +64,6 @@ for the required format and status rules.
 | [ADR-0009](decisions/0009-error-review-marks-cards-fixed.md) | Reviewing a session's errors marks cards fixed and changes no statistic | Active | 2026-10-30 |
 | [ADR-0010](decisions/0010-inverted-sessions.md) | A session's direction is chosen at creation and stored on the session | Active | 2026-10-30 |
 | [ADR-0011](decisions/0011-deck-editing-is-one-action.md) | A deck is edited by one action, and a deck gains a description under the existing v1 key | Active | 2026-10-30 |
+| [ADR-0012](decisions/0012-custom-categories-third-storage-key.md) | Custom categories live under a third storage key | Active | 2026-10-30 |
+| [ADR-0013](decisions/0013-category-icons-are-android-vector-drawables.md) | Category icons are Android vector drawables rendered with Image | Active | 2026-10-30 |
+| [ADR-0014](decisions/0014-deck-belongs-to-one-category.md) | A deck belongs to at most one category, stored on the deck under the existing v1 key | Active | 2026-10-30 |

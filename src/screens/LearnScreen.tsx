@@ -9,7 +9,7 @@ import SearchBar from '../components/SearchBar';
 import SessionCard from '../components/SessionCard';
 import { useDecks } from '../state/DecksContext';
 import { LearnStackParamList, RootTabParamList } from '../navigation/types';
-import { Session } from '../types';
+import { Category, Session } from '../types';
 import {
   clearableSessionCount,
   formatDate,
@@ -21,6 +21,7 @@ import {
   sessionProgressShares,
   sortSessions,
 } from '../utils/stats';
+import { findCategory } from '../utils/categories';
 import { filterByTitle } from '../utils/search';
 import { colors, spacing } from '../theme';
 
@@ -37,6 +38,7 @@ const showDeckUnavailable = () =>
 export default function LearnScreen({ navigation }: Props) {
   const {
     sessions,
+    categories,
     getDeck,
     replaySession,
     deleteSession,
@@ -58,6 +60,15 @@ export default function LearnScreen({ navigation }: Props) {
     }
     return states;
   }, [ordered, getDeck]);
+  // A session stores no category: it takes its deck's, and none when the deck is gone.
+  const sessionCategories = useMemo(() => {
+    const byId = new Map<string, Category | null>();
+    for (const session of ordered) {
+      const deck = getDeck(session.deckId);
+      byId.set(session.id, deck ? findCategory(deck.categoryId, categories) : null);
+    }
+    return byId;
+  }, [ordered, getDeck, categories]);
 
   const closeSearch = useCallback(() => {
     setSearchOpen(false);
@@ -211,6 +222,7 @@ export default function LearnScreen({ navigation }: Props) {
           return (
             <SessionCard
               deckName={item.deckName}
+              category={sessionCategories.get(item.id) ?? null}
               isActive={isActive}
               inverted={item.inverted}
               answeredCount={item.results.length}

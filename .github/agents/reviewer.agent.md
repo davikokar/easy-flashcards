@@ -17,7 +17,7 @@ Designer.
 ## Project context
 
 This is **Easy Flashcards**, a React Native app in TypeScript, built and tested on Android. No
-account, no network, no backend. Everything it owns is two AsyncStorage keys written by one React
+account, no network, no backend. Everything it stores is in AsyncStorage, written by one React
 Context reducer; both sides of a card are HTML, parsed and rendered by the app's own code. The
 standards you review against are:
 
@@ -87,7 +87,8 @@ Does the code conform to this repo's documented standards?
   that removes a deck cascade to its sessions, and does one that renames a deck update the
   `deckName` snapshots?
 - **Styling.** Does every colour, spacing and radius come from `src/theme.ts`? A raw hex or a magic
-  number in a `StyleSheet` is a hard violation; there are exactly two documented exceptions.
+  number in a `StyleSheet` is a hard violation, except those listed under *Writing UI* in
+  `.github/instructions/ui-vocabulary.instructions.md`.
 - **Accessibility.** Does every new control carry an `accessibilityLabel` on the element with the
   press handler, not on the child that draws it? Did a `testID` appear — the app has none by
   convention?

@@ -6,16 +6,16 @@ card by card, and track how well you know each card.
 ## Features
 
 - **Bottom tab navigation** with a *Decks* tab (import decks and start sessions), a *Learn* tab
-  (your sessions, and where you study them) and a *Statistics* tab.
+  (your sessions, and where you study them), a *Categories* tab and a *Statistics* tab.
 - **CSV import** from any local file through the Android system file picker.
   - Columns `Question` and `Answer` (header matching is case-insensitive).
   - Delimiters: semicolon (`;`) or tab (`\t`).
   - BOM and CRLF tolerant; incomplete rows are skipped and reported.
 - **Deck editing**: *Edit deck* in a deck's menu opens a form for the deck's title, an optional
-  description (shown on its card on the *Decks* tab) and its cards. Edit a card's question or
-  answer, add a card, or remove one, then press *Save*; nothing changes until you do. Editing a
-  card keeps its statistics, removing one deletes them, and the title change reaches the deck's
-  sessions.
+  description (shown on its card on the *Decks* tab), its category and its cards. Edit a card's
+  question or answer, add a card, or remove one, then press *Save*; nothing changes until you do.
+  Editing a card keeps its statistics, removing one deletes them, and the title change reaches the
+  deck's sessions.
 - **Study sessions** with an animated card flip, three icon feedback buttons — *Not Ok* (cross),
   *Okeish* (question mark) and *Ok* (tick) — a progress indicator, and an end-of-session summary
   that offers to review the cards you missed or were unsure of, or to study the whole deck again.
@@ -44,6 +44,14 @@ card by card, and track how well you know each card.
   `<ul>`/`<ol>`/`<li>`, `<h1>`-`<h6>`, `<code>`, `<mark>`, `<font color="...">`, HTML entities.
 - **Statistics** persisted locally: per-deck review counts, success rate and session counts, plus a
   per-card drill-down sorted hardest first.
+- **Categories** on the *Categories* tab: a set of built-in subject categories (astronomy,
+  mathematics, cinema and more), each with its own colour and icon, plus your own. *New category*
+  lets you pick a name (up to 30 characters, not already used), a colour and an icon; a category
+  you created can be deleted from its tile. Give a deck a category from *Edit deck*: its icon then
+  shows on the deck's card and on its sessions on the *Learn* tab, and at the top of their options
+  menus. Deleting a category leaves its
+  decks with no category (the confirmation says how many). Categories cannot be edited, and you
+  cannot yet filter by category or see one in *Statistics*. The category icons are Android-only.
 - Everything is stored on-device with AsyncStorage. Each answer is saved the moment you give it,
   so leaving a session early loses nothing and you can resume it later from the *Learn* tab.
 
@@ -84,12 +92,13 @@ npm test
 | Path | Purpose |
 | --- | --- |
 | [src/navigation](src/navigation) | Bottom tabs + per-tab native stacks |
-| [src/screens](src/screens) | Decks, Edit deck, Learn, Study, Statistics and per-deck statistics screens |
-| [src/components](src/components) | Flip card, HTML renderer, buttons, progress bars, session setup dialog |
+| [src/screens](src/screens) | One file per screen: decks, sessions and study, categories, statistics |
+| [src/components](src/components) | Flip card, HTML renderer, buttons, progress bars, dialogs, category tiles, squares and pickers |
 | [src/state](src/state) | Context store (`DecksContext.tsx`) over a pure reducer (`reducer.ts`), auto-persisting |
 | [src/storage](src/storage) | AsyncStorage read/write with defensive normalisation, one module per key |
 | [src/services](src/services) | Document picker + file read + CSV parsing; sample deck export |
-| [src/utils](src/utils) | Pure logic: CSV and HTML parsing, statistics, search, shuffling, and more |
+| [src/utils](src/utils) | Pure logic: CSV and HTML parsing, statistics, search, categories, and more |
+| [src/assets/category-icons](src/assets/category-icons) | Category icons: Material Symbols by Google (Apache License 2.0, see its `NOTICE`) as Android vector drawables |
 | [\_\_tests\_\_](__tests__) | Jest unit tests for the utils, the reducer and the storage loaders |
 
 ## Notes on dependencies

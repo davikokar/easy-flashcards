@@ -20,6 +20,7 @@ import {
   summarizeSessionsByDeck,
 } from '../utils/stats';
 import { CsvImportError } from '../utils/csv';
+import { findCategory } from '../utils/categories';
 import { filterByTitle } from '../utils/search';
 import { shuffle } from '../utils/shuffle';
 import { ImportCancelledError, pickAndParseCsv } from '../services/importDeck';
@@ -35,7 +36,7 @@ const showFilterStub = () => Alert.alert('Filter', 'Filtering decks is not avail
 const START_DEBOUNCE_MS = 1000;
 
 export default function DecksScreen({ navigation }: Props) {
-  const { decks, sessions, error, addDeck, deleteDeck, startSession } = useDecks();
+  const { decks, sessions, categories, error, addDeck, deleteDeck, startSession } = useDecks();
   const [isImporting, setIsImporting] = useState(false);
   const lastStartAt = useRef(0);
   const [openMenu, setOpenMenu] = useState<'add' | 'format' | null>(null);
@@ -250,6 +251,7 @@ export default function DecksScreen({ navigation }: Props) {
           return (
             <DeckCard
               name={item.name}
+              category={findCategory(item.categoryId, categories)}
               description={item.description}
               cardCount={stats.cardCount}
               shares={answerShares(stats)}

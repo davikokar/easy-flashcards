@@ -163,6 +163,21 @@ a card drops it from the *unanswered* part of an **active** session's `cardIds` 
 delete that session), so `cardIds` is frozen only for completed sessions and for the answered part of
 an active one.
 
+## Amendment 6 — 2026-10-30
+
+[ADR-0014](0014-deck-belongs-to-one-category.md) lets a deck belong to a category. The decision
+above is unchanged. One detail is settled so that it is not later "fixed": **a session does not
+store its category.** The Learn screen resolves it at render time through `session.deckId` →
+`deck.categoryId`, so re-categorising a deck changes the icon on its existing sessions, cleared ones
+included, and a session whose deck no longer exists shows none.
+
+This is not a breach of the snapshot rule. The snapshot exists so that a session's **length and
+content** do not change under it (*Context* above); a category is presentation and records nothing
+about the pass. Sessions already follow their deck's identity rather than freezing it: `updateDeck`
+rewrites `deckName` on every session of the deck (Amendment 5). Adding a `categoryId` to `Session`
+would be a stored-shape change under `@easy-flashcards/sessions/v1`, and needs an ADR that
+supersedes this amendment.
+
 ## References
 
 - [`src/types.ts`](../../../src/types.ts) — `Session`, `SessionResult`
@@ -173,4 +188,6 @@ an active one.
 - [ADR-0008](0008-clear-completed-sessions.md) — the cleared state (Amendment 1)
 - [ADR-0009](0009-error-review-marks-cards-fixed.md) — reviewing without a session (Amendment 2)
 - [ADR-0010](0010-inverted-sessions.md) — a session's direction (Amendment 3)
+- [ADR-0014](0014-deck-belongs-to-one-category.md) — a session's category comes from its deck
+  (Amendment 6)
 - [ARCHITECTURE.md §2, §5](../ARCHITECTURE.md)
