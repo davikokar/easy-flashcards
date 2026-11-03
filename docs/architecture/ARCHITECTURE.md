@@ -40,12 +40,12 @@ canonical; the full vocabulary is in
 |---|---|---|---|
 | Decks | **Decks screen** | Every imported deck as a **Deck card**: its **Category square** at the top left, and again before the title of its **Deck options menu**, when the deck has a category ([ADR-0014](decisions/0014-deck-belongs-to-one-category.md) Amendment 1), its card count, a **Mastery bar** splitting its reviews into Ok / Okeish / Not ok, its session and active-session counts, and its last session date. Where a deck is imported, started, edited, and deleted. A deck's description is not shown on its Deck card. The **Start session button** starts in deck order and not inverted; the Deck options menu's **Start session with options** opens the **Session setup dialog**, where **Inverted** and **Shuffle** are chosen independently ([ADR-0010](decisions/0010-inverted-sessions.md)). | `DecksScreen`, route `DecksList` |
 | Decks | **Edit deck screen** | One deck's title, description, category and cards in editable fields: add a card, remove a card, edit a card's question and answer. The **Category field** under the description opens the **Category picker**, which offers the **No category choice** and then every default and custom category in one alphabetical grid ([ADR-0014](decisions/0014-deck-belongs-to-one-category.md)). Nothing is written until **Save**, which commits the whole edit in one action ([ADR-0011](decisions/0011-deck-editing-is-one-action.md)); leaving with unsaved changes asks first. | `EditDeckScreen`, route `EditDeck` (param `deckId`) |
-| Learn | **Learn screen** | Every listed session — active, or completed and not cleared — as a **Session card**, active ones first and most recently touched first within each group. A card shows the **Category square** of its deck's category as it is now, and again before the title of its **Session options menu** — none when the deck has no category or no longer exists, because a session stores no category ([ADR-0014](decisions/0014-deck-belongs-to-one-category.md), Amendment 1) — a **Session status pill** (followed by an **Inverted pill** on an inverted session), a **Session results bar** splitting the session's cards into answered Ok / Okeish / Not ok and unanswered, and a footer with the start date and icon-only buttons: **Resume** on an active session; on a completed one the **Review errors button** — shown while the session has missed or unsure cards that still exist in its deck, with a **Review badge** giving how many are outstanding, or a tick and the button disabled once every one is fixed — then the **Replay button**. Where a session is resumed; replayed — a new session over the original's cards that still exist, in its order, which **also clears the original** ([ADR-0008](decisions/0008-clear-completed-sessions.md) Amendment 1); restarted over the whole deck with **Start a new session**, which leaves the original untouched; its errors reviewed, which opens the Study screen in review mode and creates no session ([ADR-0009](decisions/0009-error-review-marks-cards-fixed.md)); an active one discarded (a real delete); and a completed one cleared, singly or all at once (hidden from the list but still counted — ADR-0008). Every session started from a session keeps its `inverted`. | `LearnScreen`, route `LearnList` |
+| Learn | **Learn screen** | Every listed session — active, or completed and not cleared — as a **Session card**, active ones first and most recently touched first within each group. A card shows the **Category square** of its deck's category as it is now, and again before the title of its **Session options menu** — none when the deck has no category or no longer exists, because a session stores no category ([ADR-0014](decisions/0014-deck-belongs-to-one-category.md), Amendment 1) — a **Session status pill** (followed by an **Inverted pill** on an inverted session), a **Session results bar** splitting the session's cards into answered Ok / Okeish / Not ok and unanswered, and a footer with the start date and icon-only buttons: **Resume** on an active session; on a completed one the **Review errors button** — shown while the session has missed or unsure cards that still exist in its deck, with a **Review badge** giving how many are outstanding, or a tick and the button disabled once every one is fixed — then the **Replay button**. Where a session is resumed; replayed — a new session over the original's cards that still exist, in its order, which **also clears the original** ([ADR-0008](decisions/0008-clear-completed-sessions.md) Amendment 1); restarted over the whole deck with **Start a new session**, which leaves the original untouched; its errors reviewed, which opens the Study screen in review mode and creates no session ([ADR-0009](decisions/0009-error-review-marks-cards-fixed.md)); an active one discarded (a real delete, which also withdraws its answers from the card counters — ADR-0008 Amendment 2); and a completed one cleared, singly or all at once (hidden from the list but still counted — ADR-0008). Every session started from a session keeps its `inverted`. | `LearnScreen`, route `LearnList` |
 | Learn | **Study screen** | One session, in its direction — an inverted session shows each card's answer first and an **Inverted pill** in the Progress header ([ADR-0010](decisions/0010-inverted-sessions.md)): the flip card, the icon-only answer buttons (Not Ok, Okeish, Ok — [ADR-0007](decisions/0007-okeish-third-answer.md)), the answered-so-far strip, and the **Session summary**, which offers **Review the {n} missed or unsure** (switching to review mode over the same session) and **Study the whole deck again** (a new session in the same direction). With `mode: 'review'` on a completed session it is in **review mode** instead: **Review passes** over the session's outstanding missed or unsure cards, each pass a snapshot shown once per card in the session's direction, ending on the **Review summary**. Only an Ok given in a review writes anything, and all it writes is that the card is fixed ([ADR-0009](decisions/0009-error-review-marks-cards-fixed.md)). | `StudyScreen`, route `Study` (params `sessionId`, optional `mode: 'review'`) |
 | Categories | **Categories screen** | Two sections of **Category tiles** — a coloured square with the category's **Category icon**, and its name beneath. The **Custom categories section** lists the user's own categories by name, ignoring case, or a hint when there are none; the **Default categories section** lists the built-in ones, which are constants in code and never stored ([ADR-0012](decisions/0012-custom-categories-third-storage-key.md)). A custom tile opens the **Category options menu**, whose only item is **Delete category**; a default tile does nothing. The **New category button** sits in a footer below the scrolling content. Deleting a custom category detaches it from every deck that uses it, and the confirmation says how many decks will have no category ([ADR-0014](decisions/0014-deck-belongs-to-one-category.md)). A tile shows no deck count. | `CategoriesScreen`, route `CategoriesList` |
 | Categories | **New category screen** | A preview **Category tile**, the **Name field**, the **Colour picker** and the **Icon picker**. **Save** stays disabled until the name passes `validateCategoryName`, then adds the category and goes back; leaving with unsaved changes asks first. There is no screen for editing a category. | `NewCategoryScreen`, route `NewCategory` |
-| Statistics | **Statistics screen** | Totals across every deck, then one row per deck. A search narrows the rows and leaves the totals. | `StatsScreen`, route `StatsOverview` |
-| Statistics | **Deck statistics screen** | One deck's totals and every card in it, hardest first. | `DeckStatsScreen`, route `DeckStats` (param `deckId`) |
+| Statistics | **Statistics screen** | The **Timeframe chips** — `All time`, `This month` and `Last 7 days`, a fixed row above the list, hidden when there are no decks — then the **Aggregated stats** card — the **Mastery ring** (each answer's share of every review, with the Ok-only success rate in its centre — [ADR-0007](decisions/0007-okeish-third-answer.md)) above four **Stat tiles**: `Decks`, `Total cards`, `Total reviews` and `Sessions` — then the **Decks breakdown**, one **Deck stats card** per deck, each showing the deck's **Category square** when it has a category ([ADR-0014](decisions/0014-deck-belongs-to-one-category.md) Amendment 2), a **Mastery bar**, and its card, session and review counts and last session date. The selected timeframe changes the Mastery ring, the `Total reviews` and `Sessions` tiles, and each Deck stats card's Mastery bar, `Reviews` and `Sessions`; `Decks`, `Total cards`, a card's `Cards` and `Last` stay all time, and the selection is local to the screen and never stored ([ADR-0015](decisions/0015-answers-carry-a-timestamp-under-v2-keys.md)). A search narrows the Deck stats cards and leaves the Aggregated stats. | `StatsScreen`, route `StatsOverview` |
+| Statistics | **Deck statistics screen** | One deck's totals and every card in it, hardest first. Always all time, from the card counters; the Statistics screen's timeframe does not reach it (ADR-0015). | `DeckStatsScreen`, route `DeckStats` (param `deckId`) |
 
 The detail screens are reached by pushing onto their tab's stack: **Edit deck** from the Decks
 screen's Deck options menu, **Study** from the Learn screen (Resume, Replay, Review errors, Start a
@@ -73,8 +73,8 @@ the user types; see §3 for how a title matches.
 
 ```
 AsyncStorage                              Device (SAF)
-  @easy-flashcards/decks/v1                 @react-native-documents/picker
-  @easy-flashcards/sessions/v1              @dr.pogodin/react-native-fs
+  @easy-flashcards/decks/v2                 @react-native-documents/picker
+  @easy-flashcards/sessions/v2              @dr.pogodin/react-native-fs
   @easy-flashcards/categories/v1                    │
         │                                           │
   decksStorage.ts                           services/importDeck.ts
@@ -96,8 +96,8 @@ AsyncStorage                              Device (SAF)
                         │
               *Screen components  ← the only consumers of the store
                         │   (derive with utils/stats.ts,
-                        │    utils/search.ts and utils/categories.ts
-                        │    inside useMemo)
+                        │    utils/timeframe.ts, utils/search.ts
+                        │    and utils/categories.ts inside useMemo)
                         │
               Components (see §3 for the list)
                         ← plain props + callbacks, no store access
@@ -108,12 +108,26 @@ object, React re-renders, and a `useEffect` watching `state.decks`, `state.sessi
 `state.categories` writes every key back. No screen writes storage, and no storage module knows
 about React.
 
-**Nothing derived is stored.** Success rates, session progress, orderings, and difficulty rankings
-are computed from the raw counters by pure functions in
-[`src/utils/stats.ts`](../../src/utils/stats.ts), called from a `useMemo` in the screen that needs
-them. The only persisted tallies are a card's per-answer counters — one for each `Answer` in
-[`src/types.ts`](../../src/types.ts) — and they are raw. Okeish counts as a review but earns no
+**Nothing derived is stored.** Success rates, answer shares, session progress, orderings,
+difficulty rankings and every timeframe figure are computed by pure functions in
+[`src/utils/stats.ts`](../../src/utils/stats.ts) — a timeframe's start by
+[`src/utils/timeframe.ts`](../../src/utils/timeframe.ts) — called from a `useMemo` in the screen
+that needs them. Two raw records are persisted: a card's per-answer counters — one for each
+`Answer` in [`src/types.ts`](../../src/types.ts) — and each session's `results`, every
+`SessionResult` carrying the `answeredAt` of its answer. Okeish counts as a review but earns no
 credit in any success rate ([ADR-0007](decisions/0007-okeish-third-answer.md)).
+
+**Session results are the answer log, and the reducer keeps the counters equal to it.** For every
+card in a deck, its three counters equal the number of results for that card, by answer, across
+its deck's sessions. `recordAnswer` adds one to both, stamping `answeredAt` with the dispatch's
+`at`; `deleteSession` takes a discarded session's results back off its deck's counters;
+`deleteDeck` and `resetDeckStats` drop both; a card removed by `updateDeck` takes its counters and
+leaves its results, which nothing counts because the card is gone; every other action touches
+neither. The Statistics screen derives every timeframe, All time included, from the log, counting
+a result only while its deck exists and its card is still in it; the Decks screen's Mastery bar,
+the Deck statistics screen and Hardest first read the counters. A reducer test pins the equality
+across a sequence of actions —
+[ADR-0015](decisions/0015-answers-carry-a-timestamp-under-v2-keys.md).
 
 **Decks and sessions meet only in the reducer.** A `Session` holds a `deckId`, a snapshot of
 `deckName`, and a frozen `cardIds` array; it never holds a `Card`. Resolving a session back to its
@@ -138,8 +152,10 @@ in `utils/cardFaces.ts`; answers, card counters and every `stats.ts` function ig
 
 **Clearing a session archives it; it does not delete it.** `clearCompletedSessions` and
 `clearSession` stamp `clearedAt` on completed sessions, which hides them from the Learn screen and
-leaves every session statistic unchanged. `deleteSession` still removes a record outright and is
-used only to discard an active session; `deleteDeck` and `resetDeckStats` remove a deck's sessions,
+leaves every session statistic unchanged. `deleteSession` still removes a record outright and, in
+the same dispatch, withdraws the session's results from its deck's card counters — one per result,
+only for cards still in the deck, never below zero, with `lastReviewedAt` and `lastStudiedAt` left
+as they were (ADR-0008 Amendment 2). It is used only to discard an active session; `deleteDeck` and `resetDeckStats` remove a deck's sessions,
 cleared ones included — [ADR-0008](decisions/0008-clear-completed-sessions.md). `replaySession`
 clears too: in one dispatch it prepends the new session and clears its source with `clearSessionAt`
 semantics (`prependSessionClearing`), so no state, and no save, has both sessions listed or
@@ -204,7 +220,8 @@ tested). A file here may import `src/theme.ts`, which is plain constants.
 |---|---|
 | [`csv.ts`](../../src/utils/csv.ts) | `parseFlashcardsCsv` — wraps PapaParse, detects the delimiter, matches the `Question` / `Answer` headers case-insensitively, skips incomplete rows and counts them, throws `CsvImportError` on a file it cannot use. Also `deckNameFromFileName`. |
 | [`html.ts`](../../src/utils/html.ts) | A tolerant HTML parser: `parseHtml` to `HtmlNode[]`, `decodeEntities`, and the `BLOCK_TAGS` set. It never throws — unclosed and stray tags are absorbed, and an unclosed `<li>` or `<p>` is closed when its next sibling opens. |
-| [`stats.ts`](../../src/utils/stats.ts) | Every derived number in the app: `successRate`, `answerShares`, `sessionProgressShares` (each answer's share of a session's cards rather than of its reviews, scaled down together if the results ever outnumber the cards), `resolvableCardIds` (the given card ids that still exist in a deck, in the given order — what the Learn screen's Replay passes to `replaySession`, and what every review derivation filters through), `getDeckStats`, `getGlobalStats`, `getSessionTally`, `canRecordAnswer` (the reducer's guard for `recordAnswer`: only an active session's next unanswered card is accepted, so a repeated or out-of-order answer is a no-op), `getMissedOrUnsureCardIds`, `getReviewableCardIds`, `getOutstandingReviewCardIds` and `getReviewState` (the error review's derived values — see below), `normalizeFixedCardIds` (the sessions loader's rule for `fixedCardIds`), `applyReviewAnswer` (the transform behind `recordReviewAnswer`, returning the same array when nothing changes), `prependSessionClearing` (the transform behind `replaySession`: the new session first, its source cleared with `clearSessionAt` semantics), `summarizeSessions`, `summarizeSessionsByDeck` (with `EMPTY_SESSION_SUMMARY` for a deck that has none), `isSessionActive`, `isSessionCleared`, `listedSessions` (the sessions the Learn screen shows), `clearableSessionCount` (completed sessions not yet cleared), `clearCompletedSessionsAt` and `clearSessionAt` (the transforms the reducer applies to clear sessions, returning the same array when nothing qualifies), `previousReviewIndex` (where a review swipe right on the Study screen lands — one answered card back, wrapping from the oldest round to the frontier), `sortSessions`, `sortCardsByDifficulty`, `cardReviewCount`, and the `formatRate` / `formatDate` display helpers. |
+| [`stats.ts`](../../src/utils/stats.ts) | Every derived number in the app: `successRate`, `answerShares`, `describeAnswerShares` (the spoken form of a split, `Not reviewed yet` for `null` — part of the accessibility label of the Mastery bar, the Mastery ring and the Deck stats card), `allocateRingSegments` (how many of the Mastery ring's bars each answer gets — see below), `sessionProgressShares` (each answer's share of a session's cards rather than of its reviews, scaled down together if the results ever outnumber the cards), `resolvableCardIds` (the given card ids that still exist in a deck, in the given order — what the Learn screen's Replay passes to `replaySession`, and what every review derivation filters through), `getDeckStats`, `getGlobalStats` (the counter-based totals; `getGlobalStats` is no longer called from `src/` — the tests compare it with `getGlobalStatsSince`), `getDeckStatsSince`, `getGlobalStatsSince`, `countSessionsSince` and `countSessionsByDeckSince` (the Statistics screen's figures, from the answer log — see below), `getSessionTally`, `canRecordAnswer` (the reducer's guard for `recordAnswer`: only an active session's next unanswered card is accepted, so a repeated or out-of-order answer is a no-op), `getMissedOrUnsureCardIds`, `getReviewableCardIds`, `getOutstandingReviewCardIds` and `getReviewState` (the error review's derived values — see below), `normalizeFixedCardIds` (the sessions loader's rule for `fixedCardIds`), `applyReviewAnswer` (the transform behind `recordReviewAnswer`, returning the same array when nothing changes), `prependSessionClearing` (the transform behind `replaySession`: the new session first, its source cleared with `clearSessionAt` semantics), `summarizeSessions`, `summarizeSessionsByDeck` (with `EMPTY_SESSION_SUMMARY` for a deck that has none), `isSessionActive`, `isSessionCleared`, `listedSessions` (the sessions the Learn screen shows), `clearableSessionCount` (completed sessions not yet cleared), `clearCompletedSessionsAt` and `clearSessionAt` (the transforms the reducer applies to clear sessions, returning the same array when nothing qualifies), `previousReviewIndex` (where a review swipe right on the Study screen lands — one answered card back, wrapping from the oldest round to the frontier), `sortSessions`, `sortCardsByDifficulty`, `cardReviewCount`, and the `formatRate` / `formatDate` display helpers. |
+| [`timeframe.ts`](../../src/utils/timeframe.ts) | The Statistics screen's timeframes ([ADR-0015](decisions/0015-answers-carry-a-timestamp-under-v2-keys.md)). `Timeframe` is `'all'`, `'month'` or `'week'`; `TIMEFRAMES` lists them in chip order with their labels — `All time`, `This month`, `Last 7 days`. `timeframeStart(timeframe, now)` is the earliest `answeredAt` a window includes, in the device's local time: `null` for all time, local midnight on the 1st of `now`'s month, or local midnight six days before `now`'s day. There is only a start, no end. `now` is an argument, so the tests fix it. |
 | [`fileUri.ts`](../../src/utils/fileUri.ts) | `fileUriToPath` and `pathToFileUri` — the percent-encoding boundary between a `file://` URI and a path. |
 | [`search.ts`](../../src/utils/search.ts) | The title search behind the Search bar. `splitSearchWords` lower-cases a query, splits it on whitespace, `-`, `_` and `.`, and drops empty and repeated words; `titleMatchesWords` is true when every word occurs in the title as a literal substring, in any order; `filterByTitle(items, query, getTitle)` combines the two, and returns `items` itself — not a copy — for a query with no words, so a memoised list keeps its identity. |
 | [`shuffle.ts`](../../src/utils/shuffle.ts) | `shuffle(items, random = Math.random)` — Fisher-Yates over a copy; the input is never mutated. `random` is injectable so tests are deterministic. The Decks screen uses it to order the `cardIds` it passes to `startSession` when **Shuffle** is ticked in the Session setup dialog. Shuffling is not stored; the order is the `cardIds` themselves. |
@@ -217,8 +234,9 @@ tested). A file here may import `src/theme.ts`, which is plain constants.
 `isSessionActive` is the single definition of "active": `completedAt === null`. Do not write that
 comparison anywhere else. `isSessionCleared` is the same for "cleared": `clearedAt !== null`. Only
 a completed session can be cleared, so a session is active, completed and listed, or completed and
-cleared. `summarizeSessions`, `summarizeSessionsByDeck` and the Statistics screen's Sessions tile
-count cleared sessions deliberately, and a test pins it
+cleared. `summarizeSessions`, `summarizeSessionsByDeck`, `countSessionsSince` and
+`countSessionsByDeckSince` — and so the Statistics screen's Sessions Stat tile and every deck's
+session count — count cleared sessions deliberately, and a test pins it
 ([ADR-0008](decisions/0008-clear-completed-sessions.md)).
 
 The same goes for counting answers. `successRate(ok, okeish, notOk)` credits only Ok, so a card
@@ -231,17 +249,35 @@ and `getReviewState` turns that into *none* (active, or nothing reviewable), *ou
 `getOutstandingReviewCardIds`, so the number on the button is the number of cards a tap reviews —
 [ADR-0009](decisions/0009-error-review-marks-cards-fixed.md). `answerShares(tally)` is the display split — each answer's
 percentage of all reviews, or `null` when nothing has been reviewed — and is what the Mastery bar
-draws. `sessionProgressShares(tally, cardCount)` is the same split over a session's cards instead,
-so its shares sum to the answered fraction, and is what the Session results bar draws. Neither is a
-success rate and neither replaces one. Code that computes Not Ok as "everything that is not Ok" silently counts Okeish as
+and the Mastery ring draw. `allocateRingSegments(shares, count)` turns that split into whole bars
+for the ring: they always add up to `count`, leftovers go by largest remainder, and an answer with
+any share gets at least one bar while `count` allows, so a rare answer never vanishes from the ring.
+The ring's centre is `successRate`, not the sum of its coloured bars.
+`sessionProgressShares(tally, cardCount)` is the same split over a session's cards instead,
+so its shares sum to the answered fraction, and is what the Session results bar draws. None of
+these is a success rate and none replaces one. Code that computes Not Ok as "everything that is not Ok" silently counts Okeish as
 Not Ok — [ADR-0007](decisions/0007-okeish-third-answer.md).
+
+The Statistics screen's figures come from one family over the answer log (§2), each taking a
+`since` — a `timeframeStart`, `null` for all time. `getDeckStatsSince(decks, sessions, since)`
+makes one pass over the sessions and returns a `DeckStats` for every deck, counting a result only
+when its session's deck exists, its card is still in that deck, and its `answeredAt` is at or after
+`since`; `cardCount` ignores `since`. `getGlobalStatsSince` sums it, and its `deckCount` and
+`cardCount` ignore `since` too. `countSessionsSince` and `countSessionsByDeckSince` put a session in
+a window when it started at or after `since` or has any result answered at or after it, and count
+how many of those are active; a deck with no session in the window has no entry in the map. With
+`since` `null`, `getDeckStatsSince` equals `getDeckStats` and `countSessionsSince` matches
+`summarizeSessions` whenever the counters and the log agree —
+[ADR-0015](decisions/0015-answers-carry-a-timestamp-under-v2-keys.md).
 
 ### `src/types.ts` — the shapes
 
-`Card`, `Deck`, `Answer`, `SessionResult` and `Session` are what is persisted; a `Deck` carries
+`Card`, `Deck`, `Answer`, `SessionResult` and `Session` are what is persisted; a `SessionResult` is
+`{ cardId, answer, answeredAt }`, `answeredAt` set once when the answer is given
+([ADR-0015](decisions/0015-answers-carry-a-timestamp-under-v2-keys.md)), a `Deck` carries
 `description` and `categoryId` (a category id, not checked against the categories, or `null`), and
 a `Session` carries `clearedAt`, `fixedCardIds` and `inverted` beside its snapshot, and no category. The derived `DeckStats`,
-`SessionSummary`, `AnswerTally`, `AnswerShares` and `ReviewState` are what
+`SessionSummary`, `SessionCount`, `AnswerTally`, `AnswerShares` and `ReviewState` are what
 `stats.ts` returns and are never stored. `Category` (`id`, `name`, `color`, `icon`, `createdAt`) is
 the shape of every category, but only a custom one is persisted; `CategoryIcon` is the union of
 `DefaultCategoryIcon` (the default categories' icons) and `ExtraCategoryIcon`, which
@@ -259,7 +295,10 @@ React import: the `State` shape, `initialState`, the `Action` union and the `red
 tested directly in `__tests__/reducer.test.ts`. [`DecksContext.tsx`](../../src/state/DecksContext.tsx)
 holds the rest: the `DecksProvider` with the load and save effects, the `createId` helper, the
 functions on `DecksContextValue`, and the `useDecks()` hook that throws if used outside the
-provider. `recordAnswer` is guarded by `canRecordAnswer`, and the two clear actions,
+provider. `recordAnswer` is guarded by `canRecordAnswer` and appends
+`{ cardId, answer, answeredAt }` with the action's `at`; `deleteSession` withdraws the deleted
+session's results from its deck's counters through `withdrawAnswers`, a private helper in
+`reducer.ts` (§2). The two clear actions,
 `replaySession` and `recordReviewAnswer` delegate to `clearCompletedSessionsAt`, `clearSessionAt`,
 `prependSessionClearing` and `applyReviewAnswer` — all in `stats.ts`. One private `createSession`
 helper in `DecksContext.tsx` builds the session for both `startSession` and `replaySession`, with
@@ -288,8 +327,16 @@ state, which is neither in the store nor persisted. `DecksScreen`, `LearnScreen`
 each hold whether the Search bar is open and the query, and filter their list with `filterByTitle`
 in a `useMemo`; closing the bar clears the query. The Decks and Statistics screens match on the
 deck's `name`; the Learn screen matches on the session's `deckName` snapshot and searches only
-`listedSessions`, so a cleared session never appears; the Statistics screen filters only its deck
-rows, and its global totals still cover every deck. `DecksScreen` also holds import-in-flight,
+`listedSessions`, so a cleared session never appears; the Statistics screen filters only its Deck
+stats cards, and its Aggregated stats still cover every deck. `StatsScreen` also holds the selected
+`Timeframe`, starting at `'all'` and never stored. One `useMemo` over the timeframe, `decks` and
+`sessions` takes `timeframeStart(timeframe, Date.now())` and derives `getGlobalStatsSince` and its
+`answerShares`, `countSessionsSince`, `getDeckStatsSince` and `countSessionsByDeckSince`; the
+window is cut from the clock only there, so it moves only when the selection or the data changes.
+Others derive `summarizeSessionsByDeck` over all time, for each Deck stats card's `Last`, and for
+each visible deck its windowed stats, their `answerShares`, its windowed session count and its
+category through `findCategory`. The screen renders `TimeframeChips` above its `FlatList`, and only
+when a deck exists. `DecksScreen` also holds import-in-flight,
 which menu is open, and the Session setup dialog's deck, visibility, and **Inverted** and
 **Shuffle** choices, which reset to unticked each time the dialog opens, and resolves each deck's
 category with `findCategory` as it renders the Deck card; `LearnScreen` derives each listed
@@ -325,9 +372,12 @@ name has been typed in, and a character count.
 | [`Button.tsx`](../../src/components/Button.tsx) | The only button. Variants `primary`, `secondary`, `success`, `danger`, `warning`; handles `disabled` and `loading`. Takes an optional `icon` render function, passed the foreground colour for the variant; with no `label` it is icon-only, and its type then requires an `accessibilityLabel`. |
 | [`FlipCard.tsx`](../../src/components/FlipCard.tsx) | The study card. Two faces, a `rotateY` interpolation, and a scrollable body. Owns the animation, not the flip state. Takes `front` and `back` — roles, not card fields: the Study screen fills them from `cardFaces`, so in an inverted session `front` is the card's answer. The `QUESTION` / `ANSWER` side labels stay positional. |
 | [`RichText.tsx`](../../src/components/RichText.tsx) | Renders `parseHtml` output as nested `<Text>`. See §6. |
-| [`SuccessBar.tsx`](../../src/components/SuccessBar.tsx) | The one visual encoding of a success rate. Used on the Study, Statistics and Deck statistics screens; the Decks screen shows a `MasteryBar` and the Learn screen a `SessionResultsBar` instead. An optional `color` overrides the rate-based colours for a bar that is not a success rate — the Study screen's session progress bar passes `colors.text`. |
-| [`MasteryBar.tsx`](../../src/components/MasteryBar.tsx) | The Ok / Okeish / Not ok split of a deck's reviews: a segmented track plus a legend giving each answer's `AnswerIcon` (tick, question mark, cross, in the answer's colour) followed by its percentage. Takes the output of `answerShares`; with `null` it draws an empty track, grey icons, and `--` for each share. The panel carries one accessibility label summarising all three shares. |
+| [`SuccessBar.tsx`](../../src/components/SuccessBar.tsx) | The one visual encoding of a success rate. Used on the Study and Deck statistics screens; the Decks screen shows a `MasteryBar`, the Learn screen a `SessionResultsBar`, and the Statistics screen a `MasteryRing` and a `MasteryBar` per deck instead. An optional `color` overrides the rate-based colours for a bar that is not a success rate — the Study screen's session progress bar passes `colors.text`. |
+| [`MasteryBar.tsx`](../../src/components/MasteryBar.tsx) | The Ok / Okeish / Not ok split of a deck's reviews: a segmented track plus a legend giving each answer's `AnswerIcon` (tick, question mark, cross, in the answer's colour) followed by its percentage. Takes the output of `answerShares`; with `null` it draws an empty track, grey icons, and `--` for each share. The panel carries one accessibility label, `describeAnswerShares` of the shares. Used in the Deck card and the Deck stats card. |
+| [`MasteryRing.tsx`](../../src/components/MasteryRing.tsx) | The **Mastery ring** in the Statistics screen's Aggregated stats card: a ring of short bars drawn from `View`s, coloured Ok / Okeish / Not ok by `allocateRingSegments` over the output of `answerShares` and grey for the rest, with the Ok-only success rate (`formatRate`) and `Success rate` in its centre ([ADR-0007](decisions/0007-okeish-third-answer.md)). Under it, a legend of one row per answer: its `AnswerIcon`, its share and its raw count from the `AnswerTally` it is given; the icons are grey while nothing is reviewed. Draws no panel of its own, and carries one accessibility label with the rate, the shares and the counts. |
 | [`DeckCard.tsx`](../../src/components/DeckCard.tsx) | One deck on the Decks screen: a header with the **Category square** when given a `category` (no square and no gap otherwise), the name, card count and the **Deck options menu** (a `KebabMenu`), a `MasteryBar`, and a footer with the session counts, the last-session date and the **Start session button**. Takes display-ready values and callbacks; derives nothing. |
+| [`DeckStatsCard.tsx`](../../src/components/DeckStatsCard.tsx) | One **Deck stats card** in the Statistics screen's Decks breakdown: a header with the **Category square** when given a `category` (no square and no gap otherwise — [ADR-0014](decisions/0014-deck-belongs-to-one-category.md) Amendment 2), the name and a chevron, a `MasteryBar`, and an inset row of four figures — `Cards`, `Sessions`, `Reviews` and `Last` (`formatDate`). Each figure shrinks to fit its column rather than truncating, inside a line box sized to the font scale so the columns stay aligned. The whole card is one pressable that opens the Deck statistics screen through `onPress`, labelled with the name, `describeAnswerShares` and every figure. Takes display-ready values and callbacks; derives nothing. |
+| [`TimeframeChips.tsx`](../../src/components/TimeframeChips.tsx) | The **Timeframe chips** at the top of the Statistics screen: a radio group of one pill per `TIMEFRAMES` entry, in a row that wraps rather than scrolls. Controlled — the screen owns the selected `Timeframe` and passes `value` and `onChange`; the chips derive nothing and store nothing ([ADR-0015](decisions/0015-answers-carry-a-timestamp-under-v2-keys.md)). |
 | [`HeaderToolbar.tsx`](../../src/components/HeaderToolbar.tsx) | The `headerRight` of the Decks, Learn and Statistics screens: the **Search button**, the **Filter button**, then the `AppMenu` in its `boxed` variant. The Filter button renders only when both `onFilter` and `filterLabel` are given, which the Statistics screen does not. `searchActive` tints the Search button and marks it expanded while the Search bar is open. Takes optional `menuItems` that it passes to `AppMenu` as `extraItems`. The buttons only call the callbacks they are given. It was `DecksToolbar` until the Learn screen used it. |
 | [`SearchBar.tsx`](../../src/components/SearchBar.tsx) | The **Search bar**: a search glyph, an auto-focused `TextInput`, and the **Close search button**. Controlled — the screen owns the query and whether the bar is shown, and passes `value`, `onChangeText`, `onClose` and the placeholder. |
 | [`SessionCard.tsx`](../../src/components/SessionCard.tsx) | One session on the Learn screen: a header with the **Category square** when given a `category` (no square and no gap otherwise), the deck name, the **Session status pill**, the neutral **Inverted pill** when `inverted` is set, and the **Session options menu** (a `KebabMenu`), a `SessionResultsBar`, and a footer with the start date and the icon-only **Resume**, **Review errors** and **Replay** buttons. Resume shows only on an active session and only when `onResume` is given; on a completed one, the Review errors button shows only when a `review` prop (`{ count, done, onPress }`) is given and the Replay button only when `onReplay` is. The Review errors button is the `warning` variant with a **Review badge** — a sibling of the button, so a disabled button's dimming does not fade it, and hidden from accessibility — showing the count (capped at `99+`), or a tick with the button disabled when `done`; the button's accessibility label states the count or that every card is fixed. The pills wrap, so the Inverted pill drops below the status pill on a narrow card. Takes display-ready values and callbacks; derives nothing. |
@@ -339,12 +389,12 @@ name has been typed in, and a character count.
 | [`CardEditor.tsx`](../../src/components/CardEditor.tsx) | One card on the Edit deck screen: a `Card {n}` header with a **Remove card button**, and a **Question** and an **Answer** `FormField`. `React.memo`'d, and takes `cardKey`-addressed callbacks so a keystroke re-renders only the card being typed in. |
 | [`KebabMenu.tsx`](../../src/components/KebabMenu.tsx) | The three-dot control; opens a `MenuSheet`. Owns the open/closed state. An optional `variant="boxed"` draws the trigger as a bordered rounded square, matching the Header toolbar's buttons; the default is `plain`. Passes its optional `title` and `category` through to the sheet. |
 | [`MenuSheet.tsx`](../../src/components/MenuSheet.tsx) | The bottom sheet, in a `Modal`. Defines the shared `MenuItem` type. An optional `title` heads the sheet above a separator; with an optional `category` as well, a 28-point `CategorySquare` sits before the title on the same row (no square and no gap without one; a category without a title shows nothing). Only the Deck card's and Session card's `KebabMenu`s pass a category. |
-| [`MenuIcons.tsx`](../../src/components/MenuIcons.tsx) | `MenuIcon` — every menu icon, drawn from nested `View`s on a 20-point grid. Also carries glyphs used outside menus: `search` and `filter` in the Header toolbar, `search` and `close` in the Search bar, `close` on the Category picker's No category choice, `clock` in the Deck card and Session card footers, and `replay` on the Session card's Review errors and Replay buttons. An optional `size` scales the grid about its centre. |
-| [`AnswerIcons.tsx`](../../src/components/AnswerIcons.tsx) | `AnswerIcon` — the tick, cross and question-mark glyphs for Ok, Not Ok and Okeish, drawn from rotated `View`s. Used on the Study screen's answer buttons, in the `MasteryBar` and `SessionResultsBar` legends, as the tick in a completed session's status pill, as the Review badge's done tick, as the Review summary's all-fixed tick, as the tick in a ticked Session setup dialog checkbox, and as the tick on a selected Colour picker swatch and a selected Category picker tile. Hidden from accessibility; the containing button or panel carries the name. |
+| [`MenuIcons.tsx`](../../src/components/MenuIcons.tsx) | `MenuIcon` — every menu icon, drawn from nested `View`s on a 20-point grid. Also carries glyphs used outside menus: `search` and `filter` in the Header toolbar, `search` and `close` in the Search bar, `close` on the Category picker's No category choice, `clock` in the Deck card and Session card footers, `replay` on the Session card's Review errors and Replay buttons, `play` and `resume` on the Start session and Resume buttons, `delete` on the Edit deck screen's Remove card button, and `file`, `tally` and `clock` on the Statistics screen's Stat tiles — `tally`, four strokes struck through, exists only for the `Total reviews` tile. An optional `size` scales the grid about its centre. |
+| [`AnswerIcons.tsx`](../../src/components/AnswerIcons.tsx) | `AnswerIcon` — the tick, cross and question-mark glyphs for Ok, Not Ok and Okeish, drawn from rotated `View`s. Used on the Study screen's answer buttons, in the `MasteryBar`, `MasteryRing` and `SessionResultsBar` legends, as the tick in a completed session's status pill, as the Review badge's done tick, as the Review summary's all-fixed tick, as the tick in a ticked Session setup dialog checkbox, and as the tick on a selected Colour picker swatch and a selected Category picker tile. Hidden from accessibility; the containing button or panel carries the name. |
 | [`AppMenu.tsx`](../../src/components/AppMenu.tsx) | The header kebab menu. The one component that calls a service. Passes an optional `variant` through to its `KebabMenu`, and takes optional `extraItems` — screen-specific `MenuItem`s shown before Export sample deck and Settings — so a screen can add an item without `AppMenu` reading the store. |
 | [`CategoryIcon.tsx`](../../src/components/CategoryIcon.tsx) | A **Category icon**: an `Image` of the Android vector drawable for an icon key, tinted with `tintColor`, at an explicit `size` (default 24) because a drawable has no intrinsic size. Holds the one `require` map from icon key to `.xml` file — the defaults' icons and the extras alike — typed as a `Record` over `CategoryIcon`, so a key with no drawable entry fails `npm run typecheck`; typecheck does not see the `require` path, so a path naming a missing file fails only when Metro bundles ([ADR-0013](decisions/0013-category-icons-are-android-vector-drawables.md) Amendment 2). Hidden from accessibility. The only icon not drawn from `View`s — [ADR-0013](decisions/0013-category-icons-are-android-vector-drawables.md). |
 | [`CategoryTile.tsx`](../../src/components/CategoryTile.tsx) | A **Category tile**: a square filled with the category's colour, its `CategoryIcon` tinted `colors.background` on top ([ADR-0013](decisions/0013-category-icons-are-android-vector-drawables.md) Amendment 1), and the name beneath in two lines at most. Fills the width its parent gives it. Pressable only when `onPress` is given; `nameDimmed` greys the name for the New category screen's placeholder. `selected` makes a pressable tile a radio, ringed and ticked when true, as the Category picker uses it; `none` draws the **No category choice** instead — a dashed square with a `close` `MenuIcon` and no category colour or icon. |
-| [`CategorySquare.tsx`](../../src/components/CategorySquare.tsx) | A **Category square**: a small rounded square (32 points by default, or the optional `size`) in the category's colour with its `CategoryIcon` tinted `colors.background`. Shown on the Deck card, the Session card and in the Category field, and at 28 points before the title of the Deck options menu and Session options menu sheets; an image for accessibility, labelled with the category's name, with no press behaviour. |
+| [`CategorySquare.tsx`](../../src/components/CategorySquare.tsx) | A **Category square**: a small rounded square (32 points by default, or the optional `size`) in the category's colour with its `CategoryIcon` tinted `colors.background`. Shown on the Deck card, the Session card, the Deck stats card and in the Category field, and at 28 points before the title of the Deck options menu and Session options menu sheets; an image for accessibility, labelled with the category's name, with no press behaviour. |
 | [`CategoryField.tsx`](../../src/components/CategoryField.tsx) | The **Category field** on the Edit deck screen: a labelled row in `FormField`'s style with the `CategorySquare` and name, or a dimmed `No category`, and a chevron. A button that only calls `onPress`; the screen holds the draft and opens the picker. |
 | [`CategoryPicker.tsx`](../../src/components/CategoryPicker.tsx) | The **Category picker**: a centred `Modal` with a scrolling three-column radio grid of `CategoryTile`s — the No category choice first, then the `categories` it is given — and a Cancel button. Picking calls `onSelect` then `onClose`; the backdrop, Back and Cancel close it unchanged. Controlled. |
 | [`CategoryColorPicker.tsx`](../../src/components/CategoryColorPicker.tsx) | The **Colour picker**: a radio group of swatches, six to a row, one per colour of the `palette` prop; the selected one is bordered and carries a tick `AnswerIcon`. Controlled. |
@@ -400,8 +450,9 @@ RootNavigator  (NavigationContainer, dark theme built from src/theme.ts)
 Param lists live in [`src/navigation/types.ts`](../../src/navigation/types.ts), one per stack plus
 `RootTabParamList`. Tab icons are in
 [`src/navigation/TabIcons.tsx`](../../src/navigation/TabIcons.tsx), drawn from `View`s —
-`CategoriesIcon` is a two-by-two grid of outlined squares. The Categories tab never becomes the
-launch tab.
+`CategoriesIcon` is a two-by-two grid of outlined squares. `DecksIcon` is also the icon of the
+Statistics screen's `Decks` Stat tile, the one use of a tab icon outside the navigator. The
+Categories tab never becomes the launch tab.
 
 **The navigator does not mount until the store has loaded.** `RootNavigator` reads `isLoading` from
 `useDecks()` and renders an activity indicator until it is false. This is not a loading nicety: a
@@ -419,6 +470,11 @@ navigates to `Study` with `mode: 'review'`; Resume, Replay and Start a new sessi
 it. Review mode applies only to a completed session: with an active, missing or deckless session
 the Study screen shows its *Nothing to study* state.
 
+**The Statistics screen's timeframe is not navigation state.** It is local state of
+`StatsScreen`, not a route param, and the `DeckStats` route carries only `deckId`, so the Deck
+statistics screen is always all time
+([ADR-0015](decisions/0015-answers-carry-a-timestamp-under-v2-keys.md)).
+
 The navigator sets no `headerRight`. Each tab's root screen sets its own with
 `navigation.setOptions` in a `useLayoutEffect` and restyles the header (background colour and a
 larger title). On the Decks, Learn and Statistics screens that is the **Header toolbar**, which
@@ -435,9 +491,19 @@ One AsyncStorage key per module in `src/storage/`. Nothing else writes storage.
 
 | Key | Holds | Module |
 |---|---|---|
-| `@easy-flashcards/decks/v1` | `Deck[]`, each with its `description` ([ADR-0011](decisions/0011-deck-editing-is-one-action.md)), its `categoryId` ([ADR-0014](decisions/0014-deck-belongs-to-one-category.md)), and its `Card[]` and their counters | [`decksStorage.ts`](../../src/storage/decksStorage.ts) |
-| `@easy-flashcards/sessions/v1` | `Session[]` — active, completed, and cleared ([ADR-0008](decisions/0008-clear-completed-sessions.md)), each with its `fixedCardIds` ([ADR-0009](decisions/0009-error-review-marks-cards-fixed.md)) and its direction, `inverted` ([ADR-0010](decisions/0010-inverted-sessions.md)) | [`sessionsStorage.ts`](../../src/storage/sessionsStorage.ts) |
+| `@easy-flashcards/decks/v2` | `Deck[]`, each with its `description` ([ADR-0011](decisions/0011-deck-editing-is-one-action.md)), its `categoryId` ([ADR-0014](decisions/0014-deck-belongs-to-one-category.md)), and its `Card[]` and their counters; the shape is the one `/v1` held ([ADR-0015](decisions/0015-answers-carry-a-timestamp-under-v2-keys.md)) | [`decksStorage.ts`](../../src/storage/decksStorage.ts) |
+| `@easy-flashcards/sessions/v2` | `Session[]` — active, completed, and cleared ([ADR-0008](decisions/0008-clear-completed-sessions.md)), each with its `fixedCardIds` ([ADR-0009](decisions/0009-error-review-marks-cards-fixed.md)), its direction, `inverted` ([ADR-0010](decisions/0010-inverted-sessions.md)), and every result's `answeredAt` ([ADR-0015](decisions/0015-answers-carry-a-timestamp-under-v2-keys.md)) | [`sessionsStorage.ts`](../../src/storage/sessionsStorage.ts) |
 | `@easy-flashcards/categories/v1` | `Category[]` — the user's own categories only; the built-in ones are code ([ADR-0012](decisions/0012-custom-categories-third-storage-key.md)) | [`categoriesStorage.ts`](../../src/storage/categoriesStorage.ts) |
+
+**The `/v1` decks and sessions keys are orphaned.** Decks and sessions moved to `/v2` because each
+result gained a required `answeredAt` that no older record has a true value for, and the deck
+counters had to start from the same empty log as the sessions
+([ADR-0015](decisions/0015-answers-carry-a-timestamp-under-v2-keys.md),
+[ADR-0004](decisions/0004-versioned-defensive-storage.md) Amendment 4). Nothing reads, converts or
+deletes `@easy-flashcards/decks/v1` or `@easy-flashcards/sessions/v1`: the owner waived the
+conversion step for a greenfield app, so upgrading showed an empty library, and the old data stays
+on the device, unread, for as long as the app is installed. The waiver is not a precedent. The
+categories key did not move, so custom categories survived the upgrade.
 
 **Every key is loaded once**, in parallel, by a mount effect in `DecksProvider`, and if any one
 load rejects the whole load fails. A corrupt or
@@ -455,6 +521,9 @@ and discarded, deliberately: a storage error must not take down a session in pro
 `question` or `answer`; a session whose `cardIds` is not an array — defaults missing timestamps to
 now, clamps `results` to `cardIds.length`, reads a missing or non-numeric card counter as `0`,
 preserves an answer of `'ok'`, `'okeish'` or `'notOk'`, and coerces any other answer to `'ok'`. A
+result's `answeredAt` is kept when it is a finite number and otherwise read as its session's
+`startedAt`, so a damaged answer lands at its session's start rather than in every window — unless
+the session's `startedAt` is missing too, in which case both read as the time of loading. A
 session's `clearedAt` is kept only when it is a finite number **and** the session is completed;
 otherwise it is read as `null`, so an active session can never be hidden. A session's
 `fixedCardIds` goes through `normalizeFixedCardIds` in `stats.ts`: a missing or non-array value is
@@ -475,8 +544,9 @@ the defaults' icons and the extras — reads as `FALLBACK_CATEGORY_ICON`, a defa
 read ([ADR-0012](decisions/0012-custom-categories-third-storage-key.md)). The cost is silent data loss on a corrupt record; the alternative is an app that cannot start
 ([ADR-0004](decisions/0004-versioned-defensive-storage.md)).
 
-**The `/v1` suffix is the migration mechanism.** A shape change the normaliser cannot absorb takes
-a new key and converts from the old one on first read. Nothing rewrites what `/v1` means. A new
+**The version suffix is the migration mechanism.** A shape change the normaliser cannot absorb takes
+a new key and converts from the old one on first read; decks and sessions took `/v2` that way, with
+the conversion waived (above). Nothing rewrites what a version means. A new
 field whose default is the *true* value for every older record is absorbed under `/v1` instead —
 [ADR-0004 Amendment 1](decisions/0004-versioned-defensive-storage.md); a card's Okeish counter is
 the first such field ([ADR-0007](decisions/0007-okeish-third-answer.md)), a session's `clearedAt`
@@ -488,8 +558,13 @@ fourth, absent on every older record and read there as `false`
 every older record and read there as `''` ([ADR-0011](decisions/0011-deck-editing-is-one-action.md)),
 and a deck's `categoryId` the sixth, absent on every older record and read there as `null`
 ([ADR-0014](decisions/0014-deck-belongs-to-one-category.md)).
-The opposite direction is not covered: an older
-build reading data this one wrote loses the Okeish data, drops `clearedAt` so every cleared
+The `/v2` keys kept all six fields and their read defaults.
+The opposite direction is not covered, though since `/v2` it no longer reaches this build's decks
+and sessions: a build older than the `/v2` keys reads and writes only the `/v1` ones, so after a
+downgrade it shows the library as it was before the upgrade, and reinstalling this build shows the
+`/v2` library again; the two never merge (ADR-0004 Amendment 4). Among the builds that share the
+`/v1` keys, an older
+build reading data a newer one wrote loses the Okeish data, drops `clearedAt` so every cleared
 session — every replayed original included — reappears in its Learn list, drops `fixedCardIds` so
 every reviewed session's count returns to its full number of missed or unsure cards, and drops
 `inverted` so every inverted session becomes a normal one — an active one resumed there shows the
@@ -580,16 +655,23 @@ proposing a change:
   including that every key is loaded and saved. The Categories and New category screens, the
   category components, and the name validation the New category screen relies on before calling
   `addCategory` are all untested. So is everything that shows a deck's category: the Category
-  square on the Deck and Session cards and in their Menu sheet titles, the Category field and picker, the Learn screen's session →
+  square on the Deck and Session cards, in their Menu sheet titles and on the Deck stats card, the Category field and picker, the Learn screen's session →
   deck → category resolution, the delete confirmation's deck count, and `updateDeck` passing the
   edit's `categoryId` through `DecksContext`. Only `findCategory`, `countDecksInCategory`,
   `isDeckEditChanged`, `applyDeckEdit`, the icon keys and labels, the drawable file names, the
-  reducer cases and the loader rule are tested. Adding a
+  reducer cases and the loader rule are tested. On the Statistics screen only the derivations are
+  tested — `answerShares`, `describeAnswerShares`, `allocateRingSegments`, the session summaries,
+  `timeframeStart` and the `*Since` functions; the Mastery ring, the Stat tiles, the Deck stats card
+  and the Timeframe chips are not, and neither is the screen's wiring — which figure follows the
+  timeframe and which stays all time, the window cut from `Date.now()`, the chips hidden when there
+  are no decks. The Learn screen's Discard confirmation, which says the answers leave Statistics, is
+  untested too. Adding a
   component-test setup is a dependency change and needs approval.
 - **`deleteSession` deletes whatever it is given.** The rule that it is only for discarding an
   active session lives in the Learn screen, not the reducer; a future caller that deletes a
-  completed session silently changes the session statistics
-  ([ADR-0008](decisions/0008-clear-completed-sessions.md)).
+  completed session silently removes its answers from every statistic and lowers its deck's card
+  counters, because `deleteSession` withdraws them
+  ([ADR-0008](decisions/0008-clear-completed-sessions.md) Amendment 2).
 - **Study review mode can only be checked on a device.** The pass snapshot, the pass's local
   answers, the frontier switching between `session.results` and the pass, the reset on a change of
   `(sessionId, mode)`, the empty pass that goes straight to the Review summary, and the rule that a
@@ -602,9 +684,15 @@ proposing a change:
   that the Study screen passes it the session's `inverted`, or that every path creating a session
   from another passes the source's flag. A card shown the wrong way round passes `npm test`; only a
   device run catches it ([ADR-0010](decisions/0010-inverted-sessions.md)).
-- **A downgrade silently loses Okeish data, un-clears every cleared session, forgets every fixed
-  card, un-inverts every inverted session, drops every deck's description and category, and can
-  replace a custom category's icon.** An
+- **A downgrade shows a different library, and between older builds it still loses data.** A build
+  older than the `/v2` keys reads and writes only the `/v1` decks and sessions keys, so a downgrade
+  from this build shows the library as it was before the upgrade and never touches the `/v2` data;
+  reinstalling this build shows the `/v2` library again, and the two never merge
+  ([ADR-0015](decisions/0015-answers-carry-a-timestamp-under-v2-keys.md)). Between builds that share
+  the `/v1` keys a downgrade silently loses Okeish data, un-clears every cleared session, forgets
+  every fixed card, un-inverts every inverted session, and drops every deck's description and
+  category; and because the categories key did not move, a build older than the extra icons can
+  still replace a custom category's icon. An
   older APK drops the card's Okeish counter, reads every `'okeish'` answer as `'ok'`, drops each
   session's `clearedAt`, `fixedCardIds` and `inverted`, and drops each deck's `description` and
   `categoryId`, and its first save makes all of that permanent. No session statistic is lost — the
@@ -618,8 +706,9 @@ proposing a change:
   blocks it: `versionCode`
   in [`android/app/build.gradle`](../../android/app/build.gradle) has never been bumped and release
   builds share the debug keystore. Accepted in ADR-0007, ADR-0008, ADR-0009, ADR-0010, ADR-0011,
-  [ADR-0014](decisions/0014-deck-belongs-to-one-category.md) and
-  [ADR-0012](decisions/0012-custom-categories-third-storage-key.md) Amendment 2, not mitigated.
+  [ADR-0014](decisions/0014-deck-belongs-to-one-category.md),
+  [ADR-0012](decisions/0012-custom-categories-third-storage-key.md) Amendment 2 and ADR-0015, not
+  mitigated.
 - **An error review is invisible to Statistics and cannot be undone.** A card fixed in a review
   keeps the rate its sessions gave it; Okeish and Not ok answers in a review are recorded nowhere;
   an accidental Ok removes the card from that session's later passes, and only a Replay or a new
@@ -637,11 +726,34 @@ proposing a change:
   *restore* and no *show cleared*: a session cleared by mistake stays hidden though its data is
   intact, and its review state is hidden with it. Accepted in
   [ADR-0008](decisions/0008-clear-completed-sessions.md).
-- **A deck's statistics can fall out of step with its sessions'.** Removing a card in the Edit deck
-  screen deletes its counters for good, but every session that included it keeps its answers, so a
-  deck's totals can be lower than the sum over its sessions. A completed session may also list card
-  ids that no longer exist. Accepted in
-  [ADR-0011](decisions/0011-deck-editing-is-one-action.md).
+- **The card counters and the answer log are two records, kept equal only by the reducer.** The
+  Statistics screen reads session results and skips a removed card's answers, and Discard withdraws
+  its answers from the counters, so after a card removal or a discard the Statistics screen at All
+  time and the Deck statistics screen agree; that half of the former *a deck's statistics can fall
+  out of step with its sessions'* entry is resolved
+  ([ADR-0015](decisions/0015-answers-carry-a-timestamp-under-v2-keys.md)). What remains: removing a
+  card still deletes its counters for good while every session that included it keeps its answers,
+  so the Learn screen's Session cards (`getSessionTally`) still count them, and a completed session
+  may list card ids that no longer exist
+  ([ADR-0011](decisions/0011-deck-editing-is-one-action.md)). And nothing outside the reducer holds
+  the equality: a future action that changes counters or results without the other, a row one
+  loader drops while the other key keeps its counterpart, or a failed write of one key while the
+  other succeeds leaves the Statistics screen disagreeing with the Deck statistics screen and the
+  Decks screen's Mastery bar, silently. A reducer test catches the first; nothing detects or repairs
+  the others. Deriving everything from the log is the recorded way out (ADR-0015 *Alternatives
+  Considered*).
+- **The `/v1` decks and sessions keys are orphaned bytes.** Upgrading to the `/v2` keys showed an
+  empty library; the old data stays on the device, and nothing reads, converts or deletes it (§5).
+  The conversion step was waived for a greenfield app, and the next new key needs it again
+  ([ADR-0004](decisions/0004-versioned-defensive-storage.md) Amendment 4).
+- **Timeframes follow the device clock and time zone.** Each `answeredAt` is the device time when
+  the answer was given, and a window is cut in local time from `Date.now()` when the Statistics
+  screen derives its figures. A time-zone change or a clock set back moves answers between windows,
+  an answer stamped in the future counts in every window, and a wrong clock at study time is stored
+  for good. The screen left open across midnight or into a new month keeps its old window until the
+  selection or the data changes, because the cut is memoised with them. The selection is not
+  remembered across launches, there are no custom ranges, and the Deck statistics screen is always
+  all time (ADR-0015 *Not decided here*).
 - **Editing a deck cannot reorder cards, and exporting a deck is not built.** The title and
   description are not part of the CSV format, and no path writes a deck back to CSV; how they
   would be exported is deliberately left open. A re-import still creates a second deck.
@@ -651,12 +763,13 @@ proposing a change:
   resolved category are not.
 - **Category icons are Android-only.** `Image` renders an XML vector drawable only on Android; on
   iOS every Category icon would be blank — on a Category tile, in the Category picker, and in every
-  Category square (Deck and Session cards, their Menu sheet titles, the Category field) alike. The
+  Category square (Deck and Session cards, their Menu sheet titles, the Deck stats card, the
+  Category field) alike. The
   tile and the square paint their own background in the category's colour, so a categorised deck
   would still show a coloured square, just with no glyph. Read from the code, not observed. An iOS
   build would need another source for the icons
   ([ADR-0013](decisions/0013-category-icons-are-android-vector-drawables.md),
-  [ADR-0014](decisions/0014-deck-belongs-to-one-category.md) Amendment 1).
+  [ADR-0014](decisions/0014-deck-belongs-to-one-category.md) Amendments 1 and 2).
 - **Adding or renaming a category icon needs a native rebuild, and a shipped icon key can never be
   renamed or removed.** The drawables are compiled by AAPT into the APK, so a change under
   `src/assets/category-icons/` is not picked up by a Metro reload. A custom category stores its
@@ -685,11 +798,15 @@ proposing a change:
   and no undo for a delete beyond creating it again, which mints a new id — so the decks the delete
   detached stay uncategorised. Defaults cannot be changed, hidden or deleted
   ([ADR-0012](decisions/0012-custom-categories-third-storage-key.md)).
-- **A deck's category is set only on the Edit deck screen, and nothing else uses it.** There is no
-  deck count ("N entries") on a Category tile, no filtering of the Decks or Learn screen by
-  category — the **Filter button** stays a placeholder — no category in Statistics, and no category
-  column in the CSV format, so an imported deck always starts with none. Each is an open follow-up
-  ([ADR-0014](decisions/0014-deck-belongs-to-one-category.md) *Not decided here*). The default ids
+- **A deck's category is set only on the Edit deck screen, and only displayed.** It shows as a
+  Category square on the Deck card, the Session card, their Menu sheet titles, the Category field
+  and the Statistics screen's Deck stats card
+  ([ADR-0014](decisions/0014-deck-belongs-to-one-category.md) Amendment 2); nothing groups or
+  filters by it, and only the delete confirmation counts it. There is no deck count ("N entries") on a Category tile, no filtering
+  of the Decks or Learn screen by category — the **Filter button** stays a placeholder — no
+  per-category aggregation or filter in Statistics, and no category column in the CSV format, so
+  an imported deck always starts with none. Each is an open follow-up (ADR-0014 *Not decided here*
+  and Amendment 2). The default ids
   `default_<icon key>` are now stored on decks and must never change; withdrawing a default needs a
   rule for the decks that use it (ADR-0012, ADR-0014).
 - **The Category picker opens scrolled to the top.** A selected category further down the

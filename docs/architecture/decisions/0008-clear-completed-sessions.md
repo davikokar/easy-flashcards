@@ -203,6 +203,22 @@ cleared. One more path now clears a session:
 Two existing consequences become more frequent: storage grows by one session per replay, as
 before, and a downgrade un-clears every replayed original along with every hand-cleared session.
 
+## Amendment 2 — 2026-11-03
+
+[ADR-0015](0015-answers-carry-a-timestamp-under-v2-keys.md) makes session results the source of
+the Statistics screen's figures, in every timeframe. The decision above is unchanged — clearing is
+archiving, and a cleared session's answers count in every timeframe. One detail moved:
+
+- **Discard session also withdraws its answers.** `deleteSession` still really deletes, and now, in
+  the same dispatch, decrements its deck's card counters by the session's results. This finishes
+  the thought above that an abandoned pass "is a mistake being undone": before, its answers stayed
+  in the counters after the pass itself was gone. *Delete deck* and *Reset statistics* are
+  unchanged. The *Negative* consequence that `deleteSession` deletes whatever it is given still
+  holds, and a completed session deleted through it would now lower the counters too.
+
+The sessions key is now `@easy-flashcards/sessions/v2`
+([ADR-0004](0004-versioned-defensive-storage.md) Amendment 4); `clearedAt` keeps its meaning there.
+
 ## References
 
 - [ADR-0002](0002-sessions-are-snapshots.md) — amended by this record (Amendment 1)
@@ -215,6 +231,8 @@ before, and a downgrade un-clears every replayed original along with every hand-
   cost
 - [ADR-0009](0009-error-review-marks-cards-fixed.md) — the review state a cleared original keeps
   (Amendment 1)
+- [ADR-0015](0015-answers-carry-a-timestamp-under-v2-keys.md) — Discard withdraws its answers
+  (Amendment 2)
 - [`src/types.ts`](../../../src/types.ts) — `Session`
 - [`src/storage/sessionsStorage.ts`](../../../src/storage/sessionsStorage.ts)
 - [`src/state/reducer.ts`](../../../src/state/reducer.ts) — `deleteSession`, `deleteDeck`,

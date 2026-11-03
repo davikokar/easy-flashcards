@@ -178,6 +178,21 @@ rewrites `deckName` on every session of the deck (Amendment 5). Adding a `catego
 would be a stored-shape change under `@easy-flashcards/sessions/v1`, and needs an ADR that
 supersedes this amendment.
 
+## Amendment 7 — 2026-11-03
+
+[ADR-0015](0015-answers-carry-a-timestamp-under-v2-keys.md) adds timeframes to the Statistics
+screen. The decision above is unchanged — a session is still a snapshot, in its own key. Three
+details moved:
+
+- **A result records when it was given.** Each `SessionResult` carries a required `answeredAt`,
+  so Amendment 3's "a result still records only a card id and an answer" no longer holds.
+- **A session's `results` are now the answer log the Statistics screen reads**, for every
+  timeframe. Keeping a completed session's results frozen, and keeping cleared sessions, is
+  therefore what keeps those statistics stable.
+- **Sessions are stored under `@easy-flashcards/sessions/v2`**
+  ([ADR-0004](0004-versioned-defensive-storage.md) Amendment 4). The *Decision* above and the
+  earlier amendments name `/v1`; read them as the key of their time.
+
 ## References
 
 - [`src/types.ts`](../../../src/types.ts) — `Session`, `SessionResult`
@@ -190,4 +205,6 @@ supersedes this amendment.
 - [ADR-0010](0010-inverted-sessions.md) — a session's direction (Amendment 3)
 - [ADR-0014](0014-deck-belongs-to-one-category.md) — a session's category comes from its deck
   (Amendment 6)
+- [ADR-0015](0015-answers-carry-a-timestamp-under-v2-keys.md) — a result's time, and the `/v2`
+  key (Amendment 7)
 - [ARCHITECTURE.md §2, §5](../ARCHITECTURE.md)

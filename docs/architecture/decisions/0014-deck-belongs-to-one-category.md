@@ -181,6 +181,24 @@ The decision above is unchanged. Two details of it are recorded more precisely:
   two sheet titles alike. The Category tile is drawn the same way and would show the same. This is
   read from the code, not observed: the iOS project has never been built.
 
+## Amendment 2 — 2026-11-03
+
+Recorded ahead of the work it governs. The decision above is unchanged; this settles one part of
+the *Not decided here* item "the category in Statistics".
+
+- **A Deck stats card shows its deck's Category square.** Each Deck stats card in the Statistics
+  screen's Decks breakdown — rendered by the new `DeckStatsCard` component, part of the Statistics
+  screen redesign, and called the **Deck stats row** when this amendment was recorded; the UI
+  vocabulary renamed it when the work landed — shows the deck's **Category square**, resolved
+  through `findCategory`. The *Display* rule above applies unchanged: a deck with no category, or
+  whose `categoryId` no longer resolves, shows no square and reserves no gap.
+- **Why:** the rows had no icon, and the category is the only per-deck image the app has data for.
+  Reusing it avoids inventing a per-deck icon with nothing behind it.
+- **Still not decided:** a deck count on the Categories tab's tiles, filtering by category, a
+  category aggregation in Statistics, and a category column in the CSV format.
+- Sessions still store no category. Nothing persisted changes and no dependency is added. On iOS
+  the square would show without its glyph, as Amendment 1 records for the other places.
+
 ## References
 
 - [ADR-0002](0002-sessions-are-snapshots.md) — snapshots; amended by this record (Amendment 6)
@@ -200,6 +218,8 @@ The decision above is unchanged. Two details of it are recorded more precisely:
 - [`src/components/CategorySquare.tsx`](../../../src/components/CategorySquare.tsx),
   [`src/components/MenuSheet.tsx`](../../../src/components/MenuSheet.tsx) — the square, and the
   sheet title that shows it (Amendment 1)
+- [`src/components/DeckStatsCard.tsx`](../../../src/components/DeckStatsCard.tsx) — the Deck stats
+  card that shows the square on the Statistics screen (Amendment 2)
 - [ARCHITECTURE.md §1, §2, §3, §5, §8](../ARCHITECTURE.md) — updated for this record by the change
   that implemented it
 - [AGENTS.md](../../../AGENTS.md) — *State ownership*, *Storage keys*, *What to ask before doing*

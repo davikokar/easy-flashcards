@@ -78,7 +78,9 @@ export default function DeckStatsScreen({ route, navigation }: Props) {
               <Text style={[styles.meta, styles.notOk]}>{stats.notOkCount} not ok</Text>
             </View>
             <View style={styles.metaRow}>
-              <Text style={styles.meta}>{sessionSummary.total} sessions</Text>
+              <Text style={styles.meta}>
+                {sessionSummary.total} {sessionSummary.total === 1 ? 'session' : 'sessions'}
+              </Text>
               <Text style={styles.meta}>
                 Last session {formatDate(sessionSummary.lastSessionAt)}
               </Text>

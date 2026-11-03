@@ -1,4 +1,4 @@
-import { Answer, Category, Deck, Session } from '../types';
+import { Answer, AnswerTally, Category, Deck, Session, SessionResult } from '../types';
 import { findCategory } from '../utils/categories';
 import { SavedCardDraft, applyDeckEdit, reconcileSession, removedCardIds } from '../utils/deckEdit';
 import {
@@ -50,6 +50,36 @@ export const initialState: State = {
   isLoading: true,
   error: null,
 };
+
+/** Takes a discarded session's answers back out of the deck's card counters; never below zero. */
+function withdrawAnswers(deck: Deck, results: SessionResult[]): Deck {
+  const withdrawn = new Map<string, AnswerTally>();
+  for (const result of results) {
+    const tally = withdrawn.get(result.cardId) ?? { okCount: 0, okeishCount: 0, notOkCount: 0 };
+    if (result.answer === 'ok') {
+      tally.okCount += 1;
+    } else if (result.answer === 'okeish') {
+      tally.okeishCount += 1;
+    } else {
+      tally.notOkCount += 1;
+    }
+    withdrawn.set(result.cardId, tally);
+  }
+  return {
+    ...deck,
+    cards: deck.cards.map(card => {
+      const tally = withdrawn.get(card.id);
+      return tally
+        ? {
+            ...card,
+            okCount: Math.max(0, card.okCount - tally.okCount),
+            okeishCount: Math.max(0, card.okeishCount - tally.okeishCount),
+            notOkCount: Math.max(0, card.notOkCount - tally.notOkCount),
+          }
+        : card;
+    }),
+  };
+}
 
 export function reducer(state: State, action: Action): State {
   switch (action.type) {
@@ -120,7 +150,10 @@ export function reducer(state: State, action: Action): State {
       if (!session || !canRecordAnswer(session, action.cardId)) {
         return state;
       }
-      const results = [...session.results, { cardId: action.cardId, answer: action.answer }];
+      const results = [
+        ...session.results,
+        { cardId: action.cardId, answer: action.answer, answeredAt: action.at },
+      ];
       const updatedSession: Session = {
         ...session,
         results,
@@ -152,11 +185,19 @@ export function reducer(state: State, action: Action): State {
         }),
       };
     }
-    case 'deleteSession':
+    case 'deleteSession': {
+      const session = state.sessions.find(item => item.id === action.sessionId);
+      if (!session) {
+        return state;
+      }
       return {
         ...state,
-        sessions: state.sessions.filter(session => session.id !== action.sessionId),
+        sessions: state.sessions.filter(item => item !== session),
+        decks: state.decks.map(deck =>
+          deck.id === session.deckId ? withdrawAnswers(deck, session.results) : deck,
+        ),
       };
+    }
     case 'clearCompletedSessions': {
       const sessions = clearCompletedSessionsAt(state.sessions, action.at);
       return sessions === state.sessions ? state : { ...state, sessions };

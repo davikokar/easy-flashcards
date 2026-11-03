@@ -1,5 +1,6 @@
-import { Card, Category, Deck, Session } from '../src/types';
-import { State, initialState, reducer } from '../src/state/reducer';
+import { Answer, Card, Category, Deck, Session, SessionResult } from '../src/types';
+import { Action, State, initialState, reducer } from '../src/state/reducer';
+import { getDeckStats, getDeckStatsSince, getGlobalStats, getGlobalStatsSince } from '../src/utils/stats';
 
 function card(id: string): Card {
   return { id, question: id, answer: id, okCount: 0, okeishCount: 0, notOkCount: 0, lastReviewedAt: null };
@@ -177,7 +178,7 @@ describe('reducer: updateDeck', () => {
       [
         session('active', 'd', {
           cardIds: ['a', 'b', 'c'],
-          results: [{ cardId: 'a', answer: 'ok' }],
+          results: [{ cardId: 'a', answer: 'ok', answeredAt: 1 }],
         }),
         session('done', 'd', {
           cardIds: ['a', 'b', 'c'],
@@ -190,7 +191,7 @@ describe('reducer: updateDeck', () => {
     const next = reducer(state, edited([{ id: 'c', question: 'c', answer: 'c' }]));
 
     expect(next.sessions[0].cardIds).toEqual(['a', 'c']);
-    expect(next.sessions[0].results).toEqual([{ cardId: 'a', answer: 'ok' }]);
+    expect(next.sessions[0].results).toEqual([{ cardId: 'a', answer: 'ok', answeredAt: 1 }]);
     expect(next.sessions[1].cardIds).toEqual(['a', 'b', 'c']);
   });
 
@@ -285,7 +286,9 @@ describe('reducer: recordAnswer', () => {
       at: 50,
     });
 
-    expect(next.sessions[0].results).toEqual([{ cardId: 'a', answer: 'okeish' }]);
+    expect(next.sessions[0].results).toEqual([
+      { cardId: 'a', answer: 'okeish', answeredAt: 50 },
+    ]);
     expect(next.sessions[0].updatedAt).toBe(50);
     expect(next.decks[0].lastStudiedAt).toBe(50);
     expect(next.decks[0].cards[0]).toMatchObject({
@@ -295,6 +298,25 @@ describe('reducer: recordAnswer', () => {
       lastReviewedAt: 50,
     });
     expect(next.decks[0].cards[1].lastReviewedAt).toBeNull();
+  });
+
+  it('stamps each result with the time of its own answer', () => {
+    const afterFirst = reducer(start(), {
+      type: 'recordAnswer',
+      sessionId: 's',
+      cardId: 'a',
+      answer: 'ok',
+      at: 10,
+    });
+    const afterSecond = reducer(afterFirst, {
+      type: 'recordAnswer',
+      sessionId: 's',
+      cardId: 'b',
+      answer: 'notOk',
+      at: 25,
+    });
+
+    expect(afterSecond.sessions[0].results.map(r => r.answeredAt)).toEqual([10, 25]);
   });
 
   it('counts ok and not ok on their own counters', () => {
@@ -386,8 +408,8 @@ describe('reducer: recordReviewAnswer', () => {
           completedAt: 5,
           updatedAt: 5,
           results: [
-            { cardId: 'a', answer: 'ok' },
-            { cardId: 'b', answer: 'notOk' },
+            { cardId: 'a', answer: 'ok', answeredAt: 1 },
+            { cardId: 'b', answer: 'notOk', answeredAt: 2 },
           ],
         }),
       ],
@@ -431,6 +453,95 @@ describe('reducer: deleteSession and clearing', () => {
     const next = reducer(state, { type: 'deleteSession', sessionId: 's1' });
 
     expect(next.sessions.map(s => s.id)).toEqual(['s2']);
+  });
+
+  it('returns the same state for an unknown session', () => {
+    const state = stateOf([deck('d', ['a'])], [session('s1', 'd')]);
+
+    expect(reducer(state, { type: 'deleteSession', sessionId: 'zzz' })).toBe(state);
+  });
+
+  describe('withdrawing answers', () => {
+    const counted = (id: string, okCount: number, okeishCount: number, notOkCount: number): Card => ({
+      ...card(id),
+      okCount,
+      okeishCount,
+      notOkCount,
+      lastReviewedAt: 7,
+    });
+    const answered = (cardId: string, answer: Answer): SessionResult => ({
+      cardId,
+      answer,
+      answeredAt: 5,
+    });
+
+    it('takes each of the discarded answers off its card counter', () => {
+      const d: Deck = {
+        ...deck('d', []),
+        lastStudiedAt: 7,
+        cards: [counted('a', 3, 1, 2), counted('b', 1, 1, 1)],
+      };
+      const state = stateOf(
+        [d],
+        [session('s', 'd', { results: [answered('a', 'ok'), answered('a', 'notOk'), answered('b', 'okeish')] })],
+      );
+
+      const next = reducer(state, { type: 'deleteSession', sessionId: 's' });
+
+      expect(next.decks[0].cards.map(c => [c.okCount, c.okeishCount, c.notOkCount])).toEqual([
+        [2, 1, 1],
+        [1, 0, 1],
+      ]);
+    });
+
+    it('never takes a counter below zero', () => {
+      const d: Deck = { ...deck('d', []), cards: [counted('a', 0, 0, 1)] };
+      const state = stateOf(
+        [d],
+        [session('s', 'd', { results: [answered('a', 'ok'), answered('a', 'notOk'), answered('a', 'notOk')] })],
+      );
+
+      const next = reducer(state, { type: 'deleteSession', sessionId: 's' });
+
+      expect(next.decks[0].cards[0]).toMatchObject({ okCount: 0, okeishCount: 0, notOkCount: 0 });
+    });
+
+    it('skips an answer whose card was removed from the deck', () => {
+      const d: Deck = { ...deck('d', []), cards: [counted('a', 2, 0, 0)] };
+      const state = stateOf(
+        [d],
+        [session('s', 'd', { results: [answered('gone', 'ok'), answered('a', 'ok')] })],
+      );
+
+      const next = reducer(state, { type: 'deleteSession', sessionId: 's' });
+
+      expect(next.decks[0].cards.map(c => c.okCount)).toEqual([1]);
+    });
+
+    it('leaves other decks, other sessions and the review dates alone', () => {
+      const target: Deck = { ...deck('d1', []), lastStudiedAt: 7, cards: [counted('a', 1, 0, 0)] };
+      const other: Deck = { ...deck('d2', []), cards: [counted('a', 1, 0, 0)] };
+      const kept = session('keep', 'd2', { results: [answered('a', 'ok')] });
+      const state = stateOf(
+        [target, other],
+        [session('s', 'd1', { results: [answered('a', 'ok')] }), kept],
+      );
+
+      const next = reducer(state, { type: 'deleteSession', sessionId: 's' });
+
+      expect(next.decks[0]).toMatchObject({ lastStudiedAt: 7 });
+      expect(next.decks[0].cards[0]).toMatchObject({ okCount: 0, lastReviewedAt: 7 });
+      expect(next.decks[1]).toBe(other);
+      expect(next.sessions).toEqual([kept]);
+    });
+
+    it('still deletes a session whose deck no longer exists', () => {
+      const state = stateOf([], [session('s', 'gone', { results: [answered('a', 'ok')] })]);
+
+      const next = reducer(state, { type: 'deleteSession', sessionId: 's' });
+
+      expect(next.sessions).toEqual([]);
+    });
   });
 
   it('clears every completed session and no active one', () => {
@@ -545,5 +656,61 @@ describe('reducer: addCategory and deleteCategory', () => {
 
     expect(reducer(state, { type: 'deleteCategory', categoryId: 'default_astronomy' })).toBe(state);
     expect(reducer(state, { type: 'deleteCategory', categoryId: 'category_zzz' })).toBe(state);
+  });
+});
+
+describe('reducer: counters and the answer log', () => {
+  const answer = (sessionId: string, cardId: string, value: Answer, at: number): Action => ({
+    type: 'recordAnswer',
+    sessionId,
+    cardId,
+    answer: value,
+    at,
+  });
+
+  it('stay equal after recording, discarding, editing and resetting', () => {
+    const d1 = deck('d1', ['a', 'b', 'c']);
+    const d2 = deck('d2', ['x', 'y']);
+    const actions: Action[] = [
+      { type: 'startSession', session: session('s1', 'd1', { cardIds: ['a', 'b', 'c'] }) },
+      answer('s1', 'a', 'ok', 10),
+      answer('s1', 'b', 'notOk', 11),
+      answer('s1', 'c', 'okeish', 12),
+      { type: 'startSession', session: session('s2', 'd1', { cardIds: ['a', 'b', 'c'] }) },
+      answer('s2', 'a', 'okeish', 20),
+      answer('s2', 'b', 'ok', 21),
+      { type: 'startSession', session: session('s3', 'd2', { cardIds: ['x', 'y'] }) },
+      answer('s3', 'x', 'ok', 30),
+      { type: 'deleteSession', sessionId: 's2' },
+      {
+        type: 'updateDeck',
+        deckId: 'd1',
+        name: 'd1',
+        description: '',
+        categoryId: null,
+        cards: [
+          { id: 'a', question: 'a', answer: 'a' },
+          { id: 'b', question: 'b', answer: 'b' },
+        ],
+        at: 40,
+      },
+      { type: 'resetDeckStats', deckId: 'd2' },
+      { type: 'startSession', session: session('s4', 'd1', { cardIds: ['a', 'b'] }) },
+      answer('s4', 'a', 'ok', 50),
+      { type: 'clearCompletedSessions', at: 60 },
+    ];
+
+    let state = stateOf([d1, d2], []);
+    for (const action of actions) {
+      state = reducer(state, action);
+
+      const log = getDeckStatsSince(state.decks, state.sessions, null);
+      state.decks.forEach(d => expect(log.get(d.id)).toEqual(getDeckStats(d)));
+      expect(getGlobalStatsSince(state.decks, state.sessions, null)).toEqual(
+        getGlobalStats(state.decks),
+      );
+    }
+
+    expect(getGlobalStats(state.decks)).toMatchObject({ okCount: 2, okeishCount: 0, notOkCount: 1 });
   });
 });

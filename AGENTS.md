@@ -164,9 +164,11 @@ the owning document instead, so that adding an ADR or a screen does not touch an
 - **A new operation is a new reducer action** in [src/state/reducer.ts](src/state/reducer.ts), not
   a mutation written by a screen, and it gets a test in `__tests__/reducer.test.ts`. Screens call
   `useDecks()` and invoke an exposed function; they never reach into state and write it back.
-- **Derived values are computed, never stored.** Success rates, session progress, orderings and
-  difficulty rankings all live as pure functions in [src/utils/stats.ts](src/utils/stats.ts) and
-  are called from a `useMemo` in the screen. Putting a derived number into the stored shape means
+- **Derived values are computed, never stored.** Success rates, session progress, orderings,
+  difficulty rankings and every timeframe figure all live as pure functions in
+  [src/utils/stats.ts](src/utils/stats.ts) (a timeframe's start in
+  [src/utils/timeframe.ts](src/utils/timeframe.ts)) and are called from a `useMemo` in the screen.
+  Putting a derived number into the stored shape means
   persisting something that can go stale; the counters on a `Card` are the only stored tallies, and
   they are raw — one per `Answer`. A session's `fixedCardIds` is stored too, but it is a list of
   card ids, not a tally; the outstanding count and whether a review is done come from
@@ -174,6 +176,15 @@ the owning document instead, so that adding an ADR or a screen does not touch an
   earns no credit in a success rate
   ([ADR-0007](docs/architecture/decisions/0007-okeish-third-answer.md)); count answers with the
   three-way helpers in `stats.ts`, never as "Ok, else Not Ok".
+- **Session results are the answer log, and the counters must equal it.** Every `SessionResult`
+  carries the `answeredAt` of its answer, and the Statistics screen derives every timeframe, All
+  time included, from the results through the `*Since` functions in `stats.ts`, skipping answers
+  whose card has left its deck. The Decks screen, the Deck statistics screen and Hardest first read
+  the counters. For every card in a deck, its counters equal its results by answer across the
+  deck's sessions, and only the reducer keeps that true: an action that changes a counter or a
+  result must change the other in the same dispatch, and the *counters and the answer log* test in
+  `__tests__/reducer.test.ts` must still pass
+  ([ADR-0015](docs/architecture/decisions/0015-answers-carry-a-timestamp-under-v2-keys.md)).
 - **Screens are the stateful half; components are the stateless half.** A `*Screen` calls
   `useDecks()` and `useNavigation()`; a component in `src/components/` takes plain props and
   callbacks and reads neither. Keep that line — it is what would make the components testable the
@@ -200,14 +211,18 @@ the owning document instead, so that adding an ADR or a screen does not touch an
   rebuild it from `startSession` plus `clearSession`
   ([ADR-0008](docs/architecture/decisions/0008-clear-completed-sessions.md) Amendment 1).
   **Discard session** on an active session is the only
-  UI path that deletes one, through `deleteSession`. *Delete deck* and *Reset statistics* still
+  UI path that deletes one, through `deleteSession`, and it is an undo: in the same dispatch it
+  withdraws the session's answers from its deck's card counters, never below zero, so they leave
+  every statistic ([ADR-0008](docs/architecture/decisions/0008-clear-completed-sessions.md)
+  Amendment 2). *Delete deck* and *Reset statistics* still
   remove that deck's sessions, cleared ones included
   ([ADR-0008](docs/architecture/decisions/0008-clear-completed-sessions.md)). Do not call
-  `deleteSession` on a completed session — nothing in the reducer stops it, and it changes the
-  statistics.
+  `deleteSession` on a completed session — nothing in the reducer stops it, and it would take that
+  session's answers out of the counters and out of every statistic.
 - **An answer is recorded the moment it is given**, not at the end of a session: `recordAnswer`
-  appends to `session.results` and bumps the card's counters in one dispatch
-  ([ADR-0005](docs/architecture/decisions/0005-answers-recorded-immediately.md)). Leaving the Study
+  appends `{ cardId, answer, answeredAt }` to `session.results` and bumps the card's counters in
+  one dispatch, `answeredAt` being the dispatch's `at`
+  ([ADR-0005](docs/architecture/decisions/0005-answers-recorded-immediately.md) Amendment 4). Leaving the Study
   screen mid-session is therefore not a loss of data, and nothing needs an "on exit" save.
 - **Reviewing a session's errors is not studying.** The Learn screen's **Review errors button** and
   the Session summary's *Review the {n} missed or unsure* open the Study screen with
@@ -251,14 +266,24 @@ writing, and normalising it.
 
 | Key | Holds | Module |
 |---|---|---|
-| `@easy-flashcards/decks/v1` | every `Deck`, each with its `description`, its `categoryId` ([ADR-0014](docs/architecture/decisions/0014-deck-belongs-to-one-category.md)), its `Card[]` and their counters | [src/storage/decksStorage.ts](src/storage/decksStorage.ts) |
-| `@easy-flashcards/sessions/v1` | every `Session` — active, completed, and cleared — with the cards fixed in its error review (`fixedCardIds`) and its direction (`inverted`) | [src/storage/sessionsStorage.ts](src/storage/sessionsStorage.ts) |
+| `@easy-flashcards/decks/v2` | every `Deck`, each with its `description`, its `categoryId` ([ADR-0014](docs/architecture/decisions/0014-deck-belongs-to-one-category.md)), its `Card[]` and their counters | [src/storage/decksStorage.ts](src/storage/decksStorage.ts) |
+| `@easy-flashcards/sessions/v2` | every `Session` — active, completed, and cleared — with the cards fixed in its error review (`fixedCardIds`), its direction (`inverted`), and each result's `answeredAt` ([ADR-0015](docs/architecture/decisions/0015-answers-carry-a-timestamp-under-v2-keys.md)) | [src/storage/sessionsStorage.ts](src/storage/sessionsStorage.ts) |
 | `@easy-flashcards/categories/v1` | every custom `Category`; never the built-in ones ([ADR-0012](docs/architecture/decisions/0012-custom-categories-third-storage-key.md)) | [src/storage/categoriesStorage.ts](src/storage/categoriesStorage.ts) |
+
+- **Decks and sessions are on `/v2`; categories stayed on `/v1`.** The `/v1` decks and sessions
+  keys are orphaned: nothing reads, converts or deletes them, so upgrading showed an empty library
+  and the old data stays on the device. The owner waived the conversion step for this greenfield
+  app; it is not a precedent, and the next new key converts its old one again
+  ([ADR-0015](docs/architecture/decisions/0015-answers-carry-a-timestamp-under-v2-keys.md),
+  [ADR-0004](docs/architecture/decisions/0004-versioned-defensive-storage.md) Amendment 4). Do
+  not read or delete the `/v1` keys without an ADR.
 
 - **Reads are defensive and never throw on bad data.** Each loader drops rows it cannot make sense
   of and fills in defaults for missing timestamps, and a corrupt key reads as `[]`, because the
   alternative is an app that will not start after one corrupt write
-  ([ADR-0004](docs/architecture/decisions/0004-versioned-defensive-storage.md)).
+  ([ADR-0004](docs/architecture/decisions/0004-versioned-defensive-storage.md)). A result with no
+  finite `answeredAt` reads as its session's `startedAt`, so a damaged answer lands at its
+  session's start rather than in every timeframe (ADR-0015).
 - **Nothing is saved after a failed load.** If loading rejects, the store starts empty with `error`
   set, and the save effect stays off for that run so the empty state cannot overwrite the stored
   data ([ADR-0004](docs/architecture/decisions/0004-versioned-defensive-storage.md) Amendment 2).
@@ -272,7 +297,8 @@ writing, and normalising it.
 - Every key is loaded together and written together, as whole arrays, by one `useEffect` each in
   `DecksContext`. There is
   no partial write and no write queue, and a failed write is swallowed deliberately so it cannot
-  break a running session.
+  break a running session. Each key is its own `setItem`, so one can fail while another lands,
+  which leaves the stored counters and answer log disagreeing until a later save succeeds.
 - Adding a key means a new module in `src/storage/`, a row in this table, its load and save in
   `DecksContext`, and an entry in the overview's persistence section. It needs an ADR and approval
   (see *What to ask before doing*). Say so in your report.
@@ -369,13 +395,14 @@ Recorded here so they are not rediscovered as surprises. The full list, with rea
   *Add deck manually*, the XML / JSON / JSONL import formats, *Settings*, and the Header toolbar's
   **Filter button** on both the Decks and Learn screens. They are intentional stubs, not bugs — do
   not "fix" one into existence without being asked.
-- **Categories are add-and-delete only, and only the Edit deck screen uses them.** A custom
+- **Categories are add-and-delete only, and only the Edit deck screen assigns them.** A custom
   category cannot be edited. A deck's category shows on its Deck card, its sessions' Session
-  cards, the titles of their Deck options menu and Session options menu sheets, and the Edit deck
-  screen's Category field, and nowhere else: a deck count on the Categories tiles, filtering by
-  category, the category in Statistics and a CSV column for it are deliberate follow-ups
+  cards, the titles of their Deck options menu and Session options menu sheets, the Edit deck
+  screen's Category field and its Deck stats card on the Statistics screen, and nowhere else: a
+  deck count on the Categories tiles, filtering by category, a per-category aggregation in
+  Statistics and a CSV column for it are deliberate follow-ups
   ([ADR-0014](docs/architecture/decisions/0014-deck-belongs-to-one-category.md) *Not decided
-  here*, Amendment 1). Category icons render on Android only. On iOS (never built) the icon would be
+  here*, Amendments 1 and 2). Category icons render on Android only. On iOS (never built) the icon would be
   blank but a Category square or tile still paints the category's colour, so a categorised deck
   would show a coloured square with no glyph, not look uncategorised.
 

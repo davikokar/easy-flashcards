@@ -26,6 +26,8 @@ export type Answer = 'ok' | 'okeish' | 'notOk';
 export type SessionResult = {
   cardId: string;
   answer: Answer;
+  /** When the answer was given (Date.now()); set once and never changed. */
+  answeredAt: number;
 };
 
 /** A learning session: one pass over a snapshot of a deck's cards. */
@@ -59,6 +61,12 @@ export type DeckStats = {
   okeishCount: number;
   notOkCount: number;
   successRate: number | null;
+};
+
+/** How many sessions fall in a timeframe, and how many of those are still active. */
+export type SessionCount = {
+  total: number;
+  active: number;
 };
 
 export type SessionSummary = {

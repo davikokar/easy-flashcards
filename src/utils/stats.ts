@@ -7,6 +7,7 @@ import {
   DeckStats,
   ReviewState,
   Session,
+  SessionCount,
   SessionResult,
   SessionSummary,
 } from '../types';
@@ -36,6 +37,77 @@ export function answerShares(tally: AnswerTally): AnswerShares | null {
     okeish: (tally.okeishCount / total) * 100,
     notOk: (tally.notOkCount / total) * 100,
   };
+}
+
+/** Spoken form of the shares, e.g. "74% Ok, 18% Okeish, 8% Not ok"; "Not reviewed yet" for null. */
+export function describeAnswerShares(shares: AnswerShares | null): string {
+  if (!shares) {
+    return 'Not reviewed yet';
+  }
+  return [
+    `${formatRate(shares.ok)} Ok`,
+    `${formatRate(shares.okeish)} Okeish`,
+    `${formatRate(shares.notOk)} Not ok`,
+  ].join(', ');
+}
+
+// Absorbs float noise such as 70 / 100 * 10 = 7.000000000000001 when flooring and comparing.
+const SEGMENT_EPSILON = 1e-9;
+
+/**
+ * Splits `count` ring segments among Ok, Okeish and Not ok in proportion to `shares`; the three
+ * always add up to `count`. Leftovers go by largest remainder, ties to Ok, then Okeish, then Not ok.
+ * Every share above 0 then gets at least one segment, taken from the largest, while `count` allows.
+ */
+export function allocateRingSegments(shares: AnswerShares | null, count: number): AnswerTally {
+  const zeros: AnswerTally = { okCount: 0, okeishCount: 0, notOkCount: 0 };
+  if (!shares || count <= 0) {
+    return zeros;
+  }
+  // Index order is the tie-break order: Ok, Okeish, Not ok.
+  const values = [shares.ok, shares.okeish, shares.notOk];
+  const total = values.reduce((sum, value) => sum + value, 0);
+  if (!(total > 0)) {
+    return zeros;
+  }
+
+  const exact = values.map(value => (value / total) * count);
+  const segments = exact.map(value => Math.floor(value + SEGMENT_EPSILON));
+  const remainders = exact.map((value, index) => value - segments[index]);
+  const leftover = count - segments.reduce((sum, value) => sum + value, 0);
+
+  const byRemainder = [0, 1, 2]
+    .filter(index => values[index] > 0)
+    .sort((a, b) =>
+      Math.abs(remainders[a] - remainders[b]) > SEGMENT_EPSILON
+        ? remainders[b] - remainders[a]
+        : a - b,
+    );
+  for (let i = 0; i < leftover && i < byRemainder.length; i++) {
+    segments[byRemainder[i]] += 1;
+  }
+
+  const byShare = [0, 1, 2]
+    .filter(index => values[index] > 0)
+    .sort((a, b) => (values[a] !== values[b] ? values[b] - values[a] : a - b));
+  for (const index of byShare) {
+    if (segments[index] > 0) {
+      continue;
+    }
+    let donor = 0;
+    for (let i = 1; i < segments.length; i++) {
+      if (segments[i] > segments[donor]) {
+        donor = i;
+      }
+    }
+    if (segments[donor] <= 1) {
+      break;
+    }
+    segments[donor] -= 1;
+    segments[index] += 1;
+  }
+
+  return { okCount: segments[0], okeishCount: segments[1], notOkCount: segments[2] };
 }
 
 /** Each answer's percentage of the session's cards (0-100); the shares sum to the progress filled. */
@@ -100,6 +172,133 @@ export function getGlobalStats(decks: Deck[]): DeckStats & { deckCount: number }
     notOkCount: totals.notOkCount,
     successRate: successRate(totals.okCount, totals.okeishCount, totals.notOkCount),
   };
+}
+
+/**
+ * Each deck's stats from the answer log: answers at or after `since` (null = all time), counted
+ * only while their deck exists and the card is still in it. One pass over the sessions; every deck
+ * has an entry. With `since` null it equals `getDeckStats` whenever counters and log agree.
+ */
+export function getDeckStatsSince(
+  decks: Deck[],
+  sessions: Session[],
+  since: number | null,
+): Map<string, DeckStats> {
+  const tallies = new Map<string, AnswerTally>();
+  const cardIds = new Map<string, Set<string>>();
+  for (const deck of decks) {
+    tallies.set(deck.id, { okCount: 0, okeishCount: 0, notOkCount: 0 });
+    cardIds.set(deck.id, new Set(deck.cards.map(card => card.id)));
+  }
+
+  for (const session of sessions) {
+    const tally = tallies.get(session.deckId);
+    const present = cardIds.get(session.deckId);
+    if (!tally || !present) {
+      continue;
+    }
+    for (const result of session.results) {
+      if (!present.has(result.cardId) || !isAnsweredSince(result, since)) {
+        continue;
+      }
+      if (result.answer === 'ok') {
+        tally.okCount += 1;
+      } else if (result.answer === 'okeish') {
+        tally.okeishCount += 1;
+      } else {
+        tally.notOkCount += 1;
+      }
+    }
+  }
+
+  const stats = new Map<string, DeckStats>();
+  for (const deck of decks) {
+    const { okCount, okeishCount, notOkCount } = tallies.get(deck.id) as AnswerTally;
+    stats.set(deck.id, {
+      cardCount: deck.cards.length,
+      reviewCount: okCount + okeishCount + notOkCount,
+      okCount,
+      okeishCount,
+      notOkCount,
+      successRate: successRate(okCount, okeishCount, notOkCount),
+    });
+  }
+  return stats;
+}
+
+/** All decks together, from the answer log; `cardCount` and `deckCount` ignore `since`. */
+export function getGlobalStatsSince(
+  decks: Deck[],
+  sessions: Session[],
+  since: number | null,
+): DeckStats & { deckCount: number } {
+  let cardCount = 0;
+  let okCount = 0;
+  let okeishCount = 0;
+  let notOkCount = 0;
+  for (const stats of getDeckStatsSince(decks, sessions, since).values()) {
+    cardCount += stats.cardCount;
+    okCount += stats.okCount;
+    okeishCount += stats.okeishCount;
+    notOkCount += stats.notOkCount;
+  }
+  return {
+    deckCount: decks.length,
+    cardCount,
+    reviewCount: okCount + okeishCount + notOkCount,
+    okCount,
+    okeishCount,
+    notOkCount,
+    successRate: successRate(okCount, okeishCount, notOkCount),
+  };
+}
+
+function isAnsweredSince(result: SessionResult, since: number | null): boolean {
+  return since === null || result.answeredAt >= since;
+}
+
+/** In a timeframe when started at or after `since`, or when any of its answers was. */
+function isSessionSince(session: Session, since: number | null): boolean {
+  return (
+    since === null ||
+    session.startedAt >= since ||
+    session.results.some(result => isAnsweredSince(result, since))
+  );
+}
+
+/** Per-deck session counts in a timeframe, in one pass; a deck with no session has no entry. */
+export function countSessionsByDeckSince(
+  sessions: Session[],
+  since: number | null,
+): Map<string, SessionCount> {
+  const byDeck = new Map<string, SessionCount>();
+  for (const session of sessions) {
+    if (!isSessionSince(session, since)) {
+      continue;
+    }
+    const count = byDeck.get(session.deckId) ?? { total: 0, active: 0 };
+    count.total += 1;
+    if (isSessionActive(session)) {
+      count.active += 1;
+    }
+    byDeck.set(session.deckId, count);
+  }
+  return byDeck;
+}
+
+/** Session counts across every deck in a timeframe; with `since` null it matches `summarizeSessions`. */
+export function countSessionsSince(sessions: Session[], since: number | null): SessionCount {
+  const count: SessionCount = { total: 0, active: 0 };
+  for (const session of sessions) {
+    if (!isSessionSince(session, since)) {
+      continue;
+    }
+    count.total += 1;
+    if (isSessionActive(session)) {
+      count.active += 1;
+    }
+  }
+  return count;
 }
 
 export function isSessionActive(session: Session): boolean {

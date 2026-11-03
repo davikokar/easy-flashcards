@@ -48,6 +48,12 @@ for the required format and status rules.
 > did, and ADR-0014 carries Amendment 1 for the category in the options-menu titles and a corrected
 > iOS consequence. ADR-0012 and ADR-0013 each carry an Amendment 2, recorded ahead of the work that
 > adds the extra category icons; ARCHITECTURE.md links to them now that the work has landed.
+> ADR-0014 carries an Amendment 2, recorded ahead of the Statistics screen redesign that shows a
+> deck's Category square on its Deck stats card; ARCHITECTURE.md links to it now that the work
+> has landed. ADR-0015 was recorded ahead of its work, together with Amendment 7 to ADR-0002,
+> Amendment 4 to ADR-0004, Amendment 4 to ADR-0005 and Amendment 2 to ADR-0008; ARCHITECTURE.md
+> links to it now that the work has landed, and ADR-0015 carries Amendment 1 for a corner of its
+> loader rule found when it did.
 
 ### Index
 
@@ -67,3 +73,4 @@ for the required format and status rules.
 | [ADR-0012](decisions/0012-custom-categories-third-storage-key.md) | Custom categories live under a third storage key | Active | 2026-10-30 |
 | [ADR-0013](decisions/0013-category-icons-are-android-vector-drawables.md) | Category icons are Android vector drawables rendered with Image | Active | 2026-10-30 |
 | [ADR-0014](decisions/0014-deck-belongs-to-one-category.md) | A deck belongs to at most one category, stored on the deck under the existing v1 key | Active | 2026-10-30 |
+| [ADR-0015](decisions/0015-answers-carry-a-timestamp-under-v2-keys.md) | Each answer records when it was given, and statistics by timeframe are derived from session results under new v2 keys | Active | 2026-11-03 |

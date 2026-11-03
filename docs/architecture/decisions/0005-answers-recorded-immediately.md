@@ -123,6 +123,19 @@ checked by `canRecordAnswer` in [`src/utils/stats.ts`](../../../src/utils/stats.
 returns the state unchanged. Before this, two taps landing before a re-render could record the same
 card twice: two results, two counter increments, and a session completed one card early.
 
+## Amendment 4 — 2026-11-03
+
+[ADR-0015](0015-answers-carry-a-timestamp-under-v2-keys.md) adds timeframes to the Statistics
+screen. The decision above is unchanged — one dispatch, no commit step. Two details moved:
+
+- **The result carries the answer's time.** `recordAnswer` appends
+  `{ cardId, answer, answeredAt }`, with `answeredAt` the same `at` it already writes to
+  `updatedAt` and `lastReviewedAt`.
+- **"There is no undo" has one exception.** **Discard session** (`deleteSession`) now withdraws
+  every answer of the discarded session from its deck's card counters, in the same dispatch that
+  deletes it, so the counters stay equal to the session results the Statistics screen reads. A
+  single mis-tapped answer still cannot be undone.
+
 ## References
 
 - [`src/state/reducer.ts`](../../../src/state/reducer.ts) — the `recordAnswer` case
@@ -132,4 +145,6 @@ card twice: two results, two counter increments, and a session completed one car
 - [ADR-0002](0002-sessions-are-snapshots.md) — what is being written into
 - [ADR-0007](0007-okeish-third-answer.md) — the third answer (Amendment 1)
 - [ADR-0009](0009-error-review-marks-cards-fixed.md) — the review answer (Amendment 2)
+- [ADR-0015](0015-answers-carry-a-timestamp-under-v2-keys.md) — the answer's time, and Discard
+  (Amendment 4)
 - [ARCHITECTURE.md §2](../ARCHITECTURE.md)

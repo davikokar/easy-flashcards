@@ -152,6 +152,32 @@ is unchanged and applies to it in full:
 reads or writes `@easy-flashcards/categories/v1`, so its saves cannot overwrite it, and the custom
 categories are intact when the newer build is reinstalled.
 
+## Amendment 4 — 2026-11-03
+
+[ADR-0015](0015-answers-carry-a-timestamp-under-v2-keys.md) adds a required `answeredAt` to each
+session result. No default for it is true of a result written before it, so by Amendment 1 it
+takes a new key — the first time the versioned-key route has been used. Two keys move:
+
+- **`@easy-flashcards/sessions/v1` → `@easy-flashcards/sessions/v2`**, for the new field.
+- **`@easy-flashcards/decks/v1` → `@easy-flashcards/decks/v2`**, with the deck shape unchanged,
+  because its card counters tally answers recorded under `sessions/v1` and would otherwise disagree
+  with the log from the first launch.
+- **`@easy-flashcards/categories/v1` stays.** Nothing about categories changed.
+
+**The "reads the old one once and converts" step is not taken this time.** The project owner
+waived it on 2026-11-03: *"We are in a greenfield project, so we can throw away data and reimport
+the decks. Don't worry about database migrations."* The `/v1` keys are not read, not converted
+and not deleted; upgrading shows an empty library, and the user re-imports. This is a waiver for a
+greenfield app with the owner's consent, **not a precedent**: once the app holds data a user
+cannot re-create, a new key needs its conversion again.
+
+**The defensive read is unchanged and applies to both `/v2` keys.** One rule is added: a result
+whose `answeredAt` is not a finite number reads as its session's `startedAt`, not `Date.now()`.
+
+**Downgrades now leave two data sets.** An older build reads and writes only `/v1`, so it shows the
+pre-upgrade library and never touches `/v2`; reinstalling the newer build shows the `/v2` data.
+Neither overwrites the other, and they never merge.
+
 ## References
 
 - [`src/storage/decksStorage.ts`](../../../src/storage/decksStorage.ts),
@@ -161,5 +187,6 @@ categories are intact when the newer build is reinstalled.
 - [ADR-0003](0003-single-context-reducer-store.md) — the store that drives these writes
 - [ADR-0007](0007-okeish-third-answer.md) — the first shape change under `/v1` (Amendment 1)
 - [ADR-0012](0012-custom-categories-third-storage-key.md) — the third key (Amendment 3)
+- [ADR-0015](0015-answers-carry-a-timestamp-under-v2-keys.md) — the `/v2` keys (Amendment 4)
 - [ARCHITECTURE.md §5](../ARCHITECTURE.md)
 - [AGENTS.md](../../../AGENTS.md) — *Storage keys*, and *What to ask before doing*

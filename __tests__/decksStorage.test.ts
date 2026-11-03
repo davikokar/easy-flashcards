@@ -12,6 +12,16 @@ function stored(rows: unknown): void {
 }
 
 describe('loadDecks', () => {
+  it('reads only the v2 key', async () => {
+    mockGetItem.mockClear();
+    mockGetItem.mockResolvedValue(null);
+
+    await loadDecks();
+
+    expect(mockGetItem).toHaveBeenCalledTimes(1);
+    expect(mockGetItem).toHaveBeenCalledWith('@easy-flashcards/decks/v2');
+  });
+
   it('returns [] when nothing is stored or the value is corrupt', async () => {
     mockGetItem.mockResolvedValue(null);
     expect(await loadDecks()).toEqual([]);

@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Deck } from '../types';
 import { parseStoredArray } from '../utils/storedArray';
 
-const DECKS_KEY = '@easy-flashcards/decks/v1';
+const DECKS_KEY = '@easy-flashcards/decks/v2';
 
 function isCardLike(value: unknown): boolean {
   const card = value as Record<string, unknown> | null;

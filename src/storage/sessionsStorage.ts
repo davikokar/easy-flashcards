@@ -4,9 +4,10 @@ import { readInverted } from '../utils/cardFaces';
 import { normalizeFixedCardIds } from '../utils/stats';
 import { parseStoredArray } from '../utils/storedArray';
 
-const SESSIONS_KEY = '@easy-flashcards/sessions/v1';
+const SESSIONS_KEY = '@easy-flashcards/sessions/v2';
 
-function normalizeResult(value: unknown): SessionResult | null {
+// A result with no usable time reads as the session's start, never now, so it cannot drift into a window.
+function normalizeResult(value: unknown, fallbackAnsweredAt: number): SessionResult | null {
   const result = value as Record<string, unknown> | null;
   if (!result || typeof result.cardId !== 'string') {
     return null;
@@ -14,6 +15,10 @@ function normalizeResult(value: unknown): SessionResult | null {
   return {
     cardId: result.cardId,
     answer: result.answer === 'notOk' || result.answer === 'okeish' ? result.answer : 'ok',
+    answeredAt:
+      typeof result.answeredAt === 'number' && Number.isFinite(result.answeredAt)
+        ? result.answeredAt
+        : fallbackAnsweredAt,
   };
 }
 
@@ -32,7 +37,9 @@ function normalizeSession(value: unknown): Session | null {
   const startedAt = typeof session.startedAt === 'number' ? session.startedAt : Date.now();
   const cardIds = session.cardIds.filter((id): id is string => typeof id === 'string');
   const results = Array.isArray(session.results)
-    ? session.results.map(normalizeResult).filter((r): r is SessionResult => r !== null)
+    ? session.results
+        .map(item => normalizeResult(item, startedAt))
+        .filter((r): r is SessionResult => r !== null)
     : [];
 
   const completedAt = typeof session.completedAt === 'number' ? session.completedAt : null;

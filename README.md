@@ -31,7 +31,8 @@ card by card, and track how well you know each card.
   Statistics). *Start a new session* in a session's menu studies the whole deck again and leaves
   the session where it is. Either way the new session keeps the original's direction. Completed
   sessions can also be cleared from the list, one at a time or all at once; they still count in
-  Statistics.
+  Statistics. Discarding an unfinished session deletes it and takes its answers back out of the
+  statistics.
 - **Error review**: a completed session with cards you missed or were unsure of shows a review
   button with the number still to fix. Reviewing goes through those cards once, in the session's
   order and direction; answering *Ok* marks a card fixed for that session, and the others stay for
@@ -42,18 +43,33 @@ card by card, and track how well you know each card.
   any order and ignoring case. On *Statistics* the overall totals stay unfiltered.
 - **HTML formatting** on both sides of a card: `<b>`, `<i>`, `<u>`, `<s>`, `<br />`, `<p>`,
   `<ul>`/`<ol>`/`<li>`, `<h1>`-`<h6>`, `<code>`, `<mark>`, `<font color="...">`, HTML entities.
-- **Statistics** persisted locally: per-deck review counts, success rate and session counts, plus a
-  per-card drill-down sorted hardest first.
+- **Statistics** on the *Statistics* tab: an overall success rate in a ring split into ok / okeish
+  / not ok, with totals for decks, cards, reviews and sessions; then a card per deck with its
+  category, its ok / okeish / not ok split, and its card, session and review counts and last
+  session date. Tap a deck for a per-card drill-down sorted hardest first. Chips at the top switch
+  the success rate, the review and session totals, and each deck's split, review count and session
+  count between *All
+  time*, *This month* and *Last 7 days*; deck and card counts, last session dates and the per-card
+  drill-down are always all time. The choice is not remembered.
 - **Categories** on the *Categories* tab: a set of built-in subject categories (astronomy,
   mathematics, cinema and more), each with its own colour and icon, plus your own. *New category*
   lets you pick a name (up to 30 characters, not already used), a colour and an icon; a category
   you created can be deleted from its tile. Give a deck a category from *Edit deck*: its icon then
-  shows on the deck's card and on its sessions on the *Learn* tab, and at the top of their options
-  menus. Deleting a category leaves its
+  shows on the deck's card and on its sessions on the *Learn* tab, at the top of their options
+  menus, and on the deck's card on the *Statistics* tab. Deleting a category leaves its
   decks with no category (the confirmation says how many). Categories cannot be edited, and you
-  cannot yet filter by category or see one in *Statistics*. The category icons are Android-only.
+  cannot yet filter by category or see totals per category in *Statistics*. The category icons are
+  Android-only.
 - Everything is stored on-device with AsyncStorage. Each answer is saved the moment you give it,
   so leaving a session early loses nothing and you can resume it later from the *Learn* tab.
+
+## Upgrading
+
+The version that added the Statistics timeframes stores decks and sessions under new storage keys,
+and does not carry the old ones over. After updating to it, the *Decks* tab starts empty: import
+your decks again. Earlier decks, sessions and statistics are not converted or deleted; they stay
+on the device, unread. Your own categories are kept. Installing an older version again shows the
+old library, and the two never merge.
 
 ## CSV format
 

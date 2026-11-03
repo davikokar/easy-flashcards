@@ -15,6 +15,7 @@ export type MenuIconName =
   | 'clock'
   | 'shuffle'
   | 'replay'
+  | 'tally'
   | 'close';
 
 type Props = { name: MenuIconName; color: string; size?: number };
@@ -146,6 +147,16 @@ function Glyph({ name, color }: { name: MenuIconName; color: string }) {
           />
           <View style={[styles.replayHead, styles.replayHeadTop, { borderLeftColor: color }]} />
           <View style={[styles.replayHead, styles.replayHeadBottom, { borderLeftColor: color }]} />
+        </View>
+      );
+    case 'tally':
+      return (
+        <View style={styles.container}>
+          <View style={[styles.tallyBar, styles.tallyBar1, { backgroundColor: color }]} />
+          <View style={[styles.tallyBar, styles.tallyBar2, { backgroundColor: color }]} />
+          <View style={[styles.tallyBar, styles.tallyBar3, { backgroundColor: color }]} />
+          <View style={[styles.tallyBar, styles.tallyBar4, { backgroundColor: color }]} />
+          <View style={[styles.tallySlash, { backgroundColor: color }]} />
         </View>
       );
     case 'close':
@@ -446,6 +457,35 @@ const styles = StyleSheet.create({
     top: 9,
     left: 1.5,
     transform: [{ rotate: '225deg' }],
+  },
+  // Four strokes struck through by a rising slash: a tally of five.
+  tallyBar: {
+    position: 'absolute',
+    top: 4,
+    width: 2,
+    height: 12,
+    borderRadius: 1,
+  },
+  tallyBar1: {
+    left: 3,
+  },
+  tallyBar2: {
+    left: 7,
+  },
+  tallyBar3: {
+    left: 11,
+  },
+  tallyBar4: {
+    left: 15,
+  },
+  tallySlash: {
+    position: 'absolute',
+    top: 9,
+    left: 1,
+    width: 18,
+    height: 2,
+    borderRadius: 1,
+    transform: [{ rotate: '-35deg' }],
   },
   closeBar: {
     position: 'absolute',

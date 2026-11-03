@@ -131,10 +131,14 @@ export default function LearnScreen({ navigation }: Props) {
   const confirmDelete = useCallback(
     (session: Session) => {
       if (isSessionActive(session)) {
-        Alert.alert('Discard session', `Discard the unfinished session for "${session.deckName}"?`, [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Discard', style: 'destructive', onPress: () => deleteSession(session.id) },
-        ]);
+        Alert.alert(
+          'Discard session',
+          `Discard the unfinished session for "${session.deckName}"? Its answers are also removed from Statistics.`,
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Discard', style: 'destructive', onPress: () => deleteSession(session.id) },
+          ],
+        );
         return;
       }
       Alert.alert(

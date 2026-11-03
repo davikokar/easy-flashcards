@@ -26,6 +26,16 @@ function rawSession(overrides: Record<string, unknown> = {}): Record<string, unk
 }
 
 describe('loadSessions', () => {
+  it('reads only the v2 key', async () => {
+    mockGetItem.mockClear();
+    mockGetItem.mockResolvedValue(null);
+
+    await loadSessions();
+
+    expect(mockGetItem).toHaveBeenCalledTimes(1);
+    expect(mockGetItem).toHaveBeenCalledWith('@easy-flashcards/sessions/v2');
+  });
+
   it('returns [] when nothing is stored or the value is corrupt', async () => {
     mockGetItem.mockResolvedValue(null);
     expect(await loadSessions()).toEqual([]);
@@ -74,7 +84,44 @@ describe('loadSessions', () => {
 
     const [loaded] = await loadSessions();
 
-    expect(loaded.results).toEqual([{ cardId: 'a', answer: 'ok' }]);
+    expect(loaded.results).toEqual([{ cardId: 'a', answer: 'ok', answeredAt: 1 }]);
+  });
+
+  it('keeps a finite answeredAt', async () => {
+    stored([rawSession({ results: [{ cardId: 'a', answer: 'ok', answeredAt: 1234 }] })]);
+
+    const [loaded] = await loadSessions();
+
+    expect(loaded.results[0].answeredAt).toBe(1234);
+  });
+
+  it('reads a missing or non-numeric answeredAt as the start of its session', async () => {
+    stored([
+      rawSession({
+        startedAt: 77,
+        results: [
+          { cardId: 'a', answer: 'ok' },
+          { cardId: 'b', answer: 'ok', answeredAt: 'x' },
+          { cardId: 'c', answer: 'ok', answeredAt: null },
+        ],
+      }),
+    ]);
+
+    const [loaded] = await loadSessions();
+
+    expect(loaded.results.map(r => r.answeredAt)).toEqual([77, 77, 77]);
+  });
+
+  it('falls back to the default start when the session has none either', async () => {
+    const before = Date.now();
+    stored([
+      { id: 's', deckId: 'd', cardIds: ['a'], results: [{ cardId: 'a', answer: 'ok' }] },
+    ]);
+
+    const [loaded] = await loadSessions();
+
+    expect(loaded.results[0].answeredAt).toBe(loaded.startedAt);
+    expect(loaded.startedAt).toBeGreaterThanOrEqual(before);
   });
 
   it('keeps clearedAt only on a completed session', async () => {

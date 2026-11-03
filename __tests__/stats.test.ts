@@ -1,5 +1,6 @@
 import { Answer, Card, Deck, Session } from '../src/types';
 import {
+  allocateRingSegments,
   answerShares,
   applyReviewAnswer,
   canRecordAnswer,
@@ -7,10 +8,15 @@ import {
   clearableSessionCount,
   clearCompletedSessionsAt,
   clearSessionAt,
+  countSessionsByDeckSince,
+  countSessionsSince,
+  describeAnswerShares,
   EMPTY_SESSION_SUMMARY,
   formatDate,
   getDeckStats,
+  getDeckStatsSince,
   getGlobalStats,
+  getGlobalStatsSince,
   getMissedOrUnsureCardIds,
   getOutstandingReviewCardIds,
   getReviewableCardIds,
@@ -62,8 +68,8 @@ function session(
     deckName: deckId,
     cardIds: ['a', 'b'],
     results: [
-      { cardId: 'a', answer: 'ok' },
-      { cardId: 'b', answer: 'notOk' },
+      { cardId: 'a', answer: 'ok', answeredAt: startedAt },
+      { cardId: 'b', answer: 'notOk', answeredAt: startedAt },
     ],
     startedAt,
     updatedAt: completedAt ?? startedAt,
@@ -89,6 +95,166 @@ describe('answerShares', () => {
     const shares = answerShares({ okCount: 0, okeishCount: 3, notOkCount: 0 });
 
     expect(shares).toEqual({ ok: 0, okeish: 100, notOk: 0 });
+  });
+});
+
+describe('describeAnswerShares', () => {
+  it('lists the three rounded percentages in Ok, Okeish, Not ok order', () => {
+    const text = describeAnswerShares({ ok: 73.6, okeish: 18.2, notOk: 8.2 });
+
+    expect(text).toBe('74% Ok, 18% Okeish, 8% Not ok');
+  });
+
+  it('shows a zero share as 0%, not as missing', () => {
+    const text = describeAnswerShares({ ok: 0, okeish: 100, notOk: 0 });
+
+    expect(text).toBe('0% Ok, 100% Okeish, 0% Not ok');
+  });
+
+  it('says not reviewed yet when there are no shares', () => {
+    expect(describeAnswerShares(null)).toBe('Not reviewed yet');
+  });
+});
+
+describe('allocateRingSegments', () => {
+  it('splits segments in proportion to the shares', () => {
+    const segments = allocateRingSegments({ ok: 50, okeish: 25, notOk: 25 }, 8);
+
+    expect(segments).toEqual({ okCount: 4, okeishCount: 2, notOkCount: 2 });
+  });
+
+  it('is not thrown off by float noise on an exact split', () => {
+    const segments = allocateRingSegments({ ok: 70, okeish: 20, notOk: 10 }, 10);
+
+    expect(segments).toEqual({ okCount: 7, okeishCount: 2, notOkCount: 1 });
+  });
+
+  it('always adds up to the count', () => {
+    for (let ok = 0; ok <= 5; ok++) {
+      for (let okeish = 0; okeish <= 5; okeish++) {
+        for (let notOk = 0; notOk <= 5; notOk++) {
+          const shares = answerShares({ okCount: ok, okeishCount: okeish, notOkCount: notOk });
+          if (shares === null) {
+            continue;
+          }
+          for (let count = 1; count <= 30; count++) {
+            const s = allocateRingSegments(shares, count);
+
+            expect(s.okCount + s.okeishCount + s.notOkCount).toBe(count);
+          }
+        }
+      }
+    }
+  });
+
+  it('gives every non-zero share a segment once the count allows', () => {
+    for (let ok = 0; ok <= 4; ok++) {
+      for (let okeish = 0; okeish <= 4; okeish++) {
+        for (let notOk = 0; notOk <= 4; notOk++) {
+          const shares = answerShares({ okCount: ok, okeishCount: okeish, notOkCount: notOk });
+          const nonZero = [ok, okeish, notOk].filter(n => n > 0).length;
+          for (let count = 3; count <= 30; count++) {
+            const s = allocateRingSegments(shares, count);
+
+            expect(s.okCount > 0).toBe(ok > 0);
+            expect(s.okeishCount > 0).toBe(okeish > 0);
+            expect(s.notOkCount > 0).toBe(notOk > 0);
+            expect(nonZero === 0 || s.okCount + s.okeishCount + s.notOkCount === count).toBe(true);
+          }
+        }
+      }
+    }
+  });
+
+  it('gives the leftover to the largest remainder, not to the largest share', () => {
+    // Exact split 1.4 / 1.4 / 4.2: the one leftover goes to a 0.4 remainder, not to Not ok.
+    const segments = allocateRingSegments({ ok: 20, okeish: 20, notOk: 60 }, 7);
+
+    expect(segments).toEqual({ okCount: 2, okeishCount: 1, notOkCount: 4 });
+  });
+
+  it('breaks a remainder tie in favour of Ok, then Okeish, then Not ok', () => {
+    const third = 100 / 3;
+    const evenShares = { ok: third, okeish: third, notOk: third };
+
+    expect(allocateRingSegments(evenShares, 10)).toEqual({
+      okCount: 4,
+      okeishCount: 3,
+      notOkCount: 3,
+    });
+    expect(allocateRingSegments(evenShares, 11)).toEqual({
+      okCount: 4,
+      okeishCount: 4,
+      notOkCount: 3,
+    });
+    expect(allocateRingSegments({ ok: 50, okeish: 50, notOk: 0 }, 3)).toEqual({
+      okCount: 2,
+      okeishCount: 1,
+      notOkCount: 0,
+    });
+    expect(allocateRingSegments({ ok: 0, okeish: 50, notOk: 50 }, 3)).toEqual({
+      okCount: 0,
+      okeishCount: 2,
+      notOkCount: 1,
+    });
+  });
+
+  it('gives a tiny share one segment, taken from the largest', () => {
+    const segments = allocateRingSegments({ ok: 98, okeish: 1, notOk: 1 }, 10);
+
+    expect(segments).toEqual({ okCount: 8, okeishCount: 1, notOkCount: 1 });
+  });
+
+  it('leaves a zero share at zero segments', () => {
+    const segments = allocateRingSegments({ ok: 99.9, okeish: 0.1, notOk: 0 }, 12);
+
+    expect(segments).toEqual({ okCount: 11, okeishCount: 1, notOkCount: 0 });
+  });
+
+  it('still adds up to the count when it is smaller than the number of non-zero shares', () => {
+    const segments = allocateRingSegments({ ok: 50, okeish: 30, notOk: 20 }, 2);
+
+    expect(segments).toEqual({ okCount: 1, okeishCount: 1, notOkCount: 0 });
+  });
+
+  it('gives every segment to a 100% single answer', () => {
+    expect(allocateRingSegments({ ok: 100, okeish: 0, notOk: 0 }, 12)).toEqual({
+      okCount: 12,
+      okeishCount: 0,
+      notOkCount: 0,
+    });
+    expect(allocateRingSegments({ ok: 0, okeish: 100, notOk: 0 }, 12)).toEqual({
+      okCount: 0,
+      okeishCount: 12,
+      notOkCount: 0,
+    });
+    expect(allocateRingSegments({ ok: 0, okeish: 0, notOk: 100 }, 1)).toEqual({
+      okCount: 0,
+      okeishCount: 0,
+      notOkCount: 1,
+    });
+  });
+
+  it('returns all zeros for null shares', () => {
+    expect(allocateRingSegments(null, 12)).toEqual({
+      okCount: 0,
+      okeishCount: 0,
+      notOkCount: 0,
+    });
+  });
+
+  it('returns all zeros for a count of zero or less', () => {
+    const shares = { ok: 50, okeish: 25, notOk: 25 };
+    const zeros = { okCount: 0, okeishCount: 0, notOkCount: 0 };
+
+    expect(allocateRingSegments(shares, 0)).toEqual(zeros);
+    expect(allocateRingSegments(shares, -4)).toEqual(zeros);
+  });
+
+  it('returns all zeros when every share is zero', () => {
+    const segments = allocateRingSegments({ ok: 0, okeish: 0, notOk: 0 }, 12);
+
+    expect(segments).toEqual({ okCount: 0, okeishCount: 0, notOkCount: 0 });
   });
 });
 
@@ -169,10 +335,10 @@ function mixedSession(): Session {
     ...session('mixed', 'd1', 1, 2),
     cardIds: ['a', 'b', 'c', 'd'],
     results: [
-      { cardId: 'a', answer: 'ok' },
-      { cardId: 'b', answer: 'okeish' },
-      { cardId: 'c', answer: 'notOk' },
-      { cardId: 'd', answer: 'okeish' },
+      { cardId: 'a', answer: 'ok', answeredAt: 1 },
+      { cardId: 'b', answer: 'okeish', answeredAt: 1 },
+      { cardId: 'c', answer: 'notOk', answeredAt: 1 },
+      { cardId: 'd', answer: 'okeish', answeredAt: 1 },
     ],
   };
 }
@@ -195,7 +361,7 @@ describe('getMissedOrUnsureCardIds', () => {
   });
 
   it('is empty when every answer was ok', () => {
-    const allOk = { ...mixedSession(), results: [{ cardId: 'a', answer: 'ok' as const }] };
+    const allOk = { ...mixedSession(), results: [{ cardId: 'a', answer: 'ok' as const, answeredAt: 1 }] };
 
     expect(getMissedOrUnsureCardIds(allOk)).toEqual([]);
   });
@@ -505,8 +671,8 @@ describe('resolvableCardIds', () => {
   });
 });
 
-function answered(cardId: string, answer: Answer) {
-  return { cardId, answer };
+function answered(cardId: string, answer: Answer, answeredAt = 1) {
+  return { cardId, answer, answeredAt };
 }
 
 // Completed session over a-d: b missed, c unsure, a and d ok.
@@ -608,7 +774,7 @@ describe('getReviewState', () => {
 });
 
 describe('canRecordAnswer', () => {
-  const active = { ...session('s1', 'd', 1, null), results: [{ cardId: 'a', answer: 'ok' as const }] };
+  const active = { ...session('s1', 'd', 1, null), results: [answered('a', 'ok')] };
 
   it('accepts the next unanswered card of an active session', () => {
     expect(canRecordAnswer(active, 'b')).toBe(true);
@@ -774,5 +940,222 @@ describe('fixedCardIds and the statistics', () => {
     expect(getMissedOrUnsureCardIds(fixed)).toEqual(getMissedOrUnsureCardIds(plain));
     expect(summarizeSessions([fixed])).toEqual(summarizeSessions([plain]));
     expect(summarizeSessionsByDeck([fixed])).toEqual(summarizeSessionsByDeck([plain]));
+  });
+});
+
+// Local-time instants, so the tests hold in any time zone.
+const at = (month: number, day: number, hour = 12): number =>
+  new Date(2026, month, day, hour).getTime();
+
+function loggedSession(
+  id: string,
+  deckId: string,
+  startedAt: number,
+  results: Session['results'],
+  completedAt: number | null = null,
+): Session {
+  return {
+    ...session(id, deckId, startedAt, completedAt),
+    cardIds: results.map(result => result.cardId),
+    results,
+  };
+}
+
+describe('getDeckStatsSince', () => {
+  it('equals getDeckStats for a null start when counters and log agree', () => {
+    const decks = [deck('d1', [card('a', 1, 0), card('b', 0, 1, 1)]), deck('d2', [card('x', 1, 0)])];
+    const sessions = [
+      loggedSession('s1', 'd1', at(9, 1), [answered('a', 'ok', at(9, 1)), answered('b', 'okeish', at(9, 1))]),
+      loggedSession('s2', 'd1', at(10, 2), [answered('b', 'notOk', at(10, 2))]),
+      loggedSession('s3', 'd2', at(10, 3), [answered('x', 'ok', at(10, 3))]),
+    ];
+
+    const stats = getDeckStatsSince(decks, sessions, null);
+
+    expect(stats.get('d1')).toEqual(getDeckStats(decks[0]));
+    expect(stats.get('d2')).toEqual(getDeckStats(decks[1]));
+  });
+
+  it('splits a session that spans the start by each answer time, the start itself included', () => {
+    const decks = [deck('d', [card('a', 0, 0), card('b', 0, 0), card('c', 0, 0)])];
+    const since = new Date(2026, 10, 1).getTime();
+    const sessions = [
+      loggedSession('s', 'd', at(9, 31, 22), [
+        answered('a', 'ok', since - 1),
+        answered('b', 'notOk', since),
+        answered('c', 'okeish', at(10, 5)),
+      ]),
+    ];
+
+    const stats = getDeckStatsSince(decks, sessions, since).get('d');
+
+    expect(stats).toMatchObject({ reviewCount: 2, okCount: 0, okeishCount: 1, notOkCount: 1 });
+    expect(stats?.successRate).toBe(0);
+  });
+
+  it('gives a deck with no answers in the window its card count and a null rate', () => {
+    const decks = [deck('d', [card('a', 0, 0), card('b', 0, 0)])];
+    const sessions = [loggedSession('s', 'd', at(8, 1), [answered('a', 'ok', at(8, 1))])];
+
+    const stats = getDeckStatsSince(decks, sessions, at(10, 1));
+
+    expect(stats.get('d')).toEqual({
+      cardCount: 2,
+      reviewCount: 0,
+      okCount: 0,
+      okeishCount: 0,
+      notOkCount: 0,
+      successRate: null,
+    });
+  });
+
+  it('leaves out answers for cards that are no longer in the deck', () => {
+    const decks = [deck('d', [card('a', 0, 0)])];
+    const sessions = [
+      loggedSession('s', 'd', at(10, 1), [answered('gone', 'ok', at(10, 1)), answered('a', 'notOk', at(10, 1))]),
+    ];
+
+    const stats = getDeckStatsSince(decks, sessions, null).get('d');
+
+    expect(stats).toMatchObject({ reviewCount: 1, okCount: 0, notOkCount: 1 });
+  });
+
+  it('ignores sessions of a deck that does not exist', () => {
+    const decks = [deck('d', [card('a', 0, 0)])];
+    const sessions = [loggedSession('s', 'missing', at(10, 1), [answered('a', 'ok', at(10, 1))])];
+
+    const stats = getDeckStatsSince(decks, sessions, null);
+
+    expect([...stats.keys()]).toEqual(['d']);
+    expect(stats.get('d')?.reviewCount).toBe(0);
+  });
+
+  it('keeps each deck to its own sessions', () => {
+    const decks = [deck('d1', [card('a', 0, 0)]), deck('d2', [card('a', 0, 0)])];
+    const sessions = [loggedSession('s', 'd1', at(10, 1), [answered('a', 'ok', at(10, 1))])];
+
+    const stats = getDeckStatsSince(decks, sessions, null);
+
+    expect(stats.get('d1')?.reviewCount).toBe(1);
+    expect(stats.get('d2')?.reviewCount).toBe(0);
+  });
+});
+
+describe('getGlobalStatsSince', () => {
+  it('equals getGlobalStats for a null start when counters and log agree', () => {
+    const decks = [deck('d1', [card('a', 1, 0, 1)]), deck('d2', [card('x', 1, 1)])];
+    const sessions = [
+      loggedSession('s1', 'd1', at(10, 1), [answered('a', 'ok', at(10, 1))]),
+      loggedSession('s2', 'd1', at(10, 2), [answered('a', 'okeish', at(10, 2))]),
+      loggedSession('s3', 'd2', at(10, 3), [answered('x', 'ok', at(10, 3))]),
+      loggedSession('s4', 'd2', at(10, 4), [answered('x', 'notOk', at(10, 4))]),
+    ];
+
+    expect(getGlobalStatsSince(decks, sessions, null)).toEqual(getGlobalStats(decks));
+  });
+
+  it('sums the windowed answers of every deck and keeps deck and card counts whole', () => {
+    const decks = [deck('d1', [card('a', 0, 0), card('b', 0, 0)]), deck('d2', [card('x', 0, 0)])];
+    const sessions = [
+      loggedSession('s1', 'd1', at(8, 1), [answered('a', 'ok', at(8, 1)), answered('b', 'ok', at(10, 3))]),
+      loggedSession('s2', 'd2', at(10, 4), [answered('x', 'okeish', at(10, 4))]),
+    ];
+
+    const stats = getGlobalStatsSince(decks, sessions, at(10, 1));
+
+    expect(stats).toEqual({
+      deckCount: 2,
+      cardCount: 3,
+      reviewCount: 2,
+      okCount: 1,
+      okeishCount: 1,
+      notOkCount: 0,
+      successRate: 50,
+    });
+  });
+
+  it('leaves out answers of removed cards and missing decks', () => {
+    const decks = [deck('d', [card('a', 0, 0)])];
+    const sessions = [
+      loggedSession('s1', 'd', at(10, 1), [answered('gone', 'ok', at(10, 1))]),
+      loggedSession('s2', 'missing', at(10, 1), [answered('a', 'ok', at(10, 1))]),
+    ];
+
+    const stats = getGlobalStatsSince(decks, sessions, null);
+
+    expect(stats.reviewCount).toBe(0);
+    expect(stats.successRate).toBeNull();
+  });
+});
+
+describe('countSessionsByDeckSince', () => {
+  it('counts a session that started in the window, answered or not', () => {
+    const sessions = [loggedSession('s', 'd', at(10, 5), [])];
+
+    const counts = countSessionsByDeckSince(sessions, at(10, 1));
+
+    expect(counts.get('d')).toEqual({ total: 1, active: 1 });
+  });
+
+  it('counts a session that started earlier but has an answer in the window', () => {
+    const sessions = [loggedSession('s', 'd', at(9, 20), [answered('a', 'ok', at(10, 2))], at(10, 2))];
+
+    const counts = countSessionsByDeckSince(sessions, at(10, 1));
+
+    expect(counts.get('d')).toEqual({ total: 1, active: 0 });
+  });
+
+  it('leaves out a session that started and was answered before the window', () => {
+    const sessions = [loggedSession('s', 'd', at(9, 20), [answered('a', 'ok', at(9, 21))])];
+
+    const counts = countSessionsByDeckSince(sessions, at(10, 1));
+
+    expect(counts.has('d')).toBe(false);
+  });
+
+  it('counts every session of a deck, split by deck, for a null start', () => {
+    const sessions = [
+      session('s1', 'd1', 10, 20),
+      session('s2', 'd1', 30, null),
+      session('s3', 'd2', 5, 6),
+    ];
+
+    const counts = countSessionsByDeckSince(sessions, null);
+
+    expect(counts.get('d1')).toEqual({ total: 2, active: 1 });
+    expect(counts.get('d2')).toEqual({ total: 1, active: 0 });
+  });
+});
+
+describe('countSessionsSince', () => {
+  it('matches summarizeSessions for a null start', () => {
+    const sessions = [
+      session('s1', 'd1', 10, 20, 50),
+      session('s2', 'd1', 30, null),
+      session('s3', 'd2', 5, 6),
+    ];
+
+    const summary = summarizeSessions(sessions);
+
+    expect(countSessionsSince(sessions, null)).toEqual({
+      total: summary.total,
+      active: summary.active,
+    });
+  });
+
+  it('counts sessions started in the window or answered in it, across decks', () => {
+    const sessions = [
+      loggedSession('new', 'd1', at(10, 5), []),
+      loggedSession('carried', 'd2', at(9, 20), [answered('a', 'ok', at(10, 2))]),
+      loggedSession('old', 'd2', at(9, 20), [answered('a', 'ok', at(9, 21))], at(9, 21)),
+    ];
+
+    expect(countSessionsSince(sessions, at(10, 1))).toEqual({ total: 2, active: 2 });
+  });
+
+  it('counts a cleared session like any other', () => {
+    const sessions = [{ ...loggedSession('s', 'd', at(10, 5), [], at(10, 6)), clearedAt: at(10, 7) }];
+
+    expect(countSessionsSince(sessions, at(10, 1))).toEqual({ total: 1, active: 0 });
   });
 });

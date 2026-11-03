@@ -162,7 +162,7 @@ describe('reconcileSession', () => {
   });
 
   it('keeps the answered prefix even when its card was removed', () => {
-    const active = session({ results: [{ cardId: 'a', answer: 'ok' }] });
+    const active = session({ results: [{ cardId: 'a', answer: 'ok', answeredAt: 1 }] });
 
     const result = reconcileSession(active, 'Deck', ['a', 'b'], 9);
 
@@ -172,7 +172,7 @@ describe('reconcileSession', () => {
   });
 
   it('completes an active session whose unanswered cards are all removed', () => {
-    const active = session({ results: [{ cardId: 'a', answer: 'ok' }] });
+    const active = session({ results: [{ cardId: 'a', answer: 'ok', answeredAt: 1 }] });
 
     const result = reconcileSession(active, 'Deck', ['b', 'c'], 9);
 

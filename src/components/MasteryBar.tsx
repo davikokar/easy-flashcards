@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { AnswerShares } from '../types';
-import { formatRate } from '../utils/stats';
+import { describeAnswerShares, formatRate } from '../utils/stats';
 import { colors, radius, spacing } from '../theme';
 import { AnswerIcon } from './AnswerIcons';
 
@@ -11,20 +11,19 @@ type Props = {
 };
 
 const SEGMENTS = [
-  { key: 'ok', label: 'Ok', icon: 'tick', color: colors.success },
-  { key: 'okeish', label: 'Okeish', icon: 'question', color: colors.warning },
-  { key: 'notOk', label: 'Not ok', icon: 'cross', color: colors.danger },
+  { key: 'ok', icon: 'tick', color: colors.success },
+  { key: 'okeish', icon: 'question', color: colors.warning },
+  { key: 'notOk', icon: 'cross', color: colors.danger },
 ] as const;
 
 const LEGEND_ICON_SIZE = 16;
 
 export default function MasteryBar({ shares }: Props) {
-  const summary = shares
-    ? SEGMENTS.map(s => `${formatRate(shares[s.key])} ${s.label}`).join(', ')
-    : 'Not reviewed yet';
-
   return (
-    <View accessible accessibilityLabel={`Mastery: ${summary}`} style={styles.panel}>
+    <View
+      accessible
+      accessibilityLabel={`Mastery: ${describeAnswerShares(shares)}`}
+      style={styles.panel}>
       <View style={styles.track}>
         {shares
           ? SEGMENTS.filter(s => shares[s.key] > 0).map(s => (
