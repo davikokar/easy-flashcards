@@ -166,9 +166,8 @@ Everything else that interrupts the user is a native `Alert` — confirmations, 
 ## Decks screen
 
 - **Deck card** (`DeckCard`): one deck's row — a header (the **Category square** at the top left
-  when the deck has a category, then its name on one truncated line, its card count, its
-  description when it has one, and the **Deck options menu**), a **Mastery bar**, and a **Deck meta
-  row**. A deck with no category shows no square and leaves no gap.
+  when the deck has a category, then its name on one truncated line, its card count, and the
+  **Deck options menu**), a **Mastery bar**, and a **Deck meta row**. A deck with no category shows no square and leaves no gap.
 - **Mastery bar** (`MasteryBar`): the darker inset panel on a Deck card — a segmented track with one
   segment per answer, then a three-column legend of **Answer icon** (tick, question mark, cross) and
   percentage, with no text label. Segments and icons are green `Ok`, amber `Okeish`, red `Not ok`,
@@ -232,8 +231,8 @@ reaches the store until **Save**
 
 - **Deck fields**: two labelled text fields at the top. **Title** (single line) and **Description**
   (multi-line, placeholder `Optional`). Followed by the **Category field** and then a count heading,
-  `{n} card(s)`. The description shows under the card count on the **Deck card** when it is not
-  blank; it is not searched.
+  `{n} card(s)`. The description is shown only here: not on the **Deck card** or the **Session
+  card**, and it is not searched.
 - **Category field** (`CategoryField`): the labelled row under Description, in the same style as the
   text fields — the label `Category`, then a row holding the **Category square** and the
   category's name on one truncated line, with a right-pointing chevron at its end. With no

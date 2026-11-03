@@ -12,7 +12,7 @@ card by card, and track how well you know each card.
   - Delimiters: semicolon (`;`) or tab (`\t`).
   - BOM and CRLF tolerant; incomplete rows are skipped and reported.
 - **Deck editing**: *Edit deck* in a deck's menu opens a form for the deck's title, an optional
-  description (shown on its card on the *Decks* tab), its category and its cards. Edit a card's
+  description, its category and its cards. Edit a card's
   question or answer, add a card, or remove one, then press *Save*; nothing changes until you do.
   Editing a card keeps its statistics, removing one deletes them, and the title change reaches the
   deck's sessions.

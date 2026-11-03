@@ -13,8 +13,6 @@ const renderPlayIcon = (color: string) => <MenuIcon name="play" color={color} />
 
 type Props = {
   name: string;
-  /** Shown under the card count when not blank. */
-  description: string;
   /** Drawn at the top left, before the title. Nothing, and no gap, when absent. */
   category?: Category | null;
   cardCount: number;
@@ -28,7 +26,6 @@ type Props = {
 
 export default function DeckCard({
   name,
-  description,
   category,
   cardCount,
   shares,
@@ -51,11 +48,6 @@ export default function DeckCard({
           <Text style={styles.count}>
             {cardCount} card{cardCount === 1 ? '' : 's'}
           </Text>
-          {description.trim() !== '' ? (
-            <Text style={styles.description} numberOfLines={2}>
-              {description}
-            </Text>
-          ) : null}
         </View>
         <KebabMenu
           title={name}
@@ -126,11 +118,6 @@ const styles = StyleSheet.create({
   count: {
     color: colors.textMuted,
     fontSize: 13,
-  },
-  description: {
-    color: colors.textMuted,
-    fontSize: 13,
-    marginTop: spacing.xs,
   },
   // Two lines of text beside the Start session button: one row does not fit 360dp.
   meta: {
