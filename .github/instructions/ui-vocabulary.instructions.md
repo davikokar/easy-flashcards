@@ -122,8 +122,8 @@ screen can add items without `AppMenu` gaining store knowledge: each root screen
   **Replay button** and the **Review errors button**, and reviews as a statistic are never the
   error review.
 - **Export sample deck dialog** (in `AppMenu`): the centred `Modal` explaining the CSV format,
-  with **Share** and **Cancel**. One of the three dialogs in the app that are not an `Alert`; the
-  others are the **Session setup dialog** and the **Category picker**.
+  with **Share** and **Cancel**. One of the four dialogs in the app that are not an `Alert`; the
+  others are the **Session setup dialog**, the **Category picker** and the **Custom colour dialog**.
 
 Everything else that interrupts the user is a native `Alert` — confirmations, failures, and the
 "not available yet" stubs.
@@ -253,8 +253,9 @@ reaches the store until **Save**
   `accessibilityState.selected`, and the selected one has a ring and a tick. Choosing a tile
   changes the **draft** only and closes the picker; **Cancel**, the backdrop and the Back button
   close it with no change. The third dialog in the app that is not an `Alert`, after the **Export
-  sample deck dialog** and the **Session setup dialog**. Not the **Colour picker** or the **Icon
-  picker**, which sit inline on the New category screen.
+  sample deck dialog** and the **Session setup dialog** (the **Custom colour dialog** is the
+  fourth). Not the **Colour picker** or the **Icon picker**, which sit inline on the New category
+  screen.
 - **No category choice**: the first tile of the Category picker, labelled `No category` — a dashed
   square with a `close` glyph rather than a category's colour and pictogram. Picking it clears the
   draft's category. It is selected whenever the draft has none, which includes a deck whose stored
@@ -479,8 +480,10 @@ A deck belongs to at most one category
   button** pinned below it.
 - **New category screen** (`NewCategoryScreen`, route `NewCategory`): pushed onto the Categories
   stack by the New category button. A scrolling form: a **category tile** preview, the **Name
-  field**, the **Colour picker** and the **Icon picker**. Modelled on the Edit deck screen — a draft
-  held on the screen, nothing reaches the store until **Save**, with the same **Discard prompt**.
+  field**, the **Colour picker** and the **Icon picker**, with the **Custom colour dialog** opening
+  over it from the Colour picker's **Custom colour swatch**. Modelled on the Edit deck screen — a
+  draft held on the screen, nothing reaches the store until **Save**, with the same **Discard
+  prompt**.
   Aliases: **category editor**
 - **Custom categories section**: the first section — the heading `Custom categories`, the subtitle
   `{n} available`, then the user's own categories as **category tiles**, alphabetical. With none it
@@ -529,9 +532,44 @@ A deck belongs to at most one category
   name.`, `Use 30 characters or fewer.` or `A category with this name already exists.` (compared
   ignoring case, against defaults and custom categories alike).
 - **Colour picker** (`CategoryColorPicker`, labelled `Colour picker`): the grid of swatches, one per
-  `categoryPalette` colour, six to a row. A radio group; each swatch is a `radio` labelled ``Colour
-  {n} of {total}`` with its state in `accessibilityState.selected`. The selected one has a light ring and a tick
-  (the **Answer icon** `tick`), so it is not marked by colour alone.
+  `categoryPalette` colour followed by the **Custom colour swatch**, six to a row. The boxes are
+  square and share the grid's measured width, with **one gap (`spacing.sm`) both between boxes and
+  between rows**, so the two are equal at any screen width; a box is at most 56 points, and 48 on
+  a 360-point-wide phone. A radio group; each palette swatch is a `radio` labelled ``Colour {n} of
+  {total}`` (`total` is the palette's 21, the Custom colour swatch not counted) with its state in
+  `accessibilityState.selected`. The selected one has a light ring and a tick (the **Answer icon**
+  `tick`), so it is not marked by colour alone. Exactly one swatch is selected: the palette swatch
+  whose colour equals the current one (ignoring case), else the Custom colour swatch. It holds its
+  measured width and nothing else, and reads neither the store nor navigation: the screen owns the
+  colour and whether the **Custom colour dialog** is open.
+- **Custom colour swatch**: the last box of the Colour picker, drawn as a rainbow (a hue-spectrum
+  gradient, not a colour of its own, and **not in `categoryPalette`**). A `radio` labelled `Custom
+  colour`, hint `Opens the colour chooser`. Pressing it opens the **Custom colour dialog**. It is
+  selected when the current colour is **not** a palette colour; its tick sits on a light disc,
+  since a rainbow has no one ground colour for the palette's dark tick. It does not show the
+  chosen colour — the New category screen's tile preview does.
+- **Custom colour dialog** (`CustomColorDialog`, titled `Custom colour`): the centred `Modal` the
+  Custom colour swatch opens, holding the **Hue slider**, the **Saturation slider**, the
+  **Brightness slider**, the **Colour preview**, a **Use colour** button and a **Cancel** button.
+  It opens at the current colour every time. **Use colour** hands back one lowercase opaque
+  `#rrggbb`; it is **disabled** while that colour's contrast with `colors.background` is below
+  4.5:1, and the message `Too dark for the icon. Try a lighter colour.` takes the place of the hex
+  beside the Colour preview
+  ([ADR-0012](../../docs/architecture/decisions/0012-custom-categories-third-storage-key.md)
+  Amendment 3). **Cancel**, the backdrop and the Back button leave the colour unchanged. The
+  fourth dialog that is not an `Alert`. Its sliders sit in a scroll view (with **Use colour** and
+  **Cancel** outside it, so they stay in view) that does not scroll while a slider is held.
+  Aliases: **colour chooser**
+- **Hue slider**, **Saturation slider**, **Brightness slider** (`ColorSlider`): the three
+  horizontal sliders of the Custom colour dialog, each a gradient track with a light thumb and
+  its name and value above (`240°`, `75%`). Built from `View`s and the responder handlers, since
+  React Native has no slider. Each is one `adjustable` element labelled `Hue`, `Saturation` or
+  `Brightness`, with its value in `accessibilityValue` and `increment` / `decrement` actions
+  (15° for hue, 5% for the others). Hue runs 0 to 360 at full saturation and brightness;
+  saturation and brightness show the colour's own range at the other two settings.
+- **Colour preview**: the 64-point rounded square in the Custom colour dialog showing the colour
+  as it stands, labelled ``Colour preview {hex}``. Not the **tile preview** at the top of the New
+  category screen, which shows the whole category.
 - **Icon picker** (`CategoryIconPicker`, labelled `Icon picker`): every category icon
   (`CATEGORY_ICONS`) in a plain wrapping grid of 48-point cells, six to a row, on a neutral
   `surface` panel, inside the form's scroll — no inner scroll, search or grouping. The default
@@ -684,12 +722,14 @@ These are constraints, not suggestions. Each one is load-bearing somewhere.
   **Category icon** (`CategoryIcon`), and used for categories only. Do not use one for anything else,
   and do not draw a category pictogram from `View`s.
 - **Every token comes from [`src/theme.ts`](../../src/theme.ts).** `colors`, `spacing`, `radius`, and
-  `categoryPalette` (the colours a category can take) — and no second source of styling. A raw hex
+  `categoryPalette` (the 21 colours offered for a category; a category can also take a **custom
+  colour** the user picks, which is data, not a token) — and no second source of styling. A raw hex
   or a magic number in a `StyleSheet` is a finding, with existing exceptions: `mark`'s foreground in
   `RichText`, the FAB's spinner colour and the foreground on a filled `Button` (`FOREGROUND_ON_FILL`),
   all of which need contrast against a fixed background,
   and the **modal backdrop scrim** (`#000000aa`) behind the Menu sheet, the Export sample deck
-  dialog, the Session setup dialog and the Category picker — a translucent black has to dim whatever is underneath, so
+  dialog, the Session setup dialog, the Category picker and the Custom colour dialog — a translucent
+  black has to dim whatever is underneath, so
   it cannot be one of the opaque theme colours. Reuse that value for any new modal; do not pick a
   second one.
 - **Every control needs an accessibility label on the same element as its press handler**, not on

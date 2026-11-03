@@ -4,6 +4,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import CategoryColorPicker from '../components/CategoryColorPicker';
 import CategoryIconPicker from '../components/CategoryIconPicker';
 import CategoryTile from '../components/CategoryTile';
+import CustomColorDialog from '../components/CustomColorDialog';
 import FormField from '../components/FormField';
 import { useDecks } from '../state/DecksContext';
 import { CategoriesStackParamList } from '../navigation/types';
@@ -30,6 +31,7 @@ export default function NewCategoryScreen({ navigation }: Props) {
   const [name, setName] = useState('');
   const [color, setColor] = useState(INITIAL_COLOR);
   const [icon, setIcon] = useState<CategoryIcon>(FALLBACK_CATEGORY_ICON);
+  const [customColorOpen, setCustomColorOpen] = useState(false);
   // The name's error stays hidden until the user has typed, so a fresh form is not red.
   const [nameTouched, setNameTouched] = useState(false);
   // Set once the category is saved, so leaving the screen afterwards is not treated as discarding it.
@@ -122,7 +124,12 @@ export default function NewCategoryScreen({ navigation }: Props) {
 
         <View style={styles.group}>
           <Text style={styles.groupLabel}>Colour</Text>
-          <CategoryColorPicker palette={categoryPalette} value={color} onChange={setColor} />
+          <CategoryColorPicker
+            palette={categoryPalette}
+            value={color}
+            onChange={setColor}
+            onCustomPress={() => setCustomColorOpen(true)}
+          />
         </View>
 
         <View style={styles.group}>
@@ -130,6 +137,15 @@ export default function NewCategoryScreen({ navigation }: Props) {
           <CategoryIconPicker value={icon} onChange={setIcon} />
         </View>
       </ScrollView>
+      <CustomColorDialog
+        visible={customColorOpen}
+        color={color}
+        onUse={custom => {
+          setColor(custom);
+          setCustomColorOpen(false);
+        }}
+        onCancel={() => setCustomColorOpen(false)}
+      />
     </KeyboardAvoidingView>
   );
 }

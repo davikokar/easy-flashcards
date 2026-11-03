@@ -53,7 +53,10 @@ for the required format and status rules.
 > has landed. ADR-0015 was recorded ahead of its work, together with Amendment 7 to ADR-0002,
 > Amendment 4 to ADR-0004, Amendment 4 to ADR-0005 and Amendment 2 to ADR-0008; ARCHITECTURE.md
 > links to it now that the work has landed, and ADR-0015 carries Amendment 1 for a corner of its
-> loader rule found when it did.
+> loader rule found when it did. ADR-0012 carries an Amendment 3, recorded ahead of the work that
+> adds the Custom colour swatch to the Colour picker, so a custom category can have any colour that
+> meets the palette's contrast bar, under the same key and shape; ARCHITECTURE.md links to it now
+> that the work has landed.
 
 ### Index
 

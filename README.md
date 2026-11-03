@@ -53,8 +53,10 @@ card by card, and track how well you know each card.
   drill-down are always all time. The choice is not remembered.
 - **Categories** on the *Categories* tab: a set of built-in subject categories (astronomy,
   mathematics, cinema and more), each with its own colour and icon, plus your own. *New category*
-  lets you pick a name (up to 30 characters, not already used), a colour and an icon; a category
-  you created can be deleted from its tile. Give a deck a category from *Edit deck*: its icon then
+  lets you pick a name (up to 30 characters, not already used), a colour and an icon. The colour
+  is one of the palette, or any colour you mix yourself from the rainbow *Custom colour* swatch
+  (hue, saturation and brightness), as long as it is light enough for the icon to stay readable
+  on it. A category you created can be deleted from its tile. Give a deck a category from *Edit deck*: its icon then
   shows on the deck's card and on its sessions on the *Learn* tab, at the top of their options
   menus, and on the deck's card on the *Statistics* tab. Deleting a category leaves its
   decks with no category (the confirmation says how many). Categories cannot be edited, and you
@@ -109,11 +111,11 @@ npm test
 | --- | --- |
 | [src/navigation](src/navigation) | Bottom tabs + per-tab native stacks |
 | [src/screens](src/screens) | One file per screen: decks, sessions and study, categories, statistics |
-| [src/components](src/components) | Flip card, HTML renderer, buttons, progress bars, dialogs, category tiles, squares and pickers |
+| [src/components](src/components) | Flip card, HTML renderer, buttons, progress bars, dialogs, category tiles, squares and pickers, colour sliders |
 | [src/state](src/state) | Context store (`DecksContext.tsx`) over a pure reducer (`reducer.ts`), auto-persisting |
 | [src/storage](src/storage) | AsyncStorage read/write with defensive normalisation, one module per key |
 | [src/services](src/services) | Document picker + file read + CSV parsing; sample deck export |
-| [src/utils](src/utils) | Pure logic: CSV and HTML parsing, statistics, search, categories, and more |
+| [src/utils](src/utils) | Pure logic: CSV and HTML parsing, statistics, search, categories, colour maths, and more |
 | [src/assets/category-icons](src/assets/category-icons) | Category icons: Material Symbols by Google (Apache License 2.0, see its `NOTICE`) as Android vector drawables |
 | [\_\_tests\_\_](__tests__) | Jest unit tests for the utils, the reducer and the storage loaders |
 

@@ -199,14 +199,108 @@ assignment to it. This is the same kind of loss
 [ADR-0004](0004-versioned-defensive-storage.md) Amendment 1 records for Okeish, it is the cost of
 keeping the key at `/v1`, and nothing blocks a downgrade, because `versionCode` has never been
 bumped.
+
+## Amendment 3 — 2026-11-03
+
+Recorded ahead of the work it governs. The owner approved this decision before it was recorded: a
+custom category may have **any colour**, not only a palette colour, with no change to the storage
+key or its shape. The decision above stands; one detail moves.
+
+**A custom category chooses its colour from the palette or picks any colour**, not only "from the
+same 21-colour palette" (*Choices are shared with the defaults*), and `color` is no longer only
+"chosen from the palette" (*Custom categories are stored under a third key*):
+
+- The New category screen's **Colour picker** gains one final swatch after the palette, the
+  **Custom colour swatch**, drawn as a rainbow. Tapping it opens the **Custom colour dialog**:
+  hue, saturation and brightness sliders, a preview, **Use colour** and **Cancel**. **Use colour**
+  sets the colour; **Cancel** leaves it as it was.
+- The dialog and its sliders are built in-repo from React Native primitives, as every other
+  control here is. No dependency is added.
+- **The picker only ever produces an opaque, lowercase `#rrggbb`**, from the dialog or from the
+  palette, whose colours are all of that form. A colour the picker produces is therefore stored
+  in that form.
+- **A colour is compared with the palette ignoring case** (`isPaletteColor` in
+  `src/utils/color.ts`), not by exact string equality, so the result does not depend on the case
+  of the colour passed in. For a colour the picker produced the two agree, since both sides are
+  lowercase.
+- **The Custom colour swatch shows as selected when the current colour is not in the palette**,
+  by that comparison. A custom colour that happens to equal a palette colour selects that
+  palette swatch instead, and is stored exactly as the palette colour is.
+- **The contrast rule.** The category's icon is drawn in `colors.background` on top of the
+  category's colour ([ADR-0013](0013-category-icons-are-android-vector-drawables.md)
+  Amendment 1), so a dark colour would hide it. **Use colour** is disabled, with a short message
+  saying why, while the chosen colour's contrast ratio with `colors.background` is **below
+  4.5:1**, as the WCAG 2 contrast ratio defines it. That is the bar the palette already meets:
+  when this was recorded its lowest colour, `#736df3`, measured about 4.7:1.
+- The conversion from hue, saturation and brightness to hex, and the contrast check, are pure
+  functions in `src/utils/` with tests.
+
+What does not move:
+
+- **`categoryPalette` is not extended.** A default category takes its colour from its position in
+  the palette, so the palette's contents and order stay exactly as they are. The Custom colour
+  swatch is a control, not a colour: it is not in `categoryPalette` and has no colour value of its
+  own.
+- **The default categories are unchanged**, and still cannot be recoloured.
+- **There is still no recolour.** A custom category's colour is chosen when it is created, on the
+  New category screen, and only there.
+- **The stored shape is unchanged** and the key stays `@easy-flashcards/categories/v1`. `color` is
+  still one hex string; it only has more values that the app writes.
+- **The loader rule is unchanged.** It already keeps any well-formed hex colour, palette or not
+  (*Defensive read*). It does **not** apply the contrast rule: like the name rule, that is checked
+  on creation only, so a hand-edited or foreign dark colour in storage is kept and displayed.
+- **A downgrade loses nothing.** Every build that has this key keeps a well-formed hex colour that
+  is not in its palette, so an older build reads a custom colour, shows it, and writes it back
+  unchanged. Unlike Amendment 2's extra icons, the *Positive* consequence "a downgrade is safe"
+  holds in full for colours.
+
+Alternatives considered for this amendment:
+
+- **A third-party colour picker.** Rejected: it is a new dependency, which needs the owner's
+  approval and an ADR of its own. The candidates either need Reanimated and Gesture Handler — two
+  more native dependencies — or are pure-JS libraries carrying the same risk of relying on
+  `defaultProps` on function components, which React 19 ignores, that ruled out
+  `react-native-render-html` ([ADR-0001](0001-own-the-html-renderer.md)).
+- **A 3:1 contrast threshold.** WCAG 2 accepts 3:1 for graphical objects such as an icon.
+  Rejected: it would admit colours darker than any in the palette, so a custom category's icon
+  could be markedly harder to read than every default's. 4.5:1 keeps one bar for both.
+- **Any colour, with the icon tint chosen for contrast.** Rejected: ADR-0013 Amendment 1 draws the
+  icon in `colors.background` on every category colour, and a second tint would reverse that.
+- **A hex text field.** Not wanted now. It would be additive later — another way to produce a
+  colour the same rules accept.
+
+Consequences of this amendment:
+
+- **Any colour that clears the contrast bar is available**, at the cost of an in-repo dialog and
+  sliders that, like every screen and component, no test renders. The pure conversion and contrast
+  check are tested; the dialog's behaviour needs a device run.
+- **Some colours the user may want are refused**, the darker ones above all, and the user is told
+  why rather than left with an illegible icon.
+- **A dark colour can still reach the screen** by a hand-edited or foreign write, because the
+  loader does not check contrast. Its icon may then be hard to see. This is accepted, as the
+  unchecked names are (*Consequences*, *Negative*).
+- **Two custom categories can now share a colour no default has**, and a custom colour can sit
+  very close to, but not equal, a palette colour. Nothing depends on colours being distinct.
+
 ## References
 
+- [ADR-0001](0001-own-the-html-renderer.md) — the precedent for owning a control rather than
+  adding a library, and the React 19 `defaultProps` failure (Amendment 3)
 - [ADR-0003](0003-single-context-reducer-store.md) — the store; amended by this record
   (Amendment 2)
 - [ADR-0004](0004-versioned-defensive-storage.md) — versioned keys and the defensive read; amended
   by this record (Amendment 3)
 - [ADR-0013](0013-category-icons-are-android-vector-drawables.md) — the icons a category chooses
-  from; its Amendment 2 widens the set (Amendment 2 here)
+  from; its Amendment 2 widens the set (Amendment 2 here), and its Amendment 1 draws the icon in
+  `colors.background`, which sets the contrast rule (Amendment 3 here)
+- [`src/components/CategoryColorPicker.tsx`](../../../src/components/CategoryColorPicker.tsx),
+  [`src/screens/NewCategoryScreen.tsx`](../../../src/screens/NewCategoryScreen.tsx) — the Colour
+  picker and the screen it sits on (Amendment 3)
+- [`src/components/CustomColorDialog.tsx`](../../../src/components/CustomColorDialog.tsx),
+  [`src/components/ColorSlider.tsx`](../../../src/components/ColorSlider.tsx) — the Custom colour
+  dialog and its sliders (Amendment 3)
+- [`src/utils/color.ts`](../../../src/utils/color.ts) — the conversion from hue, saturation and
+  brightness to hex, the contrast check, and the palette comparison (Amendment 3)
 - [ADR-0014](0014-deck-belongs-to-one-category.md) — decks refer to categories; what deleting one
   in use does (Amendment 1)
 - [`src/storage/categoriesStorage.ts`](../../../src/storage/categoriesStorage.ts)
