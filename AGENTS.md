@@ -5,7 +5,7 @@ Guidance for AI agents working in this repository.
 ## Project
 
 **Easy Flashcards** is a React Native flashcards app, built and tested on Android. The user
-imports a deck from a local CSV file, studies it card by card, and the app records how well each
+imports a deck from a local CSV or JSON file, studies it card by card, and the app records how well each
 card is known. It has no account, no network calls, and no backend: everything the app stores lives
 in AsyncStorage on the device, one key per module (see *Storage keys*). Both sides of a card carry a small subset of HTML, which
 the app parses and renders itself. Prefer clear, conventional code over clever abstractions, and
@@ -36,7 +36,12 @@ explain non-obvious decisions in short commit messages.
   every state change. See *Storage keys* below.
 - **Dependency injection:** none. Modules import each other directly, and pure logic is kept in
   Android-free files so it can be tested without mocking anything.
-- **CSV:** PapaParse, wrapped by [src/utils/csv.ts](src/utils/csv.ts).
+- **CSV and JSON files:** PapaParse, wrapped by [src/utils/csv.ts](src/utils/csv.ts) to read CSV
+  imports, and used by [src/utils/deckExport.ts](src/utils/deckExport.ts) to write exports. JSON
+  is read by [src/utils/deckImport.ts](src/utils/deckImport.ts) and written by `deckExport.ts`
+  with the built-in `JSON` object; there is no JSON library
+  ([ADR-0016](docs/architecture/decisions/0016-deck-export-file-formats.md),
+  [ADR-0017](docs/architecture/decisions/0017-deck-import-reads-exported-formats.md)).
 - **File access:** `@react-native-documents/picker` to choose and save files, and
   `@dr.pogodin/react-native-fs` to read the picked `content://` URI. See *Dependency traps* below.
 - **HTML:** parsed and rendered in-repo — [src/utils/html.ts](src/utils/html.ts) and
@@ -67,7 +72,7 @@ src/
   utils/                # Pure TypeScript: csv, html, fileUri, stats, categories, and more
 __tests__/              # Jest unit tests: utils, the reducer, the storage loaders
 docs/                   # Architecture, decisions, and the original requirements
-samples/                # Example CSV decks
+samples/                # Example deck files, CSV and JSON (sampleDeck.test.ts checks the sample pair)
 ```
 
 `src/utils/`, `src/types.ts` and `src/state/reducer.ts` import nothing from `react` or
@@ -239,7 +244,12 @@ the owning document instead, so that adding an ADR or a screen does not touch an
   edit; a removed card takes them with it; the new title is written to every session's `deckName`;
   and removed cards leave the unanswered part of an active session's `cardIds`
   ([ADR-0011](docs/architecture/decisions/0011-deck-editing-is-one-action.md)). A deck's
-  `description` is `''` when it has none, and is not part of the CSV format yet. The deck's
+  `description` is `''` when it has none. *Export to file* writes it — the `description` key in
+  JSON, the `# description:` comment line in CSV — and a JSON import reads it back, trimmed; a CSV
+  import reads past the comment line and leaves it `''`
+  ([ADR-0016](docs/architecture/decisions/0016-deck-export-file-formats.md),
+  [ADR-0017](docs/architecture/decisions/0017-deck-import-reads-exported-formats.md), ADR-0011
+  Amendment 3). The deck's
   category travels in the same edit: `updateDeck` writes `null` for an id that `findCategory` does
   not resolve, and does not touch sessions for it (ADR-0011 Amendment 1).
 - **Only custom categories are state.** The built-in categories are `DEFAULT_CATEGORIES` in
@@ -250,7 +260,12 @@ the owning document instead, so that adding an ADR or a screen does not touch an
   `addCategory` trims and mints the id but does **not** validate: call `validateCategoryName` first,
   as the New category screen does.
 - **A deck refers to at most one category; a session refers to none.** `Deck.categoryId` is a
-  default or custom id, or `null`, and an imported deck starts at `null`. Resolve it only with
+  default or custom id, or `null`. A deck imported from CSV starts at `null`; one imported from
+  JSON asks for the file's `category.id`, which the reducer's `addDeck` case resolves with
+  `findCategory` and stores as `null` when it does not resolve — resolve it there, not in a screen,
+  and never create a category from a file
+  ([ADR-0017](docs/architecture/decisions/0017-deck-import-reads-exported-formats.md), ADR-0014
+  Amendment 4). Resolve it only with
   `findCategory` in [src/utils/categories.ts](src/utils/categories.ts): an id that matches neither a
   default nor a stored custom category displays as *no category* everywhere, and is not rewritten
   on load. `deleteCategory` sets `categoryId` to `null` on every deck that used the category, in the
@@ -392,17 +407,25 @@ Recorded here so they are not rediscovered as surprises. The full list, with rea
   therefore break without any test failing. Adding a component-test setup is a dependency change —
   ask first.
 - **Several menu entries and buttons are placeholders** that alert rather than act:
-  *Add deck manually*, the XML / JSON / JSONL import formats, *Settings*, and the Header toolbar's
+  *Add deck manually*, *Settings*, and the Header toolbar's
   **Filter button** on both the Decks and Learn screens. They are intentional stubs, not bugs — do
-  not "fix" one into existence without being asked.
-- **Categories are add-and-delete only, and only the Edit deck screen assigns them.** A custom
-  category cannot be edited. A deck's category shows on its Deck card, its sessions' Session
-  cards, the titles of their Deck options menu and Session options menu sheets, the Edit deck
-  screen's Category field and its Deck stats card on the Statistics screen, and nowhere else: a
-  deck count on the Categories tiles, filtering by category, a per-category aggregation in
-  Statistics and a CSV column for it are deliberate follow-ups
+  not "fix" one into existence without being asked. The Import format menu offers CSV and JSON
+  only; the XML and JSONL placeholders were removed and are not to come back as stubs
+  ([ADR-0017](docs/architecture/decisions/0017-deck-import-reads-exported-formats.md)).
+- **Categories are add-and-delete only, and only the Edit deck screen assigns them** — apart
+  from a JSON import, which keeps the file's `category.id` when it resolves on this device. A
+  custom category cannot be edited. A deck's category shows on its Deck card, its sessions'
+  Session cards, the titles of their Deck options menu and Session options menu sheets, the Edit
+  deck screen's Category field and its Deck stats card on the Statistics screen, and nowhere
+  else: a deck count on the Categories tiles, filtering by category, a per-category aggregation
+  in Statistics and reading a category from a CSV import are deliberate follow-ups
   ([ADR-0014](docs/architecture/decisions/0014-deck-belongs-to-one-category.md) *Not decided
-  here*, Amendments 1 and 2). Category icons render on Android only. On iOS (never built) the icon would be
+  here*, Amendments 1, 2 and 4). An export writes the category's name as a `# category:` comment
+  line in CSV and the category itself as an object in JSON, never as a CSV column; the CSV
+  importer reads past the comment line, and the JSON importer reads only `category.id`, never
+  matching by name or creating a category (ADR-0014 Amendment 3,
+  [ADR-0016](docs/architecture/decisions/0016-deck-export-file-formats.md),
+  [ADR-0017](docs/architecture/decisions/0017-deck-import-reads-exported-formats.md)). Category icons render on Android only. On iOS (never built) the icon would be
   blank but a Category square or tile still paints the category's colour, so a categorised deck
   would show a coloured square with no glyph, not look uncategorised.
 

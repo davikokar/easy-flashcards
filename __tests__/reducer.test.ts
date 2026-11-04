@@ -80,6 +80,42 @@ describe('reducer: addDeck and deleteDeck', () => {
     expect(next.decks.map(d => d.id)).toEqual(['new', 'old']);
   });
 
+  it('keeps the description and a default category id', () => {
+    const imported: Deck = { ...deck('new', ['a']), description: 'About', categoryId: 'default_astronomy' };
+
+    const next = reducer(stateOf([], []), { type: 'addDeck', deck: imported });
+
+    expect(next.decks[0]).toEqual(imported);
+  });
+
+  it('keeps the id of a stored custom category', () => {
+    const imported: Deck = { ...deck('new', ['a']), categoryId: 'category_a' };
+
+    const next = reducer(stateOf([], [], [category('category_a')]), {
+      type: 'addDeck',
+      deck: imported,
+    });
+
+    expect(next.decks[0].categoryId).toBe('category_a');
+  });
+
+  it('stores no category for an id that matches no default or stored category', () => {
+    const imported: Deck = { ...deck('new', ['a']), categoryId: 'category_gone' };
+
+    const next = reducer(stateOf([], [], [category('category_a')]), {
+      type: 'addDeck',
+      deck: imported,
+    });
+
+    expect(next.decks[0]).toEqual({ ...imported, categoryId: null });
+  });
+
+  it('stores no category when none is requested', () => {
+    const next = reducer(stateOf([], []), { type: 'addDeck', deck: deck('new', ['a']) });
+
+    expect(next.decks[0].categoryId).toBeNull();
+  });
+
   it('removes the deck and every session of it, cleared ones included', () => {
     const state = stateOf(
       [deck('d1', ['a']), deck('d2', ['a'])],
@@ -681,6 +717,7 @@ describe('reducer: counters and the answer log', () => {
       answer('s2', 'b', 'ok', 21),
       { type: 'startSession', session: session('s3', 'd2', { cardIds: ['x', 'y'] }) },
       answer('s3', 'x', 'ok', 30),
+      { type: 'addDeck', deck: deck('d3', ['p']) },
       { type: 'deleteSession', sessionId: 's2' },
       {
         type: 'updateDeck',

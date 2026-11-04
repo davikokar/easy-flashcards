@@ -125,6 +125,23 @@ holds, in either direction:
   `categoryId` to `null` on every deck that used it. It is the first category action whose effect
   reaches another array, which a single store makes one atomic step rather than two saves.
 
+## Amendment 4 — 2026-11-04
+
+Recorded ahead of the work it governs. [ADR-0017](0017-deck-import-reads-exported-formats.md)
+lets a JSON import carry a deck's description and category. The decision above is unchanged —
+still one store, one `addDeck` action, one dispatch per import. Two details moved:
+
+- **`addDeck` reads `state.categories`.** The reducer's `addDeck` case resolves the new deck's
+  `categoryId` with `findCategory` against the built-in and stored custom categories, and stores
+  `null` for an id that resolves to neither, as `updateDeck` does (Amendment 3). It is resolved in
+  the reducer, not by the caller, so it is checked against the state the deck is written into.
+- **`DecksContextValue.addDeck` changes shape.** Its input gains two required fields,
+  `description: string` and `categoryId: string | null`, beside `name`, `sourceFileName` and
+  `cards`; a CSV import passes `''` and `null`. The function still mints every id and returns the
+  deck it dispatched — whose `categoryId` is the one requested, so a caller must read the stored
+  category from the store, not from the return value. Every consumer of the context type sees the
+  change; its only caller is the Decks screen.
+
 ## References
 
 - [`src/state/reducer.ts`](../../../src/state/reducer.ts)
@@ -133,4 +150,6 @@ holds, in either direction:
 - [ADR-0004](0004-versioned-defensive-storage.md) — the persistence this store drives
 - [ADR-0012](0012-custom-categories-third-storage-key.md) — the third array (Amendment 2)
 - [ADR-0014](0014-deck-belongs-to-one-category.md) — decks refer to categories (Amendment 3)
+- [ADR-0017](0017-deck-import-reads-exported-formats.md) — `addDeck` takes a description and a
+  category (Amendment 4)
 - [ARCHITECTURE.md §2, §3](../ARCHITECTURE.md)

@@ -121,9 +121,17 @@ screen can add items without `AppMenu` gaining store knowledge: each root screen
   reviews** tile's glyph and means "answers recorded"; it is not `replay`, which belongs to the
   **Replay button** and the **Review errors button**, and reviews as a statistic are never the
   error review.
-- **Export sample deck dialog** (in `AppMenu`): the centred `Modal` explaining the CSV format,
-  with **Share** and **Cancel**. One of the four dialogs in the app that are not an `Alert`; the
-  others are the **Session setup dialog**, the **Category picker** and the **Custom colour dialog**.
+- **Export sample deck dialog** (in `AppMenu`): the centred `Modal` explaining the two sample
+  files it saves, a CSV and a JSON of the same deck — how the CSV is laid out, what the JSON adds
+  back, and that basic HTML is allowed, in a body that scrolls — with **Export** and **Cancel**
+  fixed below it. **Export** opens one
+  system save dialog per file, CSV first; cancelling either skips that file
+  ([ADR-0016](../../docs/architecture/decisions/0016-deck-export-file-formats.md) Amendment 3). The
+  dialog closes once at least one file was saved, and a final `Alert` reports the outcome. Its
+  **Export** button is not the **Custom separator dialog**'s, which is a different button in a
+  different dialog. One of the five dialogs in the app that are not an `Alert`; the
+  others are the **Session setup dialog**, the **Category picker**, the **Custom colour dialog**
+  and the **Custom separator dialog**.
 
 Everything else that interrupts the user is a native `Alert` — confirmations, failures, and the
 "not available yet" stubs.
@@ -194,7 +202,8 @@ Everything else that interrupts the user is a native `Alert` — confirmations, 
 - **Deck options menu**: the Kebab menu on a Deck card, labelled ``Options for {deck name}``. Its
   Menu sheet is titled with the deck name, after the deck's **Category square** when it has a
   category. Holds **Start session with options** (play glyph; opens the **Session setup dialog**), **Edit
-  deck** (opens the **Edit deck screen**) and **Delete deck** (destructive, confirmed by an `Alert`). It was **Shuffle and
+  deck** (opens the **Edit deck screen**), **Export to file** (`export` glyph; opens the **Export
+  format menu**) and **Delete deck** (destructive, confirmed by an `Alert`) — always last. It was **Shuffle and
   start session** before
   [ADR-0010](../../docs/architecture/decisions/0010-inverted-sessions.md).
 - **Session setup dialog** (`SessionSetupDialog`): the centred `Modal` that **Start session with
@@ -218,14 +227,56 @@ Everything else that interrupts the user is a native `Alert` — confirmations, 
   new session** and **Study the whole deck again**, and a **Review pass** shows the faces in the
   original session's direction. Only starting from a deck chooses a direction; the plain **Start
   session button** is never inverted. Statistics do not distinguish it.
+- **Export to file**: the item in the **Deck options menu** (`export` glyph, **before Delete deck**
+  and after Edit deck) that starts exporting that deck
+  ([ADR-0016](../../docs/architecture/decisions/0016-deck-export-file-formats.md)). Not
+  destructive, so no confirmation and no `Alert` before the save dialog; it changes nothing stored.
+  Works on a deck with no cards. It is a **chain of menus**, not one dialog: **Export format menu**,
+  then for CSV the **CSV separator menu**, then for Custom the **Custom separator dialog**, then
+  the system save dialog. Not **Export sample deck**, which is in the **App menu**
+  and shares only the `export` glyph and the verb: it saves a fixed sample deck as two files, with
+  no format choice.
+- **Export format menu**: the **Menu sheet** **Export to file** opens, titled `Export deck to file`,
+  with the same shape as the **Import format menu** — one `file` glyph item per format: **JSON**,
+  then **CSV**. Both are implemented; there are no stubs in it. **JSON** goes straight to the save
+  dialog; **CSV** opens the **CSV separator menu**. Mirrors the Import format menu's wording
+  (`Import deck from file`) and is a different menu, not the same one reused.
+- **CSV separator menu**: the **Menu sheet** **CSV** opens in the Export format menu, titled `CSV
+  separator`, with four items and no icons: `Comma (,)`, `Semicolon (;)`, `Tab` and `Custom…`
+  (a real ellipsis character, because it opens another step). The first three go straight to the
+  save dialog; **Custom…** opens the **Custom separator dialog**. The items have no `file` glyph
+  because they are values, not files. Not the **Session options menu**.
+- **Custom separator dialog** (`CustomSeparatorDialog`): the centred `Modal` **Custom…** opens,
+  titled `Custom separator` over the deck's name — the **Session setup dialog**'s shape. It holds
+  the **Separator field**, a **Separator message** and the **Export** and **Cancel** buttons. The
+  fifth dialog that is not an `Alert`. Stateless and controlled: the screen holds the typed text,
+  validates it, and passes the reason it is unusable as `error`. The text starts empty every time
+  it opens. The dialog is lifted clear of the keyboard, since the keyboard overlays the window.
+  - **Separator field**: the single-line **FormField** labelled `Separator`, auto-focused, with the
+    placeholder `For example |`. It does not cap the length, so a second character is reported
+    rather than silently refused.
+  - **Separator message**: the one line under the field, always present so the buttons do not move.
+    Empty while the text is usable. Otherwise it says why not: `Enter one character.` (empty —
+    muted, not red, because a blank field is a prompt rather than a mistake and this is what the
+    user sees on opening), `Use a single character.`, `Quotes, # and line breaks cannot be
+    used.`, `Spaces are not allowed. Use the Tab option for a tab.` and `Letters and digits are
+    not allowed.` (all danger red). Announced as a polite live region.
+  - **Export**: the primary Button. **Disabled while the separator message shows any reason**;
+    shows a spinner while the file is being written. Hands off to the system save dialog.
+  - **Cancel**: the secondary Button; also the backdrop and the Back button. Writes nothing.
 - **Add deck button**: the floating action button at the bottom right, a primary rounded square
   labelled `Add a deck`. It is
   the app's only FAB. Shows a spinner while an import is in flight. Opens the **Add deck menu**.
   Aliases: **the + button**, **the FAB**
 - **Add deck menu**: the Menu sheet behind the Add deck button — **Import deck from file**, which
   opens the **Import format menu**, and **Add deck manually** (a stub).
-- **Import format menu**: `CSV`, `XML`, `JSON`, `JSONL`. **Only CSV is implemented**; the other
-  three alert. Do not describe the app as supporting four formats.
+- **Import format menu**: the **Menu sheet** **Import deck from file** opens, with exactly two
+  items, each with the `file` glyph: **CSV**, then **JSON**. Both are implemented; there are no
+  stubs and no "not available yet" alert in it. Each opens the system picker and reads the file
+  as the chosen format, whatever its extension
+  ([ADR-0017](../../docs/architecture/decisions/0017-deck-import-reads-exported-formats.md)).
+  Not the **Export format menu**, which lists the same two formats in the opposite order. Do not
+  describe the app as supporting XML or JSONL.
 - **Decks empty state**: `No decks yet`.
 
 ## Edit deck screen
@@ -254,7 +305,7 @@ reaches the store until **Save**
   changes the **draft** only and closes the picker; **Cancel**, the backdrop and the Back button
   close it with no change. The third dialog in the app that is not an `Alert`, after the **Export
   sample deck dialog** and the **Session setup dialog** (the **Custom colour dialog** is the
-  fourth). Not the **Colour picker** or the **Icon picker**, which sit inline on the New category
+  fourth and the **Custom separator dialog** the fifth). Not the **Colour picker** or the **Icon picker**, which sit inline on the New category
   screen.
 - **No category choice**: the first tile of the Category picker, labelled `No category` — a dashed
   square with a `close` glyph rather than a category's colour and pictogram. Picking it clears the
@@ -728,7 +779,8 @@ These are constraints, not suggestions. Each one is load-bearing somewhere.
   `RichText`, the FAB's spinner colour and the foreground on a filled `Button` (`FOREGROUND_ON_FILL`),
   all of which need contrast against a fixed background,
   and the **modal backdrop scrim** (`#000000aa`) behind the Menu sheet, the Export sample deck
-  dialog, the Session setup dialog, the Category picker and the Custom colour dialog — a translucent
+  dialog, the Session setup dialog, the Category picker, the Custom colour dialog and the Custom
+  separator dialog — a translucent
   black has to dim whatever is underneath, so
   it cannot be one of the opaque theme colours. Reuse that value for any new modal; do not pick a
   second one.

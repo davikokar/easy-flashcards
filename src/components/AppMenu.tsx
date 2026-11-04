@@ -1,10 +1,11 @@
-import React, { useCallback, useState } from 'react';
-import { Alert, Modal, Pressable, StyleSheet, Text } from 'react-native';
+import React, { useCallback, useRef, useState } from 'react';
+import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 import Button from './Button';
 import KebabMenu from './KebabMenu';
 import type { MenuItem } from './MenuSheet';
-import { ExportCancelledError, exportSampleDeck } from '../services/exportSampleDeck';
+import { exportSampleDeck } from '../services/exportSampleDeck';
 import { colors, radius, spacing } from '../theme';
+import { describeSampleDeckExport } from '../utils/sampleDeck';
 
 type Props = {
   variant?: 'plain' | 'boxed';
@@ -15,22 +16,27 @@ type Props = {
 export default function AppMenu({ variant, extraItems = [] }: Props) {
   const [isExportVisible, setIsExportVisible] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const exportInFlight = useRef(false);
 
-  const handleShare = useCallback(async () => {
+  const handleExport = useCallback(async () => {
+    // The ref, not the state, is the guard: state is stale until the next render.
+    if (exportInFlight.current) {
+      return;
+    }
+    exportInFlight.current = true;
     setIsExporting(true);
     try {
-      const name = await exportSampleDeck();
-      setIsExportVisible(false);
-      Alert.alert('Sample deck exported', `Saved as ${name ?? 'sample-deck.csv'}.`);
-    } catch (error) {
-      if (error instanceof ExportCancelledError) {
+      const outcomes = await exportSampleDeck();
+      const alert = describeSampleDeckExport(outcomes);
+      if (alert === null) {
         return;
       }
-      Alert.alert(
-        'Export failed',
-        error instanceof Error ? error.message : 'Could not export the sample deck.',
-      );
+      if (outcomes.some(outcome => outcome.status === 'saved')) {
+        setIsExportVisible(false);
+      }
+      Alert.alert(alert.title, alert.message);
     } finally {
+      exportInFlight.current = false;
       setIsExporting(false);
     }
   }, []);
@@ -63,14 +69,24 @@ export default function AppMenu({ variant, extraItems = [] }: Props) {
         <Pressable style={styles.backdrop} onPress={() => setIsExportVisible(false)}>
           <Pressable style={styles.dialog}>
             <Text style={styles.title}>Export sample deck</Text>
-            <Text style={styles.body}>
-              This exports a small sample CSV file so you can see how a deck has to be formatted
-              before importing it: one card per row, with the question and the answer separated by a
-              semicolon or a tab. Basic HTML such as {'<b>'}, {'<i>'} and {'<br />'} is allowed.
-            </Text>
+            <ScrollView>
+              <Text style={styles.body}>
+                This saves the same sample deck as two files, CSV and JSON. You are asked where to
+                save each one and can cancel either to skip it.
+                {'\n\n'}
+                CSV: lines starting with # (title, description, category) are skipped on import,
+                then a {'"question"'} / {'"answer"'} header and one card per row, separated here by
+                semicolons (a comma, a tab or another single symbol also works).
+                {'\n\n'}
+                JSON: also brings back the title, description and category.
+                {'\n\n'}
+                Basic HTML such as {'<b>'}, {'<i>'} and {'<br />'} is allowed on either side of a
+                card.
+              </Text>
+            </ScrollView>
             <Button
-              label="Share"
-              onPress={handleShare}
+              label="Export"
+              onPress={handleExport}
               loading={isExporting}
               disabled={isExporting}
             />
@@ -98,6 +114,7 @@ const styles = StyleSheet.create({
   dialog: {
     width: '100%',
     maxWidth: 420,
+    maxHeight: '90%',
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
     borderWidth: 1,

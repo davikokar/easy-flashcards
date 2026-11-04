@@ -1,0 +1,35 @@
+{
+  "format": "easy-flashcards-deck",
+  "version": 1,
+  "title": "Sample deck",
+  "description": "Five cards showing how a deck file is laid out.",
+  "category": {
+    "id": "default_geography",
+    "name": "Geography",
+    "color": "#829ef7",
+    "icon": "geography",
+    "builtIn": true
+  },
+  "cards": [
+    {
+      "question": "What is the capital of <b>France</b>?",
+      "answer": "Paris"
+    },
+    {
+      "question": "Translate <i>\"good morning\"</i> to Spanish",
+      "answer": "Buenos d&iacute;as"
+    },
+    {
+      "question": "What does HTML stand for?",
+      "answer": "<b>H</b>yper<b>T</b>ext <b>M</b>arkup <b>L</b>anguage"
+    },
+    {
+      "question": "Name the three primary colours",
+      "answer": "<ul><li>Red</li><li>Green</li><li>Blue</li></ul>"
+    },
+    {
+      "question": "Which planet is known as the Red Planet?",
+      "answer": "Mars<br />Fourth planet from the Sun"
+    }
+  ]
+}

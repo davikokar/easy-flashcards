@@ -3,6 +3,7 @@ import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, View }
 import type { CompositeScreenProps } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
+import CustomSeparatorDialog from '../components/CustomSeparatorDialog';
 import DeckCard from '../components/DeckCard';
 import EmptyState from '../components/EmptyState';
 import HeaderToolbar from '../components/HeaderToolbar';
@@ -19,11 +20,18 @@ import {
   getDeckStats,
   summarizeSessionsByDeck,
 } from '../utils/stats';
-import { CsvImportError } from '../utils/csv';
 import { findCategory } from '../utils/categories';
+import { DeckImportFormat } from '../utils/deckImport';
+import {
+  DeckExportOptions,
+  SEPARATOR_PRESETS,
+  SeparatorError,
+  validateCustomSeparator,
+} from '../utils/deckExport';
 import { filterByTitle } from '../utils/search';
 import { shuffle } from '../utils/shuffle';
-import { ImportCancelledError, pickAndParseCsv } from '../services/importDeck';
+import { ExportCancelledError, exportDeck } from '../services/exportDeck';
+import { ImportCancelledError, pickAndParseDeck } from '../services/importDeck';
 import { colors, radius, spacing } from '../theme';
 
 type Props = CompositeScreenProps<
@@ -47,6 +55,13 @@ export default function DecksScreen({ navigation }: Props) {
   const [setupVisible, setSetupVisible] = useState(false);
   const [setupInverted, setSetupInverted] = useState(false);
   const [setupShuffled, setSetupShuffled] = useState(false);
+  // The deck id stays set after the export menus close so the Custom separator dialog keeps its title.
+  const [exportDeckId, setExportDeckId] = useState<string | null>(null);
+  const [exportMenu, setExportMenu] = useState<'format' | 'separator' | null>(null);
+  const [customVisible, setCustomVisible] = useState(false);
+  const [customSeparator, setCustomSeparator] = useState('');
+  const [isExportingDeck, setIsExportingDeck] = useState(false);
+  const exportInFlight = useRef(false);
   const sessionsByDeck = useMemo(() => summarizeSessionsByDeck(sessions), [sessions]);
   const visibleDecks = useMemo(() => filterByTitle(decks, query, deck => deck.name), [decks, query]);
 
@@ -83,37 +98,41 @@ export default function DecksScreen({ navigation }: Props) {
     });
   }, [navigation, toolbar]);
 
-  const handleImport = useCallback(async () => {
-    setIsImporting(true);
-    try {
-      const imported = await pickAndParseCsv();
-      const deck = addDeck({
-        name: imported.deckName,
-        sourceFileName: imported.fileName,
-        cards: imported.parsed.cards,
-      });
-      const skipped = imported.parsed.skippedRows;
-      Alert.alert(
-        'Deck imported',
-        `"${deck.name}" now has ${deck.cards.length} card${deck.cards.length === 1 ? '' : 's'}.` +
-          (skipped > 0 ? `\n${skipped} incomplete row${skipped === 1 ? '' : 's'} skipped.` : ''),
-      );
-    } catch (importError) {
-      if (importError instanceof ImportCancelledError) {
-        return;
-      }
-      Alert.alert(
-        'Import failed',
-        importError instanceof CsvImportError
-          ? importError.message
-          : importError instanceof Error
+  const handleImport = useCallback(
+    async (format: DeckImportFormat) => {
+      setIsImporting(true);
+      try {
+        const imported = await pickAndParseDeck(format);
+        const deck = addDeck({
+          name: imported.deckName,
+          description: imported.description,
+          categoryId: imported.categoryId,
+          sourceFileName: imported.fileName,
+          cards: imported.cards,
+        });
+        const skipped = imported.skipped;
+        const unit = format === 'csv' ? 'row' : 'card';
+        Alert.alert(
+          'Deck imported',
+          `"${deck.name}" now has ${deck.cards.length} card${deck.cards.length === 1 ? '' : 's'}.` +
+            (skipped > 0 ? `\n${skipped} incomplete ${unit}${skipped === 1 ? '' : 's'} skipped.` : ''),
+        );
+      } catch (importError) {
+        if (importError instanceof ImportCancelledError) {
+          return;
+        }
+        Alert.alert(
+          'Import failed',
+          importError instanceof Error
             ? importError.message
             : 'Unknown error while importing the file.',
-      );
-    } finally {
-      setIsImporting(false);
-    }
-  }, [addDeck]);
+        );
+      } finally {
+        setIsImporting(false);
+      }
+    },
+    [addDeck],
+  );
 
   const confirmDelete = useCallback(
     (deck: Deck) => {
@@ -178,10 +197,6 @@ export default function DecksScreen({ navigation }: Props) {
     }
   }, [setupDeck, setupInverted, setupShuffled, handleStartSession]);
 
-  const notYetAvailable = useCallback((format: string) => {
-    Alert.alert(format, 'Only CSV files can be imported for now.');
-  }, []);
-
   const addMenuItems = useMemo(
     () => [
       {
@@ -201,13 +216,94 @@ export default function DecksScreen({ navigation }: Props) {
 
   const formatMenuItems = useMemo(
     () => [
-      { label: 'CSV', icon: 'file' as const, onPress: handleImport },
-      { label: 'XML', icon: 'file' as const, onPress: () => notYetAvailable('XML') },
-      { label: 'JSON', icon: 'file' as const, onPress: () => notYetAvailable('JSON') },
-      { label: 'JSONL', icon: 'file' as const, onPress: () => notYetAvailable('JSONL') },
+      { label: 'CSV', icon: 'file' as const, onPress: () => handleImport('csv') },
+      { label: 'JSON', icon: 'file' as const, onPress: () => handleImport('json') },
     ],
-    [handleImport, notYetAvailable],
+    [handleImport],
   );
+
+  const exportDeckToFile = useMemo(
+    () => decks.find(deck => deck.id === exportDeckId),
+    [decks, exportDeckId],
+  );
+
+  const customSeparatorError = useMemo((): SeparatorError | null => {
+    const result = validateCustomSeparator(customSeparator);
+    return result.ok ? null : result.reason;
+  }, [customSeparator]);
+
+  const startExport = useCallback(
+    async (options: DeckExportOptions) => {
+      // The ref, not the state, is the guard: state is stale until the next render.
+      if (exportInFlight.current) {
+        return;
+      }
+      // Read again by id: the deck may have been deleted since its menu opened.
+      const deck = decks.find(candidate => candidate.id === exportDeckId);
+      if (!deck) {
+        setCustomVisible(false);
+        Alert.alert('Export failed', 'This deck no longer exists.');
+        return;
+      }
+      exportInFlight.current = true;
+      setIsExportingDeck(true);
+      try {
+        const name = await exportDeck(deck, findCategory(deck.categoryId, categories), options);
+        setCustomVisible(false);
+        Alert.alert('Deck exported', name ? `Saved as ${name}.` : 'The deck was saved.');
+      } catch (exportError) {
+        if (exportError instanceof ExportCancelledError) {
+          return;
+        }
+        Alert.alert(
+          'Export failed',
+          exportError instanceof Error ? exportError.message : 'Could not export the deck.',
+        );
+      } finally {
+        exportInFlight.current = false;
+        setIsExportingDeck(false);
+      }
+    },
+    [decks, categories, exportDeckId],
+  );
+
+  const exportFormatItems = useMemo(
+    () => [
+      { label: 'JSON', icon: 'file' as const, onPress: () => startExport({ format: 'json' }) },
+      { label: 'CSV', icon: 'file' as const, onPress: () => setExportMenu('separator') },
+    ],
+    [startExport],
+  );
+
+  const exportSeparatorItems = useMemo(
+    () => [
+      ...SEPARATOR_PRESETS.map(preset => ({
+        label: `${preset.label}${preset.key === 'tab' ? '' : ` (${preset.value})`}`,
+        onPress: () => startExport({ format: 'csv', separator: preset.value }),
+      })),
+      {
+        label: 'Custom…',
+        onPress: () => {
+          setCustomSeparator('');
+          setCustomVisible(true);
+        },
+      },
+    ],
+    [startExport],
+  );
+
+  const exportWithCustomSeparator = useCallback(() => {
+    const result = validateCustomSeparator(customSeparator);
+    if (result.ok) {
+      startExport({ format: 'csv', separator: result.separator });
+    }
+  }, [customSeparator, startExport]);
+
+  const closeCustomSeparator = useCallback(() => {
+    if (!exportInFlight.current) {
+      setCustomVisible(false);
+    }
+  }, []);
 
   return (
     <View style={styles.container}>
@@ -270,6 +366,14 @@ export default function DecksScreen({ navigation }: Props) {
                   onPress: () => navigation.navigate('EditDeck', { deckId: item.id }),
                 },
                 {
+                  label: 'Export to file',
+                  icon: 'export',
+                  onPress: () => {
+                    setExportDeckId(item.id);
+                    setExportMenu('format');
+                  },
+                },
+                {
                   label: 'Delete deck',
                   icon: 'delete',
                   destructive: true,
@@ -302,6 +406,24 @@ export default function DecksScreen({ navigation }: Props) {
         title={openMenu === 'format' ? 'Import deck from file' : 'Add a deck'}
         items={openMenu === 'format' ? formatMenuItems : addMenuItems}
         onClose={() => setOpenMenu(null)}
+      />
+
+      <MenuSheet
+        visible={exportMenu !== null}
+        title={exportMenu === 'separator' ? 'CSV separator' : 'Export deck to file'}
+        items={exportMenu === 'separator' ? exportSeparatorItems : exportFormatItems}
+        onClose={() => setExportMenu(null)}
+      />
+
+      <CustomSeparatorDialog
+        visible={customVisible}
+        deckName={exportDeckToFile?.name ?? ''}
+        value={customSeparator}
+        onChangeText={setCustomSeparator}
+        error={customSeparatorError}
+        exporting={isExportingDeck}
+        onExport={exportWithCustomSeparator}
+        onCancel={closeCustomSeparator}
       />
 
       <SessionSetupDialog

@@ -9,8 +9,8 @@ model: Claude Sonnet 5.5
 ## Project context
 
 This is **Easy Flashcards**, a React Native app in TypeScript, built and tested on Android. The
-user imports a deck from a CSV file, studies it card by card, and the app records how well each
-card is known. There is no account, no network, and no backend; everything the app stores is in
+user imports a deck from a CSV or JSON file, studies it card by card, and the app records how well
+each card is known. There is no account, no network, and no backend; everything the app stores is in
 AsyncStorage, written by one React Context reducer. Both sides of a card are HTML, parsed and
 rendered by the app's own code. Read these before you write anything:
 

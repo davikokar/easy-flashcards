@@ -8,7 +8,7 @@ import React, {
   useRef,
 } from 'react';
 import { Answer, Category, CategoryIcon, Deck, Session } from '../types';
-import { ParsedCard } from '../utils/csv';
+import { ParsedCard } from '../utils/deckImport';
 import { DeckEdit } from '../utils/deckEdit';
 import { loadCategories, saveCategories } from '../storage/categoriesStorage';
 import { loadDecks, saveDecks } from '../storage/decksStorage';
@@ -20,7 +20,14 @@ type SessionOptions = { inverted: boolean };
 type DecksContextValue = State & {
   getDeck: (deckId: string) => Deck | undefined;
   getSession: (sessionId: string) => Session | undefined;
-  addDeck: (input: { name: string; sourceFileName: string | null; cards: ParsedCard[] }) => Deck;
+  /** The returned deck carries the requested `categoryId`; the reducer stores null if it does not resolve. */
+  addDeck: (input: {
+    name: string;
+    description: string;
+    categoryId: string | null;
+    sourceFileName: string | null;
+    cards: ParsedCard[];
+  }) => Deck;
   updateDeck: (deckId: string, edit: DeckEdit) => void;
   deleteDeck: (deckId: string) => void;
   startSession: (deck: Deck, options: SessionOptions, cardIds?: string[]) => Session;
@@ -115,8 +122,8 @@ export function DecksProvider({ children }: { children: React.ReactNode }) {
     const deck: Deck = {
       id: createId('deck'),
       name: input.name,
-      description: '',
-      categoryId: null,
+      description: input.description,
+      categoryId: input.categoryId,
       sourceFileName: input.sourceFileName,
       createdAt: Date.now(),
       lastStudiedAt: null,

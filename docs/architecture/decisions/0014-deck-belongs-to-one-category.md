@@ -199,6 +199,50 @@ the *Not decided here* item "the category in Statistics".
 - Sessions still store no category. Nothing persisted changes and no dependency is added. On iOS
   the square would show without its glyph, as Amendment 1 records for the other places.
 
+## Amendment 3 — 2026-11-03
+
+Recorded ahead of the work it governs. The decision above is unchanged; this settles the *Not
+decided here* item "a category column in the CSV format" for **export** only.
+
+- **An exported deck carries its category, but not as a column.** Under
+  [ADR-0016](0016-deck-export-file-formats.md), a CSV export writes it once, as the
+  `# category: <name>` comment line at the top of the file, and a JSON export writes it as a
+  `category` object holding its `id`, `name`, `color`, `icon` and whether it is built in. A
+  per-deck value repeated on every card row was rejected.
+- **The category is resolved with `findCategory`**, so the *Resolving an id* rule above holds in a
+  file too: a deck with no category, or whose `categoryId` no longer resolves, exports no category
+  (an empty comment value, or `null`).
+- **Still not decided:** reading a category back on import — the importer is unchanged and an
+  imported deck still starts with no category — and how a custom category from another device
+  would be matched against this one's. Also still open: a deck count on the Categories tab's tiles,
+  filtering by category, and a category aggregation in Statistics.
+- Nothing persisted changes and no dependency is added.
+
+## Amendment 4 — 2026-11-04
+
+Recorded ahead of the work it governs. The decision above is unchanged; this settles Amendment 3's
+open item "reading a category back on import", under
+[ADR-0017](0017-deck-import-reads-exported-formats.md).
+
+- **A JSON-imported deck may start with a category; a CSV-imported deck still starts with none.**
+  The decision's line *"An imported deck starts with no category"* now holds for CSV only. A CSV's
+  `# category:` line is ignored.
+- **The JSON category is matched by `category.id` alone.** Its `name`, `color`, `icon` and
+  `builtIn` are not read, and **an import never creates a category.**
+- **The id is resolved in the reducer, at dispatch, with `findCategory`** — the *Resolving an id*
+  rule above, applied by the `addDeck` case exactly as `updateDeck` applies it. An id that resolves
+  to neither a built-in nor a stored custom category is stored as `null`. So the rule that no state
+  and no save holds a deck pointing at a missing category now covers import too; nothing new can
+  reach the loader's dangling-id path.
+- **What matches:** a built-in category always, its id being permanent; a custom category only on
+  the device that minted it, and only while it exists. **A custom category from another device does
+  not match**, because a custom id is minted per device; the deck imports uncategorised and the
+  user is not told it had a category. Matching by name, or creating the category, was rejected in
+  ADR-0017 for now.
+- **Still not decided:** a deck count on the Categories tab's tiles, filtering by category, and a
+  category aggregation in Statistics.
+- Nothing persisted changes and no dependency is added.
+
 ## References
 
 - [ADR-0002](0002-sessions-are-snapshots.md) — snapshots; amended by this record (Amendment 6)
@@ -210,6 +254,9 @@ the *Not decided here* item "the category in Statistics".
 - [ADR-0012](0012-custom-categories-third-storage-key.md) — categories, and the requirement for
   this record; amended by this record (Amendment 1)
 - [ADR-0013](0013-category-icons-are-android-vector-drawables.md) — the icons shown
+- [ADR-0016](0016-deck-export-file-formats.md) — the category in an exported file (Amendment 3)
+- [ADR-0017](0017-deck-import-reads-exported-formats.md) — the category read back on JSON import
+  (Amendment 4)
 - [`src/types.ts`](../../../src/types.ts) — `Deck`
 - [`src/storage/decksStorage.ts`](../../../src/storage/decksStorage.ts) — the `categoryId` default
 - [`src/state/reducer.ts`](../../../src/state/reducer.ts) — `updateDeck`, `deleteCategory`

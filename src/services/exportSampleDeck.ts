@@ -1,36 +1,36 @@
-import { CachesDirectoryPath, writeFile } from '@dr.pogodin/react-native-fs';
-import { errorCodes, isErrorWithCode, saveDocuments } from '@react-native-documents/picker';
-import { pathToFileUri } from '../utils/fileUri';
-import { SAMPLE_DECK_CSV, SAMPLE_DECK_FILE_NAME } from '../utils/sampleDeck';
+import { exportFileName } from '../utils/deckExport';
+import {
+  SAMPLE_DECK,
+  SAMPLE_DECK_CATEGORY,
+  SAMPLE_DECK_EXPORTS,
+  SampleDeckExportOutcome,
+} from '../utils/sampleDeck';
+import { ExportCancelledError, exportDeck } from './exportDeck';
 
-export class ExportCancelledError extends Error {
-  constructor() {
-    super('Export cancelled');
-    this.name = 'ExportCancelledError';
-  }
-}
+/**
+ * Saves the sample deck once per entry of SAMPLE_DECK_EXPORTS. The save dialogs run one at a
+ * time (saveDocuments allows one), and a cancelled or failed file does not stop the next.
+ */
+export async function exportSampleDeck(): Promise<SampleDeckExportOutcome[]> {
+  const outcomes: SampleDeckExportOutcome[] = [];
 
-/** Writes the sample deck to the cache, then opens the system "save as" dialog. */
-export async function exportSampleDeck(): Promise<string | null> {
-  const path = `${CachesDirectoryPath}/${SAMPLE_DECK_FILE_NAME}`;
-  await writeFile(path, SAMPLE_DECK_CSV, 'utf8');
-
-  let saved;
-  try {
-    [saved] = await saveDocuments({
-      sourceUris: [pathToFileUri(path)],
-      mimeType: 'text/csv',
-      fileName: SAMPLE_DECK_FILE_NAME,
-    });
-  } catch (error) {
-    if (isErrorWithCode(error) && error.code === errorCodes.OPERATION_CANCELED) {
-      throw new ExportCancelledError();
+  for (const options of SAMPLE_DECK_EXPORTS) {
+    const file = {
+      format: options.format,
+      suggestedName: exportFileName(SAMPLE_DECK.name, options.format),
+    };
+    try {
+      const savedAs = await exportDeck(SAMPLE_DECK, SAMPLE_DECK_CATEGORY, options);
+      outcomes.push({ ...file, status: 'saved', savedAs });
+    } catch (error) {
+      if (error instanceof ExportCancelledError) {
+        outcomes.push({ ...file, status: 'cancelled' });
+      } else {
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        outcomes.push({ ...file, status: 'failed', message });
+      }
     }
-    throw error;
   }
 
-  if (saved.error) {
-    throw new Error(saved.error);
-  }
-  return saved.name;
+  return outcomes;
 }

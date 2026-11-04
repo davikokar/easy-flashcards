@@ -93,8 +93,10 @@ export function reducer(state: State, action: Action): State {
       };
     case 'loadFailed':
       return { ...state, isLoading: false, error: action.message };
-    case 'addDeck':
-      return { ...state, decks: [action.deck, ...state.decks] };
+    case 'addDeck': {
+      const categoryId = findCategory(action.deck.categoryId, state.categories)?.id ?? null;
+      return { ...state, decks: [{ ...action.deck, categoryId }, ...state.decks] };
+    }
     case 'updateDeck': {
       const deck = state.decks.find(item => item.id === action.deckId);
       if (!deck) {

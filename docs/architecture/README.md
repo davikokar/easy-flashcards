@@ -56,7 +56,14 @@ for the required format and status rules.
 > loader rule found when it did. ADR-0012 carries an Amendment 3, recorded ahead of the work that
 > adds the Custom colour swatch to the Colour picker, so a custom category can have any colour that
 > meets the palette's contrast bar, under the same key and shape; ARCHITECTURE.md links to it now
-> that the work has landed.
+> that the work has landed. ADR-0016 was recorded ahead of its work, together with Amendment 2 to
+> ADR-0011 and Amendment 3 to ADR-0014; it changes nothing persisted, and ARCHITECTURE.md links to
+> it now that the work has landed. ADR-0017 was recorded ahead of its work, together with
+> Amendment 4 to ADR-0003, Amendment 3 to ADR-0011, Amendment 4 to ADR-0014 and Amendment 2 to
+> ADR-0016; it changes nothing persisted, and ARCHITECTURE.md links to it now that the work has
+> landed. ADR-0016 carries an Amendment 3, recorded ahead of the work that makes Export sample
+> deck save the sample in both export formats, as two files; it changes nothing persisted, and
+> ARCHITECTURE.md links to it now that the work has landed.
 
 ### Index
 
@@ -77,3 +84,5 @@ for the required format and status rules.
 | [ADR-0013](decisions/0013-category-icons-are-android-vector-drawables.md) | Category icons are Android vector drawables rendered with Image | Active | 2026-10-30 |
 | [ADR-0014](decisions/0014-deck-belongs-to-one-category.md) | A deck belongs to at most one category, stored on the deck under the existing v1 key | Active | 2026-10-30 |
 | [ADR-0015](decisions/0015-answers-carry-a-timestamp-under-v2-keys.md) | Each answer records when it was given, and statistics by timeframe are derived from session results under new v2 keys | Active | 2026-11-03 |
+| [ADR-0016](decisions/0016-deck-export-file-formats.md) | A deck is exported to a JSON or CSV file in formats the app defines, carrying no progress data | Active | 2026-11-03 |
+| [ADR-0017](decisions/0017-deck-import-reads-exported-formats.md) | Deck import reads the formats the app exports — CSV with any supported separator and leading comments, and the versioned JSON file | Active | 2026-11-04 |

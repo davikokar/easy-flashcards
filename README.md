@@ -1,21 +1,33 @@
 # Easy Flashcards
 
-Android flashcards app built with React Native. Import decks from local CSV files, study them
-card by card, and track how well you know each card.
+Android flashcards app built with React Native. Import decks from local CSV or JSON files, study
+them card by card, and track how well you know each card.
 
 ## Features
 
 - **Bottom tab navigation** with a *Decks* tab (import decks and start sessions), a *Learn* tab
   (your sessions, and where you study them), a *Categories* tab and a *Statistics* tab.
-- **CSV import** from any local file through the Android system file picker.
-  - Columns `Question` and `Answer` (header matching is case-insensitive).
-  - Delimiters: semicolon (`;`) or tab (`\t`).
-  - BOM and CRLF tolerant; incomplete rows are skipped and reported.
+- **Deck import** from any local file through the Android system file picker: *Import deck from
+  file* asks for **CSV** or **JSON** first, and the file is read as that format whatever its
+  extension.
+  - **CSV**: columns `Question` and `Answer` (header matching is case-insensitive), separated by a
+    comma, semicolon, tab or any single symbol the export accepts; the deck is named after the
+    file. See [CSV format](#csv-format).
+  - **JSON**: a deck file exported by the app, bringing its title, description and — when it
+    exists on this device — its category. See [Export formats](#export-formats).
+  - BOM and CRLF tolerant; incomplete rows or cards are skipped and reported, and a file that
+    cannot be read is refused with the reason. Every imported card starts with no statistics.
 - **Deck editing**: *Edit deck* in a deck's menu opens a form for the deck's title, an optional
   description, its category and its cards. Edit a card's
   question or answer, add a card, or remove one, then press *Save*; nothing changes until you do.
   Editing a card keeps its statistics, removing one deletes them, and the title change reaches the
   deck's sessions.
+- **Deck export**: *Export to file* in a deck's menu saves the deck's title, description, category
+  and cards as a JSON or CSV file wherever you choose in the system save dialog. For CSV, pick a
+  comma, semicolon or tab as the separator, or type any single character that is not a letter, a
+  digit, whitespace, a double quote or `#`. Statistics and sessions are not exported. Both formats
+  import back; JSON keeps the title, description and category, CSV only the cards. See
+  [Export formats](#export-formats).
 - **Study sessions** with an animated card flip, three icon feedback buttons — *Not Ok* (cross),
   *Okeish* (question mark) and *Ok* (tick) — a progress indicator, and an end-of-session summary
   that offers to review the cards you missed or were unsure of, or to study the whole deck again.
@@ -80,8 +92,57 @@ Question;Answer
 This is the question; This is the <b>answer</b>
 ```
 
-A ready-to-use example lives in [samples/sample-deck.csv](samples/sample-deck.csv). Copy it to the
-device (or to the emulator's Downloads folder) and import it from the *Decks* tab.
+The header row is the first line that is neither blank nor starts with `#`; blank and `#` lines
+above it are skipped, so the app's own CSV exports import as they are. The separator is detected
+from the header row: a semicolon, tab or comma, or any other single symbol that is not a letter,
+digit, whitespace, a double quote or `#`. Extra columns are ignored, card text is trimmed, and a row
+missing its question or its answer is skipped and counted. The deck is named after the file, with
+no description and no category.
+
+Ready-to-use examples live in [samples/sample-deck.csv](samples/sample-deck.csv) and
+[samples/sample-deck.json](samples/sample-deck.json): the same five-card deck in both
+[export formats](#export-formats), the CSV with its three comment lines and semicolons as the
+separator. Copy one to the device (or to the emulator's Downloads folder) and import it from the
+*Decks* tab as CSV or JSON.
+
+*Export sample deck* in the app menu (the three-dot button at the top right of each tab) saves the
+same two files from the app: `Sample deck.csv`, then `Sample deck.json`. You are asked where to
+save each one in turn, and cancelling either dialog skips that file. An alert then says which files
+were saved; cancelling both shows nothing.
+
+## Export formats
+
+*Export to file* writes one of two formats. Card text is written exactly as stored, HTML included.
+Both are UTF-8 with LF line endings.
+
+**CSV**: three comment lines, then a `question` / `answer` header, then one row per card, separated
+by the separator you chose:
+
+```text
+# title: German words
+# description: Words from work.\nSecond line.
+# category: Languages
+question;answer
+What is the capital of <b>France</b>?;Paris
+```
+
+A comment line is written even when its value is empty (`# category:`). Inside one, a line break is
+written as `\n` and a backslash as `\\`. A field is quoted when it contains the separator, a quote
+or a line break, or starts or ends with a space, and a quote inside it is doubled; a field that
+starts with `#` is always quoted, so it cannot be mistaken for a comment line.
+
+**JSON**: one object with `format` (`"easy-flashcards-deck"`), `version` (`1`), `title`,
+`description`, `category` (`null`, or its `id`, `name`, `color`, `icon` and whether it is
+`builtIn`) and `cards` (each a `question` and an `answer`).
+
+Both formats import back. A CSV import reads past the comment lines, so the deck is named after
+the file and has no description or category. A JSON import keeps the title, description and
+category; the category is matched by its `id` only, so a built-in one always comes back and one you
+created comes back only on the device where you created it, and otherwise the deck has none. A JSON
+file from a newer version of the app is refused. Imported text is trimmed of leading and trailing
+whitespace, and a deck exported with no cards cannot be imported. The full specification is
+[ADR-0016](docs/architecture/decisions/0016-deck-export-file-formats.md), and the import rules
+[ADR-0017](docs/architecture/decisions/0017-deck-import-reads-exported-formats.md).
 
 ## Getting started
 
@@ -114,8 +175,8 @@ npm test
 | [src/components](src/components) | Flip card, HTML renderer, buttons, progress bars, dialogs, category tiles, squares and pickers, colour sliders |
 | [src/state](src/state) | Context store (`DecksContext.tsx`) over a pure reducer (`reducer.ts`), auto-persisting |
 | [src/storage](src/storage) | AsyncStorage read/write with defensive normalisation, one module per key |
-| [src/services](src/services) | Document picker + file read + CSV parsing; sample deck export |
-| [src/utils](src/utils) | Pure logic: CSV and HTML parsing, statistics, search, categories, colour maths, and more |
+| [src/services](src/services) | Document picker + file read + CSV or JSON parsing; deck and sample deck export through the save dialog |
+| [src/utils](src/utils) | Pure logic: CSV, JSON and HTML parsing, deck import and export formats, statistics, search, categories, colour maths, and more |
 | [src/assets/category-icons](src/assets/category-icons) | Category icons: Material Symbols by Google (Apache License 2.0, see its `NOTICE`) as Android vector drawables |
 | [\_\_tests\_\_](__tests__) | Jest unit tests for the utils, the reducer and the storage loaders |
 

@@ -58,14 +58,18 @@ make a brief easier.
 - **Build the input literally in the test.** No fixture files, no shared `beforeEach` setup object.
   A small builder per shape (`card()`, `deck()`, `session()`) is fine when it takes its varying
   values as arguments. A test reads a file from disk only when it exists to check that a shipped
-  file matches the code, and there are two: `samples/sample-deck.csv`, in `sampleDeck.test.ts`,
-  against the built-in copy, and the drawables in `src/assets/category-icons/`, in
-  `categories.test.ts`, against `CATEGORY_ICONS`. Both read with Node's `fs` and mock nothing. Never
-  read a file to supply a test's input.
+  file matches the code, and only these do: the two sample deck files, `samples/sample-deck.csv`
+  and `samples/sample-deck.json`, in `sampleDeck.test.ts`, each checked to equal what
+  `serializeDeck` writes for `SAMPLE_DECK` (line endings aside) and to import as its cards, the
+  JSON also as its title, description and category; and the drawables in
+  `src/assets/category-icons/`, in `categories.test.ts`, against `CATEGORY_ICONS`. All read with
+  Node's `fs` and mock nothing. Never read a file to supply a test's input.
 - **Assert on returned values**, never on how a function got there.
-- Test the failure path as well as the happy one. `parseFlashcardsCsv` throws `CsvImportError` on
-  a file it cannot use, and that is part of its contract — assert on the throw, not just on the
-  parse.
+- Test the failure path as well as the happy one. `parseFlashcardsCsv` and `parseDeckJson` throw
+  `DeckImportError` on a file they cannot use, and that is part of their contract — assert on the
+  throw and its message, not just on the parse.
+- A round trip is built literally too: `csv.test.ts` and `deckImport.test.ts` serialise a deck
+  built in the test with `deckExport.ts` and parse the result, rather than reading an exported file.
 - Test the tolerance that is deliberate. `parseHtml` absorbing an unclosed tag and
   `fileUriToPath` leaving a stray `%` alone are both decisions, and a test is what stops the next
   person "fixing" them.

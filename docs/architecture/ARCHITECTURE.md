@@ -1,10 +1,14 @@
 # Easy Flashcards — Architecture
 
 Easy Flashcards is a React Native flashcards app, built and tested on Android. The user imports a
-deck from a local CSV file, studies it card by card, and the app records how well each card is
-known. It has no account, no network calls, and no backend. Everything it stores is in AsyncStorage
-on the device, one key per module in `src/storage/` (§5); the only times it leaves the app are to
-pick a file to import and to save the sample deck out.
+deck from a local CSV or JSON file, studies it card by card, and the app records how well each card
+is known. It has no account, no network calls, and no backend. Everything it stores is in
+AsyncStorage on the device, one key per module in `src/storage/` (§5); the only times it leaves the
+app are to pick a file to import, and to save a deck out through the system save dialog — the
+sample deck as two files, one CSV and one JSON, in two dialogs. An exported deck carries its
+content, never its progress, and every file the app exports imports again
+([ADR-0016](decisions/0016-deck-export-file-formats.md) and its Amendment 3,
+[ADR-0017](decisions/0017-deck-import-reads-exported-formats.md)).
 
 - **App id / namespace:** `com.easyflashcards`
 - **Language:** TypeScript · **UI:** React Native primitives, no component library
@@ -38,7 +42,7 @@ canonical; the full vocabulary is in
 
 | Tab | Canonical name | What it shows | Implementation |
 |---|---|---|---|
-| Decks | **Decks screen** | Every imported deck as a **Deck card**: its **Category square** at the top left, and again before the title of its **Deck options menu**, when the deck has a category ([ADR-0014](decisions/0014-deck-belongs-to-one-category.md) Amendment 1), its card count, a **Mastery bar** splitting its reviews into Ok / Okeish / Not ok, its session and active-session counts, and its last session date. Where a deck is imported, started, edited, and deleted. A deck's description is not shown on its Deck card. The **Start session button** starts in deck order and not inverted; the Deck options menu's **Start session with options** opens the **Session setup dialog**, where **Inverted** and **Shuffle** are chosen independently ([ADR-0010](decisions/0010-inverted-sessions.md)). | `DecksScreen`, route `DecksList` |
+| Decks | **Decks screen** | Every imported deck as a **Deck card**: its **Category square** at the top left, and again before the title of its **Deck options menu**, when the deck has a category ([ADR-0014](decisions/0014-deck-belongs-to-one-category.md) Amendment 1), its card count, a **Mastery bar** splitting its reviews into Ok / Okeish / Not ok, its session and active-session counts, and its last session date. Where a deck is imported, started, edited, exported, and deleted. The **Add deck button** opens the **Add deck menu**, whose **Import deck from file** opens the **Import format menu** — **CSV** or **JSON**, nothing else — and then the system picker; the file is read as the chosen format whatever its extension, a JSON file brings its title, description and a category that resolves on this device, a CSV file is named after the file, and a file that cannot be read gets an `Import failed` alert with the reason ([ADR-0017](decisions/0017-deck-import-reads-exported-formats.md)). A deck's description is not shown on its Deck card. The **Start session button** starts in deck order and not inverted; the Deck options menu's **Start session with options** opens the **Session setup dialog**, where **Inverted** and **Shuffle** are chosen independently ([ADR-0010](decisions/0010-inverted-sessions.md)). Its **Export to file** opens the **Export format menu** (JSON or CSV), for CSV the **CSV separator menu** (Comma, Semicolon, Tab or Custom…), and for Custom… the **Custom separator dialog**, then the system save dialog; it writes the deck's title, description, category and cards to a file and changes nothing stored ([ADR-0016](decisions/0016-deck-export-file-formats.md)). | `DecksScreen`, route `DecksList` |
 | Decks | **Edit deck screen** | One deck's title, description, category and cards in editable fields: add a card, remove a card, edit a card's question and answer. The **Category field** under the description opens the **Category picker**, which offers the **No category choice** and then every default and custom category in one alphabetical grid ([ADR-0014](decisions/0014-deck-belongs-to-one-category.md)). Nothing is written until **Save**, which commits the whole edit in one action ([ADR-0011](decisions/0011-deck-editing-is-one-action.md)); leaving with unsaved changes asks first. | `EditDeckScreen`, route `EditDeck` (param `deckId`) |
 | Learn | **Learn screen** | Every listed session — active, or completed and not cleared — as a **Session card**, active ones first and most recently touched first within each group. A card shows the **Category square** of its deck's category as it is now, and again before the title of its **Session options menu** — none when the deck has no category or no longer exists, because a session stores no category ([ADR-0014](decisions/0014-deck-belongs-to-one-category.md), Amendment 1) — a **Session status pill** (followed by an **Inverted pill** on an inverted session), a **Session results bar** splitting the session's cards into answered Ok / Okeish / Not ok and unanswered, and a footer with the start date and icon-only buttons: **Resume** on an active session; on a completed one the **Review errors button** — shown while the session has missed or unsure cards that still exist in its deck, with a **Review badge** giving how many are outstanding, or a tick and the button disabled once every one is fixed — then the **Replay button**. Where a session is resumed; replayed — a new session over the original's cards that still exist, in its order, which **also clears the original** ([ADR-0008](decisions/0008-clear-completed-sessions.md) Amendment 1); restarted over the whole deck with **Start a new session**, which leaves the original untouched; its errors reviewed, which opens the Study screen in review mode and creates no session ([ADR-0009](decisions/0009-error-review-marks-cards-fixed.md)); an active one discarded (a real delete, which also withdraws its answers from the card counters — ADR-0008 Amendment 2); and a completed one cleared, singly or all at once (hidden from the list but still counted — ADR-0008). Every session started from a session keeps its `inverted`. | `LearnScreen`, route `LearnList` |
 | Learn | **Study screen** | One session, in its direction — an inverted session shows each card's answer first and an **Inverted pill** in the Progress header ([ADR-0010](decisions/0010-inverted-sessions.md)): the flip card, the icon-only answer buttons (Not Ok, Okeish, Ok — [ADR-0007](decisions/0007-okeish-third-answer.md)), the answered-so-far strip, and the **Session summary**, which offers **Review the {n} missed or unsure** (switching to review mode over the same session) and **Study the whole deck again** (a new session in the same direction). With `mode: 'review'` on a completed session it is in **review mode** instead: **Review passes** over the session's outstanding missed or unsure cards, each pass a snapshot shown once per card in the session's direction, ending on the **Review summary**. Only an Ok given in a review writes anything, and all it writes is that the card is fixed ([ADR-0009](decisions/0009-error-review-marks-cards-fixed.md)). | `StudyScreen`, route `Study` (params `sessionId`, optional `mode: 'review'`) |
@@ -56,10 +60,14 @@ their tabs and are reached only by switching tab.
 There are no modal screens. Transient UI is an `Alert`, the **Menu sheet** (`MenuSheet`), a
 bottom sheet rendered in a `Modal` and opened from a **Kebab menu** (`KebabMenu`), or a centred
 `Modal` dialog: the **Export sample deck dialog** inside `AppMenu`, the **Session setup dialog**
-(`SessionSetupDialog`) that the Decks screen opens, the **Category picker** (`CategoryPicker`)
+(`SessionSetupDialog`) and the **Custom separator dialog** (`CustomSeparatorDialog`) that the Decks
+screen opens, the **Category picker** (`CategoryPicker`)
 that the Edit deck screen's Category field opens, and the **Custom colour dialog**
 (`CustomColorDialog`) that the New category screen opens from its Colour picker. The Category options menu is a
-Menu sheet too, opened by the Categories screen rather than by a Kebab menu. The **App menu**
+Menu sheet too, opened by the Categories screen rather than by a Kebab menu, and so are the Decks
+screen's **Export format menu** and **CSV separator menu**, opened in turn from the Deck options
+menu's **Export to file**, and its **Add deck menu** and **Import format menu**, opened in turn
+from the **Add deck button**. The **App menu**
 (`AppMenu`) in the header is one of those kebab menus; on the Decks, Learn and Statistics screens
 it sits at the end of the **Header toolbar** (`HeaderToolbar`), after the **Search button** and —
 on Decks and Learn only — the **Filter button**, and on the Learn screen it carries **Clear
@@ -80,9 +88,11 @@ AsyncStorage                              Device (SAF)
         │                                           │
   decksStorage.ts                           services/importDeck.ts
   sessionsStorage.ts                        services/exportSampleDeck.ts
-  categoriesStorage.ts                              │
+  categoriesStorage.ts                      services/exportDeck.ts
    (load / save / normalise)                        │
         │                                     utils/csv.ts (PapaParse)
+        │                                     utils/deckImport.ts
+        │                                     utils/deckExport.ts (PapaParse)
         └───────────────┬─────────────────────────┘
                         │
               DecksContext  (useReducer over state/reducer.ts)
@@ -108,6 +118,30 @@ The loop is one-way: a screen calls a function on the context, the reducer produ
 object, React re-renders, and a `useEffect` watching `state.decks`, `state.sessions` and
 `state.categories` writes every key back. No screen writes storage, and no storage module knows
 about React.
+
+**Exporting a deck reads the store and writes nothing to it.** The Decks screen takes the deck from
+`useDecks()`, resolves its category with `findCategory`, and hands both to `exportDeck` in
+`services/`, which serialises them with `utils/deckExport.ts` and opens the system save dialog. No
+action is dispatched and no key changes; the file carries the deck's title, description, category
+and cards, and none of its ids, counters, timestamps or sessions —
+[ADR-0016](decisions/0016-deck-export-file-formats.md).
+
+**Exporting the sample deck does not touch the store at all.** `AppMenu` calls
+`exportSampleDeck` in `services/`, which hands the constant `SAMPLE_DECK` from
+`utils/sampleDeck.ts` to the same `exportDeck` once per file — CSV, then JSON — so the sample is
+written by the same serialiser as any deck; `describeSampleDeckExport` turns the two outcomes into
+one alert (ADR-0016 Amendment 3).
+
+**Importing a deck is one `addDeck`, and the reducer resolves its category.** The Decks screen
+calls `pickAndParseDeck(format)` in `services/`, which reads the picked file and parses it with
+`utils/csv.ts` or `utils/deckImport.ts`, then passes the result to `addDeck` with its name,
+`description` and requested `categoryId` — `''` and `null` for a CSV file. The reducer's `addDeck`
+case resolves that id with `findCategory`, as `updateDeck` does, and stores `null` when it matches
+neither a default nor a stored custom category; the import never creates a category. Every card
+starts with a fresh id and zero counters and the deck with no sessions, whatever the file holds, so
+the counters equal the answer log (below) for an imported deck by construction —
+[ADR-0017](decisions/0017-deck-import-reads-exported-formats.md),
+[ADR-0003](decisions/0003-single-context-reducer-store.md) Amendment 4.
 
 **Nothing derived is stored.** Success rates, answer shares, session progress, orderings,
 difficulty rankings and every timeframe figure are computed by pure functions in
@@ -188,7 +222,9 @@ default nor a stored custom category; the category touches no session — ADR-00
 **A deck refers to at most one category; a session refers to none.** The built-in categories are
 `DEFAULT_CATEGORIES` in `utils/categories.ts`: constants with permanent `default_<icon>` ids, never
 in the store's state and never stored. `state.categories` holds only the user's own. A deck holds
-`categoryId` — `null` for none, and `null` on every imported deck — and nothing checks it on load.
+`categoryId` — `null` for none, and `null` on every deck imported from CSV — and nothing checks it
+on load. A deck imported from JSON gets the file's category id only when it resolves at dispatch
+([ADR-0017](decisions/0017-deck-import-reads-exported-formats.md)).
 `findCategory(id, customs)` is the one resolution: the default or stored custom category with that
 id, or `null`. The reducer and every screen that shows a category go through it, so an id that
 resolves to neither displays as no category everywhere. A session stores no category; the Learn
@@ -222,7 +258,8 @@ tested). A file here may import `src/theme.ts`, which is plain constants.
 
 | File | Role |
 |---|---|
-| [`csv.ts`](../../src/utils/csv.ts) | `parseFlashcardsCsv` — wraps PapaParse, detects the delimiter, matches the `Question` / `Answer` headers case-insensitively, skips incomplete rows and counts them, throws `CsvImportError` on a file it cannot use. Also `deckNameFromFileName`. |
+| [`csv.ts`](../../src/utils/csv.ts) | `parseFlashcardsCsv` — the CSV importer ([ADR-0017](decisions/0017-deck-import-reads-exported-formats.md)). It strips a BOM, skips the blank lines and the lines starting with `#` above the header — so the `# title:`, `# description:` and `# category:` lines `deckExport.ts` writes are read past, not read — and takes the first other line as the header row; a `#` line below it is an ordinary row. It finds the separator from that row: each of its characters that is `;`, tab, `,` or passes `validateCustomSeparator` (imported from `deckExport.ts`, so the importer accepts every separator the export can write) splits it with PapaParse, and the first, in that order and then custom ones by position, whose trimmed, lower-cased fields include `question` and `answer` wins. Rows from the header on are parsed with it; extra columns are ignored, card text is trimmed, a row with both sides blank is ignored, and one with a single blank side is skipped and counted. Throws `DeckImportError` for an empty file, a header row naming no `question` / `answer` pair under any candidate, or no usable row. Also `deckNameFromFileName`. |
+| [`deckImport.ts`](../../src/utils/deckImport.ts) | The format-independent side of import and the JSON importer ([ADR-0017](decisions/0017-deck-import-reads-exported-formats.md)). `DeckImportFormat` (`'csv'` or `'json'`), `ParsedCard`, `DeckImportError` — the one error either importer throws, its message shown as is — and `stripBom`. `parseDeckJson` reads the object `serializeDeckJson` writes: it must be a JSON object with `format: "easy-flashcards-deck"` and a numeric `version`; a `version` above 1 is refused as from a newer app, and anything else unrecognised — not JSON, an array, another `format`, a lower `version`, `cards` not an array — as not a deck file. Unknown keys are ignored. A card counts when both sides are strings, non-blank once trimmed, and is otherwise skipped and counted; no usable card is an error. Returns the trimmed `title` or `null` (the caller then names the deck after the file), the trimmed `description` or `''`, the unresolved `category.id` or `null` — `name`, `color`, `icon` and `builtIn` are not read — the cards and the skipped count. No id, counter or timestamp in the file is read. |
 | [`html.ts`](../../src/utils/html.ts) | A tolerant HTML parser: `parseHtml` to `HtmlNode[]`, `decodeEntities`, and the `BLOCK_TAGS` set. It never throws — unclosed and stray tags are absorbed, and an unclosed `<li>` or `<p>` is closed when its next sibling opens. |
 | [`stats.ts`](../../src/utils/stats.ts) | Every derived number in the app: `successRate`, `answerShares`, `describeAnswerShares` (the spoken form of a split, `Not reviewed yet` for `null` — part of the accessibility label of the Mastery bar, the Mastery ring and the Deck stats card), `allocateRingSegments` (how many of the Mastery ring's bars each answer gets — see below), `sessionProgressShares` (each answer's share of a session's cards rather than of its reviews, scaled down together if the results ever outnumber the cards), `resolvableCardIds` (the given card ids that still exist in a deck, in the given order — what the Learn screen's Replay passes to `replaySession`, and what every review derivation filters through), `getDeckStats`, `getGlobalStats` (the counter-based totals; `getGlobalStats` is no longer called from `src/` — the tests compare it with `getGlobalStatsSince`), `getDeckStatsSince`, `getGlobalStatsSince`, `countSessionsSince` and `countSessionsByDeckSince` (the Statistics screen's figures, from the answer log — see below), `getSessionTally`, `canRecordAnswer` (the reducer's guard for `recordAnswer`: only an active session's next unanswered card is accepted, so a repeated or out-of-order answer is a no-op), `getMissedOrUnsureCardIds`, `getReviewableCardIds`, `getOutstandingReviewCardIds` and `getReviewState` (the error review's derived values — see below), `normalizeFixedCardIds` (the sessions loader's rule for `fixedCardIds`), `applyReviewAnswer` (the transform behind `recordReviewAnswer`, returning the same array when nothing changes), `prependSessionClearing` (the transform behind `replaySession`: the new session first, its source cleared with `clearSessionAt` semantics), `summarizeSessions`, `summarizeSessionsByDeck` (with `EMPTY_SESSION_SUMMARY` for a deck that has none), `isSessionActive`, `isSessionCleared`, `listedSessions` (the sessions the Learn screen shows), `clearableSessionCount` (completed sessions not yet cleared), `clearCompletedSessionsAt` and `clearSessionAt` (the transforms the reducer applies to clear sessions, returning the same array when nothing qualifies), `previousReviewIndex` (where a review swipe right on the Study screen lands — one answered card back, wrapping from the oldest round to the frontier), `sortSessions`, `sortCardsByDifficulty`, `cardReviewCount`, and the `formatRate` / `formatDate` display helpers. |
 | [`timeframe.ts`](../../src/utils/timeframe.ts) | The Statistics screen's timeframes ([ADR-0015](decisions/0015-answers-carry-a-timestamp-under-v2-keys.md)). `Timeframe` is `'all'`, `'month'` or `'week'`; `TIMEFRAMES` lists them in chip order with their labels — `All time`, `This month`, `Last 7 days`. `timeframeStart(timeframe, now)` is the earliest `answeredAt` a window includes, in the device's local time: `null` for all time, local midnight on the 1st of `now`'s month, or local midnight six days before `now`'s day. There is only a start, no end. `now` is an argument, so the tests fix it. |
@@ -231,9 +268,10 @@ tested). A file here may import `src/theme.ts`, which is plain constants.
 | [`shuffle.ts`](../../src/utils/shuffle.ts) | `shuffle(items, random = Math.random)` — Fisher-Yates over a copy; the input is never mutated. `random` is injectable so tests are deterministic. The Decks screen uses it to order the `cardIds` it passes to `startSession` when **Shuffle** is ticked in the Session setup dialog. Shuffling is not stored; the order is the `cardIds` themselves. |
 | [`cardFaces.ts`](../../src/utils/cardFaces.ts) | `cardFaces(card, inverted)` — the session's direction applied to a card: `{ front, back }`, the `question` then the `answer`, swapped when `inverted`. The single place a direction is applied; the card itself is never rewritten. Also `readInverted(value)`, the sessions loader's rule for the stored flag: `true` only for an exact `true` ([ADR-0010](decisions/0010-inverted-sessions.md)). |
 | [`storedArray.ts`](../../src/utils/storedArray.ts) | `parseStoredArray(raw)` — the rows of a stored JSON array; `[]` for a missing, unparseable or non-array value. Every loader reads through it, so a corrupt key never throws. |
-| [`sampleDeck.ts`](../../src/utils/sampleDeck.ts) | `SAMPLE_DECK_CSV` and `SAMPLE_DECK_FILE_NAME` — the built-in sample deck that `exportSampleDeck` writes out. Raw assets are not bundled, so it is a copy of `samples/sample-deck.csv`; a test checks that the two parse the same. |
+| [`sampleDeck.ts`](../../src/utils/sampleDeck.ts) | The sample deck that the App menu's **Export sample deck** saves ([ADR-0016](decisions/0016-deck-export-file-formats.md) Amendment 3). `SAMPLE_DECK` is a `Deck` — the title `Sample deck`, a description, the built-in category `default_geography` and five cards — whose ids, timestamps and counters exist only to satisfy the type, since an export writes none of them; `SAMPLE_DECK_CATEGORY` is that category resolved by `findCategory` with no custom categories. `SAMPLE_DECK_EXPORTS` lists the files to save, in order: CSV with the Semicolon preset, then JSON. `SampleDeckExportOutcome` is one file's result — `saved` with the name the save dialog returned (or `null`), `cancelled`, or `failed` with a message — and `describeSampleDeckExport(outcomes)` builds the one alert: `Sample deck exported` when at least one file was saved and none failed, `Sample deck partly exported` when one was saved and another failed, `Export failed` when none was saved and one failed, and `null` — no alert — when every file was cancelled. Its message names each saved file (`Saved as … and ….`, by the suggested name when the dialog returned none), then each failure with its message, then each cancelled file as not saved; with nothing saved it lists only the failures. Raw assets are not bundled, so `samples/sample-deck.csv` and `samples/sample-deck.json` are copies of what the export writes; a test checks that each equals `serializeDeck`'s output, line endings aside, and imports as the deck. |
+| [`deckExport.ts`](../../src/utils/deckExport.ts) | The pure side of exporting a deck: the two file formats of [ADR-0016](decisions/0016-deck-export-file-formats.md). It takes a deck and its already-resolved `Category \| null`, and never resolves one itself. `serializeDeckJson` writes one two-space-indented object — `format: "easy-flashcards-deck"`, `version: 1`, `title`, `description`, `category` (`null`, or `{ id, name, color, icon, builtIn }` with `builtIn` from `isDefaultCategoryId`) and `cards` as `{ question, answer }`. `serializeDeckCsv(deck, category, separator)` writes three `# title:`, `# description:` and `# category:` comment lines — a value kept on one line by writing `\` as `\\` and a line feed as `\n` and dropping a carriage return, never quoted — then a `question` / `answer` header and one row per card through `Papa.unparse`, with `newline: '\n'` and a `quotes` function that also quotes every field starting with `#`; it adds the final line feed Papa leaves off, and throws on a separator that is neither a preset nor valid, because Papa would silently fall back to a comma. Card text is written exactly as stored. `SEPARATOR_PRESETS` are Comma, Semicolon and Tab with their labels; `validateCustomSeparator` is the custom rule — one code point, untrimmed, not `"`, `#`, a carriage return, a line feed or the BOM (checked before whitespace, because `\s` matches the BOM too), not whitespace, and not a letter or digit in any script by the `\p{L}` / `\p{N}` Unicode property escapes, which Hermes runs (seen on a device) — returning the separator or a reason (`empty`, `tooLong`, `reserved`, `whitespace`, `alphanumeric`). `exportFileName` is the suggested file name: the title with `/ \ : * ? " < > \|` and control characters replaced by `_`, trimmed, `deck` when nothing is left, plus `.json` or `.csv`. `EXPORT_MIME_TYPES` maps each format to `application/json` or `text/csv`, and `serializeDeck` picks the serialiser from a `DeckExportOptions`. The tests round-trip the CSV through PapaParse with `comments: '#'`, and `csv.test.ts` and `deckImport.test.ts` round-trip both formats through the importers. |
 | [`deckEdit.ts`](../../src/utils/deckEdit.ts) | The pure side of editing a deck ([ADR-0011](decisions/0011-deck-editing-is-one-action.md)). `CardDraft` / `DeckEdit` are the editor's shapes — a `DeckEdit` carries the `categoryId` beside the title, description and cards; `draftsOf`, `isDeckEditChanged` (what the Save button and the discard prompt rest on; a different `categoryId` counts as a change), `removedCardIds` and `firstIncompleteCard` serve the Edit deck screen. `applyDeckEdit(deck, name, description, categoryId, cards)` is the transform behind `updateDeck` — it writes the category id it is given, which the reducer has already resolved; existing cards keep their counters, new ones start at zero, the list's order becomes the deck's — and `reconcileSession` applies the edit to a session: the new `deckName`, and for an active session the removed cards dropped from its unanswered part, which can complete it or, left with no cards and no answers, delete it (`null`). |
-| [`categories.ts`](../../src/utils/categories.ts) | The pure side of categories ([ADR-0012](decisions/0012-custom-categories-third-storage-key.md)). The icon keys are plain TypeScript — no `.xml` is imported here, so Jest can load it ([ADR-0013](decisions/0013-category-icons-are-android-vector-drawables.md)). `DEFAULT_CATEGORY_ICONS` are the default categories' icons; `EXTRA_CATEGORY_ICON_LABELS` maps each extra icon, which belongs to no default category, to a label saying what it shows, and its key order — by label, ignoring case — is the order of `EXTRA_CATEGORY_ICONS`; `CATEGORY_ICONS` is the full set a custom category chooses from, the defaults' icons first, then the extras (ADR-0012 Amendment 2, ADR-0013 Amendment 2). Every key is permanent once shipped; a label is not. `getCategoryIconLabel` is a default icon's category name, or an extra icon's label. `FALLBACK_CATEGORY_ICON`, typed as a default icon, is the key the loader substitutes for an unknown one, which the New category screen also starts on. `DEFAULT_CATEGORIES` are the built-in categories, alphabetical, each coloured by its position in `categoryPalette`, with `createdAt: 0`. `validateCategoryName(input, customs)` is the name rule — trimmed, non-empty, at most `CATEGORY_NAME_MAX_LENGTH`, unique ignoring case across defaults and customs — returning the trimmed name or a reason (`empty`, `tooLong`, `duplicate`). `isCategoryIcon` (over the full set) and `isHexColor` — any `#rgb`, `#rgba`, `#rrggbb` or `#rrggbbaa`, either case — are the loader's checks; `color.ts` has a stricter `isHexColor` of the same name (§8). `sortCategoriesByName` orders by name ignoring case; the Categories screen uses it for the custom section. `findCategory(id, customs)` resolves a deck's `categoryId` to the default or custom category with that id, or `null` for `null` or an id that matches neither — the one resolution behind `updateDeck` and every screen that shows a category ([ADR-0014](decisions/0014-deck-belongs-to-one-category.md)). `countDecksInCategory(decks, id)` is how many decks a delete detaches. `getAllCategories` (defaults and customs together, sorted) is the Category picker's list. `isDefaultCategoryId` is tested but not called from `src/`. |
+| [`categories.ts`](../../src/utils/categories.ts) | The pure side of categories ([ADR-0012](decisions/0012-custom-categories-third-storage-key.md)). The icon keys are plain TypeScript — no `.xml` is imported here, so Jest can load it ([ADR-0013](decisions/0013-category-icons-are-android-vector-drawables.md)). `DEFAULT_CATEGORY_ICONS` are the default categories' icons; `EXTRA_CATEGORY_ICON_LABELS` maps each extra icon, which belongs to no default category, to a label saying what it shows, and its key order — by label, ignoring case — is the order of `EXTRA_CATEGORY_ICONS`; `CATEGORY_ICONS` is the full set a custom category chooses from, the defaults' icons first, then the extras (ADR-0012 Amendment 2, ADR-0013 Amendment 2). Every key is permanent once shipped; a label is not. `getCategoryIconLabel` is a default icon's category name, or an extra icon's label. `FALLBACK_CATEGORY_ICON`, typed as a default icon, is the key the loader substitutes for an unknown one, which the New category screen also starts on. `DEFAULT_CATEGORIES` are the built-in categories, alphabetical, each coloured by its position in `categoryPalette`, with `createdAt: 0`. `validateCategoryName(input, customs)` is the name rule — trimmed, non-empty, at most `CATEGORY_NAME_MAX_LENGTH`, unique ignoring case across defaults and customs — returning the trimmed name or a reason (`empty`, `tooLong`, `duplicate`). `isCategoryIcon` (over the full set) and `isHexColor` — any `#rgb`, `#rgba`, `#rrggbb` or `#rrggbbaa`, either case — are the loader's checks; `color.ts` has a stricter `isHexColor` of the same name (§8). `sortCategoriesByName` orders by name ignoring case; the Categories screen uses it for the custom section. `findCategory(id, customs)` resolves a deck's `categoryId` to the default or custom category with that id, or `null` for `null` or an id that matches neither — the one resolution behind `updateDeck` and every screen that shows a category ([ADR-0014](decisions/0014-deck-belongs-to-one-category.md)). `countDecksInCategory(decks, id)` is how many decks a delete detaches. `getAllCategories` (defaults and customs together, sorted) is the Category picker's list. `isDefaultCategoryId` is what `deckExport.ts` writes as an exported category's `builtIn`. |
 | [`color.ts`](../../src/utils/color.ts) | The colour maths behind the Custom colour dialog ([ADR-0012](decisions/0012-custom-categories-third-storage-key.md) Amendment 3). `Hsv` is a hue in degrees with saturation and brightness from 0 to 1. `hsvToHex` wraps the hue, clamps the rest and always returns an opaque lowercase `#rrggbb`; `hexToHsv` is its inverse, reading a grey as hue 0. `contrastRatio` is the WCAG 2 contrast ratio, and `meetsCategoryContrast(color, background)` is the rule behind **Use colour** — at least `CATEGORY_MIN_CONTRAST`, and false for anything that is not `#rrggbb`, so a malformed colour never passes. `isPaletteColor` compares ignoring case, and is how the Colour picker decides that the Custom colour swatch is the selected one. `hueSpectrumStops`, `saturationStops` and `brightnessStops` are evenly spaced gradient stops for the slider tracks and the Custom colour swatch. Its `isHexColor` accepts only `#rrggbb`, unlike the loader's in `categories.ts` (§8); `hexToHsv` and `contrastRatio` throw `RangeError` on anything else. |
 
 `isSessionActive` is the single definition of "active": `completedAt === null`. Do not write that
@@ -307,10 +345,14 @@ session's results from its deck's counters through `withdrawAnswers`, a private 
 `replaySession` and `recordReviewAnswer` delegate to `clearCompletedSessionsAt`, `clearSessionAt`,
 `prependSessionClearing` and `applyReviewAnswer` — all in `stats.ts`. One private `createSession`
 helper in `DecksContext.tsx` builds the session for both `startSession` and `replaySession`, with
-`clearedAt: null`, `fixedCardIds: []` and the `inverted` it is given. `addDeck` builds an imported
-deck with `categoryId: null`. `addCategory` and `deleteCategory` are the two category actions, and
+`clearedAt: null`, `fixedCardIds: []` and the `inverted` it is given. `addDeck` builds the deck
+from an import — fresh ids, zero counters, and the `description` and requested `categoryId` it is
+given — dispatches it once and returns it; the reducer's `addDeck` case resolves the `categoryId`
+with `findCategory` and stores `null` for one that does not resolve, so the returned deck carries
+the *requested* id and a caller that needs the stored category reads the deck from the store
+([ADR-0003](decisions/0003-single-context-reducer-store.md) Amendment 4). `addCategory` and `deleteCategory` are the two category actions, and
 `deleteCategory` also detaches the category from every deck that uses it; `updateDeck` resolves the
-edit's `categoryId` against `state.categories` with `findCategory` (see §2). `State.categories`
+edit's `categoryId` against `state.categories` with `findCategory` (see §2), as `addDeck` does. `State.categories`
 holds custom categories only.
 [ADR-0003](decisions/0003-single-context-reducer-store.md) keeps it the only store.
 
@@ -318,11 +360,14 @@ holds custom categories only.
 
 | File | Role |
 |---|---|
-| [`importDeck.ts`](../../src/services/importDeck.ts) | `pickAndParseCsv` — opens the system picker, copies the chosen file into the app cache, reads it, parses it, and returns `{ deckName, fileName, parsed }`. Throws `ImportCancelledError` when the user backs out. |
-| [`exportSampleDeck.ts`](../../src/services/exportSampleDeck.ts) | `exportSampleDeck` — writes the built-in `SAMPLE_DECK_CSV` (from `utils/sampleDeck.ts`) to the cache and opens the system save dialog. Throws `ExportCancelledError` on cancel. |
+| [`importDeck.ts`](../../src/services/importDeck.ts) | `pickAndParseDeck(format)` — opens the system picker with the format's MIME types (CSV's text types, or `application/json` and `text/plain`, each list ending in `*/*` so any file stays pickable), copies the chosen file into the app cache with `keepLocalCopy` and does not delete the copy, reads it as UTF-8, and parses it **as the chosen format**, never by extension or content — `parseFlashcardsCsv` or `parseDeckJson`. Returns `ImportedFile`: `deckName` (the JSON title, else `deckNameFromFileName`), `fileName`, `description`, the unresolved `categoryId`, `cards` and `skipped` — `''` and `null` for CSV. Throws `ImportCancelledError` when the user backs out, and `DeckImportError` when the copy fails or the parser rejects the file ([ADR-0017](decisions/0017-deck-import-reads-exported-formats.md)). |
+| [`exportSampleDeck.ts`](../../src/services/exportSampleDeck.ts) | `exportSampleDeck()` — saves `SAMPLE_DECK` with `SAMPLE_DECK_CATEGORY` once per entry of `SAMPLE_DECK_EXPORTS`, each through `exportDeck`, awaiting one save dialog before opening the next: on Android `saveDocuments` saves one file per call and refuses a second call while one is open. A cancel (`ExportCancelledError`) or an error on one file is caught and recorded, and does not stop the next. Never throws for either; returns one `SampleDeckExportOutcome` per file, in order, carrying the format and the suggested name from `exportFileName` ([ADR-0016](decisions/0016-deck-export-file-formats.md) Amendment 3). |
+| [`exportDeck.ts`](../../src/services/exportDeck.ts) | `exportDeck(deck, category, options)` — writes `serializeDeck`'s text to the cache under the fixed name `easy-flashcards-export.json` or `.csv`, never the deck's title, so user text never reaches a path; opens the system save dialog through `saveDocuments` with the format's MIME type and `exportFileName` as the suggested name; and returns the name the file was saved as. Defines `ExportCancelledError` and throws it on cancel, throws an `Error` when the provider reports one, and deletes the cache file afterwards either way ([ADR-0016](decisions/0016-deck-export-file-formats.md)). Called by the Decks screen's Export to file and, once per file, by `exportSampleDeck`. |
 
-A cancelled picker is a normal outcome, not an error, which is why each service has its own
-cancellation error type for the caller to catch and ignore.
+A cancelled picker or save dialog is a normal outcome, not an error, which is why the import has
+`ImportCancelledError` and the export `ExportCancelledError`, defined in `exportDeck.ts`. The Decks
+screen catches it and shows nothing; `exportSampleDeck` catches it per file and records that file
+as cancelled.
 
 ### `src/screens/` — the stateful half
 
@@ -341,10 +386,26 @@ window is cut from the clock only there, so it moves only when the selection or 
 Others derive `summarizeSessionsByDeck` over all time, for each Deck stats card's `Last`, and for
 each visible deck its windowed stats, their `answerShares`, its windowed session count and its
 category through `findCategory`. The screen renders `TimeframeChips` above its `FlatList`, and only
-when a deck exists. `DecksScreen` also holds import-in-flight,
+when a deck exists. `DecksScreen` also holds import-in-flight, for the Add deck button's spinner —
+an import passes the chosen format to `pickAndParseDeck`, then `addDeck`, and shows a `Deck
+imported` alert with the card count and any skipped rows (CSV) or cards (JSON), an `Import failed`
+alert with the error's message, or nothing on a cancelled picker —
 which menu is open, and the Session setup dialog's deck, visibility, and **Inverted** and
 **Shuffle** choices, which reset to unticked each time the dialog opens, and resolves each deck's
-category with `findCategory` as it renders the Deck card; `LearnScreen` derives each listed
+category with `findCategory` as it renders the Deck card. For an export it holds the deck's id —
+kept after the menus close, so the Custom separator dialog keeps its title — which export menu is
+open, the Export format menu or the CSV separator menu, whether the Custom separator dialog is open
+and the separator typed into it, emptied each time it opens, and export-in-flight twice: as state,
+for the dialog's spinner, and as a ref, which is the guard against a second export, because the
+state is stale until the next render. It derives `validateCustomSeparator` of the typed separator
+in a `useMemo` for the dialog's message, and when an export starts it reads the deck again by id —
+one deleted since its menu opened gets an `Export failed` alert — and resolves its category with
+`findCategory` before calling `exportDeck`. A saved file gets a `Deck exported` alert naming it, a
+cancelled save dialog shows nothing, and a failure an `Export failed` alert with the error's
+message; the Custom separator dialog closes by itself only when the file is saved or the deck is
+gone, and ignores Cancel while
+the export runs. A JSON or preset-separator export shows nothing in flight: the menu closes before
+the save dialog opens. `LearnScreen` derives each listed
 session's `getReviewState` in a `useMemo`, and in another each session's category, through its deck
 (none when the deck is gone). `StudyScreen` holds the flip, the viewed card
 index, and which card's answer has been revealed, and in review mode the current pass: a snapshot
@@ -389,6 +450,7 @@ name has been typed in, and a character count.
 | [`SearchBar.tsx`](../../src/components/SearchBar.tsx) | The **Search bar**: a search glyph, an auto-focused `TextInput`, and the **Close search button**. Controlled — the screen owns the query and whether the bar is shown, and passes `value`, `onChangeText`, `onClose` and the placeholder. |
 | [`SessionCard.tsx`](../../src/components/SessionCard.tsx) | One session on the Learn screen: a header with the **Category square** when given a `category` (no square and no gap otherwise), the deck name, the **Session status pill**, the neutral **Inverted pill** when `inverted` is set, and the **Session options menu** (a `KebabMenu`), a `SessionResultsBar`, and a footer with the start date and the icon-only **Resume**, **Review errors** and **Replay** buttons. Resume shows only on an active session and only when `onResume` is given; on a completed one, the Review errors button shows only when a `review` prop (`{ count, done, onPress }`) is given and the Replay button only when `onReplay` is. The Review errors button is the `warning` variant with a **Review badge** — a sibling of the button, so a disabled button's dimming does not fade it, and hidden from accessibility — showing the count (capped at `99+`), or a tick with the button disabled when `done`; the button's accessibility label states the count or that every card is fixed. The pills wrap, so the Inverted pill drops below the status pill on a narrow card. Takes display-ready values and callbacks; derives nothing. |
 | [`SessionSetupDialog.tsx`](../../src/components/SessionSetupDialog.tsx) | The **Session setup dialog**: a centred `Modal` with the deck name, two independent checkbox rows — **Inverted** and **Shuffle** — and **Start** / **Cancel**. Controlled: the Decks screen owns the visibility and both choices, and starts the session in `onStart`. The backdrop and Back cancel. |
+| [`CustomSeparatorDialog.tsx`](../../src/components/CustomSeparatorDialog.tsx) | The **Custom separator dialog**: a centred `Modal` titled `Custom separator` over the deck name, with the **Separator field** (an auto-focused `FormField`), the **Separator message** and **Export** / **Cancel**. Controlled, and it validates nothing: the Decks screen owns the visibility, the value and the export, and passes the `SeparatorError` from `validateCustomSeparator` or `null`. The dialog maps a reason to its message — muted for `empty`, which is a prompt, red for the rest — and keeps the line rendered when there is none so the buttons do not move. Export is disabled while there is a reason and shows `Button`'s spinner while `exporting`. Wrapped in a `KeyboardAvoidingView`, because the keyboard overlays the window rather than resizing it. Cancel, the backdrop and Back call `onCancel`; the caller closes it ([ADR-0016](decisions/0016-deck-export-file-formats.md)). |
 | [`SessionResultsBar.tsx`](../../src/components/SessionResultsBar.tsx) | A session's answered part: a segmented track whose Ok / Okeish / Not ok segments are each sized by their share of the session's cards, so the unfilled remainder is the unanswered part, plus a legend giving each answer's `AnswerIcon` and count, the icons grey while nothing is answered. Takes the output of `sessionProgressShares`, the tally and the card count. The panel carries one accessibility label. Not a success rate. |
 | [`HistoryStrip.tsx`](../../src/components/HistoryStrip.tsx) | The answered-so-far tiles on the Study screen, coloured per answer — in review mode, the pass's answers; auto-scrolls to the current card. |
 | [`EmptyState.tsx`](../../src/components/EmptyState.tsx) | Every list's `ListEmptyComponent`. |
@@ -398,7 +460,7 @@ name has been typed in, and a character count.
 | [`MenuSheet.tsx`](../../src/components/MenuSheet.tsx) | The bottom sheet, in a `Modal`. Defines the shared `MenuItem` type. An optional `title` heads the sheet above a separator; with an optional `category` as well, a 28-point `CategorySquare` sits before the title on the same row (no square and no gap without one; a category without a title shows nothing). Only the Deck card's and Session card's `KebabMenu`s pass a category. |
 | [`MenuIcons.tsx`](../../src/components/MenuIcons.tsx) | `MenuIcon` — every menu icon, drawn from nested `View`s on a 20-point grid. Also carries glyphs used outside menus: `search` and `filter` in the Header toolbar, `search` and `close` in the Search bar, `close` on the Category picker's No category choice, `clock` in the Deck card and Session card footers, `replay` on the Session card's Review errors and Replay buttons, `play` and `resume` on the Start session and Resume buttons, `delete` on the Edit deck screen's Remove card button, and `file`, `tally` and `clock` on the Statistics screen's Stat tiles — `tally`, four strokes struck through, exists only for the `Total reviews` tile. An optional `size` scales the grid about its centre. |
 | [`AnswerIcons.tsx`](../../src/components/AnswerIcons.tsx) | `AnswerIcon` — the tick, cross and question-mark glyphs for Ok, Not Ok and Okeish, drawn from rotated `View`s. Used on the Study screen's answer buttons, in the `MasteryBar`, `MasteryRing` and `SessionResultsBar` legends, as the tick in a completed session's status pill, as the Review badge's done tick, as the Review summary's all-fixed tick, as the tick in a ticked Session setup dialog checkbox, and as the tick on a selected Colour picker swatch (on a light disc on the Custom colour swatch) and a selected Category picker tile. Hidden from accessibility; the containing button or panel carries the name. |
-| [`AppMenu.tsx`](../../src/components/AppMenu.tsx) | The header kebab menu. The one component that calls a service. Passes an optional `variant` through to its `KebabMenu`, and takes optional `extraItems` — screen-specific `MenuItem`s shown before Export sample deck and Settings — so a screen can add an item without `AppMenu` reading the store. |
+| [`AppMenu.tsx`](../../src/components/AppMenu.tsx) | The header kebab menu. The one component that calls a service. Passes an optional `variant` through to its `KebabMenu`, and takes optional `extraItems` — screen-specific `MenuItem`s shown before Export sample deck and Settings — so a screen can add an item without `AppMenu` reading the store. **Export sample deck** opens the **Export sample deck dialog**, which says the sample is saved as two files, CSV and JSON, with a save dialog for each that can be cancelled to skip it, and describes both formats. Its **Export** button shows a spinner while `exportSampleDeck` runs and then the alert `describeSampleDeckExport` builds; the dialog closes when at least one file was saved, stays open after a failure with nothing saved, and stays open with no alert when both were cancelled. |
 | [`CategoryIcon.tsx`](../../src/components/CategoryIcon.tsx) | A **Category icon**: an `Image` of the Android vector drawable for an icon key, tinted with `tintColor`, at an explicit `size` (default 24) because a drawable has no intrinsic size. Holds the one `require` map from icon key to `.xml` file — the defaults' icons and the extras alike — typed as a `Record` over `CategoryIcon`, so a key with no drawable entry fails `npm run typecheck`; typecheck does not see the `require` path, so a path naming a missing file fails only when Metro bundles ([ADR-0013](decisions/0013-category-icons-are-android-vector-drawables.md) Amendment 2). Hidden from accessibility. The only icon not drawn from `View`s — [ADR-0013](decisions/0013-category-icons-are-android-vector-drawables.md). |
 | [`CategoryTile.tsx`](../../src/components/CategoryTile.tsx) | A **Category tile**: a square filled with the category's colour, its `CategoryIcon` tinted `colors.background` on top ([ADR-0013](decisions/0013-category-icons-are-android-vector-drawables.md) Amendment 1), and the name beneath in two lines at most. Fills the width its parent gives it. Pressable only when `onPress` is given; `nameDimmed` greys the name for the New category screen's placeholder. `selected` makes a pressable tile a radio, ringed and ticked when true, as the Category picker uses it; `none` draws the **No category choice** instead — a dashed square with a `close` `MenuIcon` and no category colour or icon. |
 | [`CategorySquare.tsx`](../../src/components/CategorySquare.tsx) | A **Category square**: a small rounded square (32 points by default, or the optional `size`) in the category's colour with its `CategoryIcon` tinted `colors.background`. Shown on the Deck card, the Session card, the Deck stats card and in the Category field, and at 28 points before the title of the Deck options menu and Session options menu sheets; an image for accessibility, labelled with the category's name, with no press behaviour. |
@@ -610,7 +672,7 @@ renders it itself — [ADR-0001](decisions/0001-own-the-html-renderer.md).
 - [`utils/html.ts`](../../src/utils/html.ts) turns a string into `HtmlNode[]`. It is tolerant by
   design: an unclosed tag is closed at the end of input, an unclosed `<li>` or `<p>` is closed when
   the next one opens (an `<li>` never across a nested list, a `<p>` never across a block tag), a
-  stray closing tag is dropped, and nothing throws. The input is a user's CSV file, so malformed
+  stray closing tag is dropped, and nothing throws. The input is an imported CSV or JSON file, so malformed
   markup is expected rather than exceptional.
 - [`components/RichText.tsx`](../../src/components/RichText.tsx) renders those nodes as **nested
   `<Text>` elements**, mapping each tag through a `TAG_STYLES` table. `<br>` becomes a newline,
@@ -636,9 +698,10 @@ Unsupported tags are not an error — an unknown tag renders its children with n
 | Navigation | React Navigation — bottom tabs + native stack, with `react-native-screens` and `react-native-safe-area-context` |
 | State | React Context over `useReducer` |
 | Persistence | `@react-native-async-storage/async-storage` |
-| CSV | PapaParse, wrapped by `src/utils/csv.ts` |
+| CSV | PapaParse — reading wrapped by `src/utils/csv.ts`, writing (`Papa.unparse`) by `src/utils/deckExport.ts` |
+| JSON deck files | the built-in `JSON` object, no library — read by `src/utils/deckImport.ts`, written by `src/utils/deckExport.ts` |
 | File picking and saving | `@react-native-documents/picker` |
-| File reading | `@dr.pogodin/react-native-fs` |
+| File reading, and writing to the cache | `@dr.pogodin/react-native-fs` |
 | HTML | owned in-repo — `src/utils/html.ts` + `src/components/RichText.tsx` |
 | Animation | the React Native `Animated` API, with `PanResponder` for the Study screen's swipe |
 | Tests | Jest with `@react-native/jest-preset` — pure logic, the reducer, and the storage loaders with AsyncStorage mocked by `jest.mock`; nothing renders |
@@ -682,7 +745,24 @@ proposing a change:
   and the Timeframe chips are not, and neither is the screen's wiring — which figure follows the
   timeframe and which stays all time, the window cut from `Date.now()`, the chips hidden when there
   are no decks. The Learn screen's Discard confirmation, which says the answers leave Statistics, is
-  untested too. Adding a
+  untested too. Of exporting a deck only `utils/deckExport.ts` is tested; `services/exportDeck.ts`
+  — the cache write, the save dialog, cancellation and the cache file's deletion — the Custom
+  separator dialog, and the Decks screen's chain of menus, its in-flight guard and its deleted-deck
+  alert are not. Export was checked on a device; exporting a categorised deck and a deck with no
+  cards, and the Custom separator dialog's spinner, were not. Of exporting the sample deck only
+  `utils/sampleDeck.ts` is tested — the shipped files against the serialiser, their import, and
+  every alert text; `services/exportSampleDeck.ts` — the two dialogs in sequence, and a cancel or
+  failure on one file not stopping the other — and `AppMenu`'s handler, which decides whether the
+  dialog closes, are not (see *Export sample deck* below). Of importing a deck only the parsers
+  in `utils/csv.ts` and `utils/deckImport.ts` and the reducer's `addDeck` case are tested;
+  `services/importDeck.ts` — the MIME lists, the cache copy, the read, cancellation — the Import
+  format menu, the Decks screen's alerts, and `addDeck` in `DecksContext.tsx` — the fresh ids, the
+  zero counters, and passing `description` and `categoryId` through — are not. Import has **not
+  been checked on a device** — none was attached when the work landed
+  ([ADR-0017](decisions/0017-deck-import-reads-exported-formats.md)): that the Import format menu
+  shows CSV and JSON only, importing the app's own CSV exports and a JSON export, the `Import
+  failed` alerts for a JSON file picked under CSV and a CSV file picked under JSON, and cancelling
+  the picker are all outstanding. Adding a
   component-test setup is a dependency change and needs approval.
 - **`deleteSession` deletes whatever it is given.** The rule that it is only for discarding an
   active session lives in the Learn screen, not the reducer; a future caller that deletes a
@@ -771,9 +851,46 @@ proposing a change:
   selection or the data changes, because the cut is memoised with them. The selection is not
   remembered across launches, there are no custom ranges, and the Deck statistics screen is always
   all time (ADR-0015 *Not decided here*).
-- **Editing a deck cannot reorder cards, and exporting a deck is not built.** The title and
-  description are not part of the CSV format, and no path writes a deck back to CSV; how they
-  would be exported is deliberately left open. A re-import still creates a second deck.
+- **Editing a deck cannot reorder cards.** The Edit deck screen has no way to move a card, so an
+  exported deck's cards are in the order the deck already had.
+- **An exported deck comes back only as far as its format carries it.** Every file the app exports
+  imports again, in both formats and with every separator
+  ([ADR-0017](decisions/0017-deck-import-reads-exported-formats.md)), but:
+  - **A CSV round trip loses the title, the description and the category.** The importer reads
+    past the `# title:`, `# description:` and `# category:` lines, so the deck is named after the
+    file — the export's suggested name unless the user changed it — with no description and no
+    category. JSON is the format that moves a deck whole.
+  - **A custom category from another device does not match.** JSON import matches `category.id`
+    only, so a built-in category always resolves, a custom one only on the device that minted it
+    while it still exists, and anything else imports as no category without telling the user it
+    had one. Nothing is matched by name and no category is created.
+  - **Progress does not travel.** No ids, counters or sessions are exported, and none are read, so
+    every imported card starts unreviewed ([ADR-0016](decisions/0016-deck-export-file-formats.md)).
+  - **Whitespace is trimmed.** Both importers trim each card side, and JSON the title and the
+    description, while the export writes them untrimmed, so a round trip is exact only modulo
+    leading and trailing whitespace.
+  - **An exported empty deck does not import.** The export writes a deck with no cards; both
+    importers reject a file with no usable card.
+- **A CSV export is written for this app's convention, not for spreadsheets.** A field beginning
+  with `=`, `+`, `-` or `@` is written as is, and a spreadsheet may evaluate it; most spreadsheets
+  show the `#` lines as data rows; and another tool reads a comment line's `\n` and `\\` escapes
+  literally. Accepted in ADR-0016.
+- **Export sample deck takes two save dialogs, can half-succeed, and is unchecked on a device.**
+  Android's `saveDocuments` saves one file per call, so the sample's CSV and JSON each get their
+  own save dialog, one after the other, and the user picks a place twice. Each can be cancelled or
+  fail on its own, so the export can end with one file saved and the other not; the alert says
+  which, and nothing retries the missing file — the user exports both again. With nothing saved
+  the Export sample deck dialog stays open, with no alert when both were cancelled. The dialog's
+  text is longer than before and the dialog does not scroll. Decks imported from the old
+  hand-written sample keep the answer it broke, `Buenos d&iacute`, because nothing rewrites an
+  imported card, and the old export's cache file `sample-deck.csv` stays on a device until the
+  system clears the cache. `samples/` has to be regenerated whenever the sample, a serialiser or
+  the palette colour of the sample's category changes; `sampleDeck.test.ts` fails until it is, by
+  design. **Nothing of it has been seen on a device** — none was attached when the work landed:
+  the dialog's text and whether it clips, including at a 1.3x font scale, the two save dialogs in
+  sequence, the alerts for both saved, one cancelled and both cancelled, and the contents of the
+  saved files are all outstanding ([ADR-0016](decisions/0016-deck-export-file-formats.md)
+  Amendment 3).
 - **The Edit deck screen is not covered by any test that renders.** `deckEdit.ts` and the reducer
   case are tested; the screen's draft state, the Save button's enabled state, the discard prompt,
   the remove confirmation, the Category field and picker, and the comparison against the deck's
@@ -822,15 +939,18 @@ proposing a change:
   and no undo for a delete beyond creating it again, which mints a new id — so the decks the delete
   detached stay uncategorised. Defaults cannot be changed, hidden or deleted
   ([ADR-0012](decisions/0012-custom-categories-third-storage-key.md)).
-- **A deck's category is set only on the Edit deck screen, and only displayed.** It shows as a
+- **A deck's category is chosen only on the Edit deck screen, and only displayed.** Beyond that, only
+  a JSON import sets one, and only when the file's `category.id` resolves on this device
+  ([ADR-0017](decisions/0017-deck-import-reads-exported-formats.md)). It shows as a
   Category square on the Deck card, the Session card, their Menu sheet titles, the Category field
   and the Statistics screen's Deck stats card
   ([ADR-0014](decisions/0014-deck-belongs-to-one-category.md) Amendment 2); nothing groups or
   filters by it, and only the delete confirmation counts it. There is no deck count ("N entries") on a Category tile, no filtering
   of the Decks or Learn screen by category — the **Filter button** stays a placeholder — no
-  per-category aggregation or filter in Statistics, and no category column in the CSV format, so
-  an imported deck always starts with none. Each is an open follow-up (ADR-0014 *Not decided here*
-  and Amendment 2). The default ids
+  per-category aggregation or filter in Statistics, and no category from a CSV import — an export
+  writes it as a `# category:` comment line, not as a column, and the importer reads past it — so a
+  deck imported from CSV always starts with none. Each is an open follow-up (ADR-0014 *Not decided here*
+  and Amendments 2, 3 and 4, [ADR-0016](decisions/0016-deck-export-file-formats.md), ADR-0017). The default ids
   `default_<icon key>` are now stored on decks and must never change; withdrawing a default needs a
   rule for the decks that use it (ADR-0012, ADR-0014).
 - **The Category picker opens scrolled to the top.** A selected category further down the
@@ -849,9 +969,10 @@ proposing a change:
 - **`FormField` has no error, `maxLength` or `onBlur` prop.** The New category screen cuts its name
   input to the length limit by hand and renders its own helper line beneath the field; the next
   form that needs either will have to do the same or extend `FormField`.
-- **Several menu entries and buttons are placeholders.** *Add deck manually*, the
-  XML / JSON / JSONL import formats, *Settings*, and the Header toolbar's **Filter button** — on
+- **Several menu entries and buttons are placeholders.** *Add deck manually*, *Settings*, and the
+  Header toolbar's **Filter button** — on
   both the Decks screen and the Learn screen — all show a "not available yet" alert. They are deliberate stubs, not bugs.
+  The Import format menu has none: the XML and JSONL placeholders were removed, not kept (ADR-0017).
 - **The whole store is written on every change.** Every key is serialised and written as a full
   array for a single answer — the categories key included, though an answer never changes it. At
   the volumes a hand-imported CSV produces this costs nothing; it does not scale

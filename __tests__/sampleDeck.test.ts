@@ -1,19 +1,162 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { parseFlashcardsCsv } from '../src/utils/csv';
-import { SAMPLE_DECK_CSV } from '../src/utils/sampleDeck';
+import { serializeDeck } from '../src/utils/deckExport';
+import { parseDeckJson } from '../src/utils/deckImport';
+import {
+  SAMPLE_DECK,
+  SAMPLE_DECK_CATEGORY,
+  SAMPLE_DECK_EXPORTS,
+  SampleDeckExportOutcome,
+  describeSampleDeckExport,
+} from '../src/utils/sampleDeck';
 
-describe('SAMPLE_DECK_CSV', () => {
-  it('parses into five cards with nothing skipped', () => {
-    const parsed = parseFlashcardsCsv(SAMPLE_DECK_CSV);
+function readSample(fileName: string): string {
+  return fs.readFileSync(path.join(__dirname, '..', 'samples', fileName), 'utf8');
+}
 
-    expect(parsed.cards).toHaveLength(5);
-    expect(parsed.skippedRows).toBe(0);
+function normaliseLineEndings(text: string): string {
+  return text.replace(/\r\n/g, '\n');
+}
+
+const csvOptions = SAMPLE_DECK_EXPORTS[0];
+const jsonOptions = SAMPLE_DECK_EXPORTS[1];
+
+const csv = (status: 'saved' | 'cancelled' | 'failed'): SampleDeckExportOutcome => {
+  const file = { format: 'csv', suggestedName: 'Sample deck.csv' } as const;
+  if (status === 'saved') {
+    return { ...file, status, savedAs: 'Sample deck.csv' };
+  }
+  return status === 'failed' ? { ...file, status, message: 'disk full' } : { ...file, status };
+};
+
+const json = (status: 'saved' | 'cancelled' | 'failed'): SampleDeckExportOutcome => {
+  const file = { format: 'json', suggestedName: 'Sample deck.json' } as const;
+  if (status === 'saved') {
+    return { ...file, status, savedAs: 'Sample deck.json' };
+  }
+  return status === 'failed' ? { ...file, status, message: 'no access' } : { ...file, status };
+};
+
+describe('the shipped sample files', () => {
+  it('has the CSV the export writes for the sample deck', () => {
+    const file = normaliseLineEndings(readSample('sample-deck.csv'));
+
+    expect(file).toBe(serializeDeck(SAMPLE_DECK, SAMPLE_DECK_CATEGORY, csvOptions));
   });
 
-  it('matches samples/sample-deck.csv', () => {
-    const file = fs.readFileSync(path.join(__dirname, '..', 'samples', 'sample-deck.csv'), 'utf8');
+  it('has the JSON the export writes for the sample deck', () => {
+    const file = normaliseLineEndings(readSample('sample-deck.json'));
 
-    expect(parseFlashcardsCsv(SAMPLE_DECK_CSV)).toEqual(parseFlashcardsCsv(file));
+    expect(file).toBe(serializeDeck(SAMPLE_DECK, SAMPLE_DECK_CATEGORY, jsonOptions));
+  });
+
+  it('imports from the CSV as the five cards with nothing skipped', () => {
+    const parsed = parseFlashcardsCsv(readSample('sample-deck.csv'));
+
+    expect(parsed.skippedRows).toBe(0);
+    expect(parsed.cards).toEqual(
+      SAMPLE_DECK.cards.map(card => ({ question: card.question, answer: card.answer })),
+    );
+  });
+
+  it('imports from the JSON as the title, description, category and five cards', () => {
+    const parsed = parseDeckJson(readSample('sample-deck.json'));
+
+    expect(parsed.title).toBe(SAMPLE_DECK.name);
+    expect(parsed.description).toBe(SAMPLE_DECK.description);
+    expect(parsed.categoryId).toBe(SAMPLE_DECK.categoryId);
+    expect(parsed.skippedCards).toBe(0);
+    expect(parsed.cards).toEqual(
+      SAMPLE_DECK.cards.map(card => ({ question: card.question, answer: card.answer })),
+    );
+  });
+});
+
+describe('SAMPLE_DECK_CATEGORY', () => {
+  it('resolves to a built-in category', () => {
+    expect(SAMPLE_DECK_CATEGORY).not.toBeNull();
+  });
+});
+
+describe('describeSampleDeckExport', () => {
+  it('reports both files when both were saved', () => {
+    expect(describeSampleDeckExport([csv('saved'), json('saved')])).toEqual({
+      title: 'Sample deck exported',
+      message: 'Saved as Sample deck.csv and Sample deck.json.',
+    });
+  });
+
+  it('says the JSON file was not saved when only the CSV was saved', () => {
+    expect(describeSampleDeckExport([csv('saved'), json('cancelled')])).toEqual({
+      title: 'Sample deck exported',
+      message: 'Saved as Sample deck.csv. The JSON file was not saved.',
+    });
+  });
+
+  it('says the CSV file was not saved when only the JSON was saved', () => {
+    expect(describeSampleDeckExport([csv('cancelled'), json('saved')])).toEqual({
+      title: 'Sample deck exported',
+      message: 'Saved as Sample deck.json. The CSV file was not saved.',
+    });
+  });
+
+  it('reports a partial export when the JSON failed after the CSV was saved', () => {
+    expect(describeSampleDeckExport([csv('saved'), json('failed')])).toEqual({
+      title: 'Sample deck partly exported',
+      message: 'Saved as Sample deck.csv. The JSON file could not be saved: no access.',
+    });
+  });
+
+  it('reports a partial export when the CSV failed after the JSON was saved', () => {
+    expect(describeSampleDeckExport([csv('failed'), json('saved')])).toEqual({
+      title: 'Sample deck partly exported',
+      message: 'Saved as Sample deck.json. The CSV file could not be saved: disk full.',
+    });
+  });
+
+  it('reports one sentence per failed file when none was saved', () => {
+    expect(describeSampleDeckExport([csv('failed'), json('failed')])).toEqual({
+      title: 'Export failed',
+      message:
+        'The CSV file could not be saved: disk full. The JSON file could not be saved: no access.',
+    });
+  });
+
+  it('reports only the failed file when the other was cancelled', () => {
+    expect(describeSampleDeckExport([csv('cancelled'), json('failed')])).toEqual({
+      title: 'Export failed',
+      message: 'The JSON file could not be saved: no access.',
+    });
+  });
+
+  it.each(['.', '!', '?'])('does not add a second stop to a message ending in %s', stop => {
+    const failed: SampleDeckExportOutcome = {
+      format: 'csv',
+      suggestedName: 'Sample deck.csv',
+      status: 'failed',
+      message: `disk full${stop}`,
+    };
+
+    expect(describeSampleDeckExport([failed, json('cancelled')])?.message).toBe(
+      `The CSV file could not be saved: disk full${stop}`,
+    );
+  });
+
+  it('shows nothing when both files were cancelled', () => {
+    expect(describeSampleDeckExport([csv('cancelled'), json('cancelled')])).toBeNull();
+  });
+
+  it('names a saved file by the suggested name when the dialog returned none', () => {
+    const unnamed: SampleDeckExportOutcome = {
+      format: 'csv',
+      suggestedName: 'Sample deck.csv',
+      status: 'saved',
+      savedAs: null,
+    };
+
+    expect(describeSampleDeckExport([unnamed, json('cancelled')])?.message).toBe(
+      'Saved as Sample deck.csv. The JSON file was not saved.',
+    );
   });
 });

@@ -101,6 +101,38 @@ committed once by **Save**. Two details moved:
 - **The changed-check includes it.** `isDeckEditChanged` reports a change when `categoryId` differs
   from the deck's, so choosing only a category enables **Save**.
 
+## Amendment 2 — 2026-11-03
+
+Recorded ahead of the work it governs. The decision above is unchanged; this settles what it left
+"deliberately for later" — how a deck's title and description are exported.
+
+- **They are exported by [ADR-0016](0016-deck-export-file-formats.md)**, through the Deck options
+  menu's **Export to file**: as the `title` and `description` keys of a JSON file, or as the
+  `# title:` and `# description:` comment lines at the top of a CSV file. A description that is
+  `''` is exported empty, and its line breaks are escaped so the comment stays on one line.
+- **The import format is unchanged.** The importer still reads neither, still names an imported
+  deck after its file, and still gives it the description `''`. Reading them back is ADR-0016's
+  follow-up.
+- Nothing persisted changes; `description` keeps its shape and its `''` default.
+
+## Amendment 3 — 2026-11-04
+
+Recorded ahead of the work it governs. The decision above is unchanged; this settles Amendment 2's
+follow-up — reading a deck's title and description back on import — under
+[ADR-0017](0017-deck-import-reads-exported-formats.md).
+
+- **A JSON import reads both.** The deck is named after `title`, trimmed, unless it is not a string
+  or is blank, in which case it is named after the file. Its description is `description`,
+  trimmed — the same trim the Edit deck screen applies on Save — or `''` when it is not a string.
+  The decision's line *"Import creates decks with `''`"* now holds for CSV only.
+- **A CSV import reads neither.** Its `# title:` and `# description:` lines are skipped with the
+  other comment lines; the deck is still named after its file and gets the description `''`.
+  ADR-0016's escaping of line breaks in the comment is therefore never reversed by the app.
+- **`addDeck` takes the description.** Its input gains a required `description` beside `name`, so
+  the import passes it in the one `addDeck` dispatch rather than following with an `updateDeck`.
+  Editing is unaffected: a deck is still edited by the one `updateDeck` action.
+- Nothing persisted changes; `description` keeps its shape and its `''` default.
+
 ## References
 
 - [`src/types.ts`](../../../src/types.ts) — `Deck.description`
@@ -111,3 +143,6 @@ committed once by **Save**. Two details moved:
 - [ADR-0004](0004-versioned-defensive-storage.md) — Amendment 1, new fields under `/v1`
 - [ADR-0005](0005-answers-recorded-immediately.md) — card counters
 - [ADR-0014](0014-deck-belongs-to-one-category.md) — the deck's category (Amendment 1)
+- [ADR-0016](0016-deck-export-file-formats.md) — exporting the title and description (Amendment 2)
+- [ADR-0017](0017-deck-import-reads-exported-formats.md) — importing them back from JSON
+  (Amendment 3)

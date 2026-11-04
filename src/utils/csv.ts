@@ -1,66 +1,74 @@
 import Papa from 'papaparse';
-
-export type ParsedCard = { question: string; answer: string };
+import { validateCustomSeparator } from './deckExport';
+import { DeckImportError, EMPTY_FILE_MESSAGE, ParsedCard, stripBom } from './deckImport';
 
 export type ParsedCsv = {
   cards: ParsedCard[];
-  delimiter: ';' | '\t';
+  delimiter: string;
   skippedRows: number;
 };
 
-export class CsvImportError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'CsvImportError';
-  }
+const NO_HEADER_MESSAGE =
+  'No header row found. The first line that is not blank or a "#" comment must name a ' +
+  '"question" and an "answer" column, separated by a comma, a semicolon, a tab or one other symbol.';
+
+// Order in which qualifying separators win; `;` and tab were the only ones accepted before.
+const PRESET_ORDER = [';', '\t', ','];
+
+function isCommentOrBlank(line: string): boolean {
+  return line.trim().length === 0 || line.startsWith('#');
 }
 
-const SUPPORTED_DELIMITERS: Array<';' | '\t'> = [';', '\t'];
-
-function stripBom(input: string): string {
-  return input.charCodeAt(0) === 0xfeff ? input.slice(1) : input;
+function normalizeHeader(header: string): string {
+  return header.trim().toLowerCase();
 }
 
-function detectDelimiter(headerLine: string): ';' | '\t' {
-  const best = SUPPORTED_DELIMITERS.map(delimiter => ({
-    delimiter,
-    count: headerLine.split(delimiter).length - 1,
-  })).sort((a, b) => b.count - a.count)[0];
+/** The header row's own characters that the export could have used as a separator. */
+function candidateSeparators(headerLine: string): string[] {
+  const chars = Array.from(new Set(Array.from(headerLine)));
+  const presets = PRESET_ORDER.filter(preset => chars.includes(preset));
+  const customs = chars.filter(
+    char => !PRESET_ORDER.includes(char) && validateCustomSeparator(char).ok,
+  );
+  return [...presets, ...customs];
+}
 
-  if (!best || best.count === 0) {
-    throw new CsvImportError(
-      'Unsupported delimiter. The CSV must separate columns with a semicolon (;) or a tab.',
-    );
-  }
-  return best.delimiter;
+function findSeparator(headerLine: string): string | null {
+  return (
+    candidateSeparators(headerLine).find(separator => {
+      const names = Papa.parse<string[]>(headerLine, { delimiter: separator }).data[0] ?? [];
+      const normalized = names.map(normalizeHeader);
+      return normalized.includes('question') && normalized.includes('answer');
+    }) ?? null
+  );
 }
 
 /**
- * Parses a flashcards CSV with `Question` / `Answer` headers (case-insensitive)
- * separated by semicolons or tabs.
+ * Parses a flashcards CSV. Blank and `#` lines before the header are skipped, the header row
+ * must name `Question` and `Answer` (case-insensitive), and its separator is detected from it.
  */
 export function parseFlashcardsCsv(raw: string): ParsedCsv {
-  const content = stripBom(raw).replace(/\r\n?/g, '\n').trim();
-  if (content.length === 0) {
-    throw new CsvImportError('The selected file is empty.');
+  const text = stripBom(raw).replace(/\r\n?/g, '\n');
+  if (text.trim().length === 0) {
+    throw new DeckImportError(EMPTY_FILE_MESSAGE);
   }
 
-  const delimiter = detectDelimiter(content.split('\n', 1)[0]);
-  const result = Papa.parse<Record<string, string | undefined>>(content, {
-    delimiter,
-    header: true,
-    skipEmptyLines: 'greedy',
-    transformHeader: header => header.trim().toLowerCase(),
-  });
-
-  const headers = result.meta.fields ?? [];
-  if (!headers.includes('question') || !headers.includes('answer')) {
-    throw new CsvImportError(
-      `Missing required headers. Expected "Question" and "Answer", found: ${
-        headers.length > 0 ? headers.join(', ') : '(none)'
-      }.`,
-    );
+  const lines = text.split('\n');
+  const headerIndex = lines.findIndex(line => !isCommentOrBlank(line));
+  const delimiter = headerIndex < 0 ? null : findSeparator(lines[headerIndex]);
+  if (delimiter === null) {
+    throw new DeckImportError(NO_HEADER_MESSAGE);
   }
+
+  const result = Papa.parse<Record<string, string | undefined>>(
+    lines.slice(headerIndex).join('\n'),
+    {
+      delimiter,
+      header: true,
+      skipEmptyLines: 'greedy',
+      transformHeader: normalizeHeader,
+    },
+  );
 
   const cards: ParsedCard[] = [];
   let skippedRows = 0;
@@ -79,7 +87,7 @@ export function parseFlashcardsCsv(raw: string): ParsedCsv {
   }
 
   if (cards.length === 0) {
-    throw new CsvImportError('No usable rows found. Every row needs a question and an answer.');
+    throw new DeckImportError('No usable rows found. Every row needs a question and an answer.');
   }
 
   return { cards, delimiter, skippedRows };
