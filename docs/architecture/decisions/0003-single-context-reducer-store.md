@@ -142,6 +142,23 @@ still one store, one `addDeck` action, one dispatch per import. Two details move
   category from the store, not from the return value. Every consumer of the context type sees the
   change; its only caller is the Decks screen.
 
+## Amendment 5 — 2026-11-04
+
+Recorded ahead of the work it governs. [ADR-0011](0011-deck-editing-is-one-action.md) Amendment 4
+lets the Edit deck form create a deck by hand, as the **New deck screen**. The decision above is
+unchanged — still one store, one `addDeck` action, one dispatch per deck created. Three details are
+recorded:
+
+- **`addDeck` gains a second caller.** Amendment 4's *"its only caller is the Decks screen"* no
+  longer holds: `EditDeckScreen`, in its new-deck mode, calls `addDeck` once on **Save**, passing
+  `sourceFileName: null`. The action's shape is unchanged, and so is `DecksContextValue`; no action
+  and no context function is added. The category is resolved in the reducer, as Amendment 4 set
+  up ([ADR-0014](0014-deck-belongs-to-one-category.md) Amendment 5).
+- **`addDeck` is not idempotent.** It mints new ids on every call, so a second call with the same
+  input creates a second deck. A caller that can fire twice — a double-tapped **Save** — must guard
+  itself; the store does not deduplicate.
+- Nothing persisted changes: no storage key and no stored shape.
+
 ## References
 
 - [`src/state/reducer.ts`](../../../src/state/reducer.ts)
@@ -152,4 +169,6 @@ still one store, one `addDeck` action, one dispatch per import. Two details move
 - [ADR-0014](0014-deck-belongs-to-one-category.md) — decks refer to categories (Amendment 3)
 - [ADR-0017](0017-deck-import-reads-exported-formats.md) — `addDeck` takes a description and a
   category (Amendment 4)
+- [ADR-0011](0011-deck-editing-is-one-action.md) — the New deck screen, `addDeck`'s second caller
+  (Amendment 5; ADR-0011 Amendment 4)
 - [ARCHITECTURE.md §2, §3](../ARCHITECTURE.md)

@@ -3,6 +3,7 @@ import type { NavigatorScreenParams } from '@react-navigation/native';
 export type DecksStackParamList = {
   DecksList: undefined;
   EditDeck: { deckId: string };
+  NewDeck: undefined;
 };
 
 export type LearnStackParamList = {

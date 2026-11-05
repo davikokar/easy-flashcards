@@ -2,12 +2,16 @@ import {
   AnswerShares,
   AnswerTally,
   Card,
+  CardSortOrder,
+  CardStatus,
   Answer,
   Deck,
   DeckStats,
+  RateBand,
   ReviewState,
   Session,
   SessionCount,
+  SessionHistoryEntry,
   SessionResult,
   SessionSummary,
 } from '../types';
@@ -567,4 +571,142 @@ export function sortCardsByDifficulty(cards: Card[]): Card[] {
     }
     return b.notOkCount - a.notOkCount;
   });
+}
+
+/** Month and day only, in the device locale; 'Never' for a null or zero timestamp like `formatDate`. */
+export function formatShortDate(timestamp: number | null): string {
+  if (!timestamp) {
+    return 'Never';
+  }
+  return new Date(timestamp).toLocaleDateString(undefined, { month: 'numeric', day: 'numeric' });
+}
+
+/** The colour band of a success rate: >= 70 high, >= 40 mid, else low; none when never reviewed. */
+export function rateBand(rate: number | null): RateBand {
+  if (rate === null) {
+    return 'none';
+  }
+  return rate >= 70 ? 'high' : rate >= 40 ? 'mid' : 'low';
+}
+
+/** New when never answered; else by Ok-only rate, so an all-Okeish card needs review (ADR-0007). */
+export function cardStatus(card: Card): CardStatus {
+  if (cardReviewCount(card) === 0) {
+    return 'new';
+  }
+  const band = rateBand(successRate(card.okCount, card.okeishCount, card.notOkCount));
+  return band === 'high' ? 'mastered' : band === 'mid' ? 'learning' : 'needsReview';
+}
+
+export function countCardStatuses(cards: Card[]): Record<CardStatus, number> {
+  const counts: Record<CardStatus, number> = { new: 0, needsReview: 0, learning: 0, mastered: 0 };
+  for (const card of cards) {
+    counts[cardStatus(card)] += 1;
+  }
+  return counts;
+}
+
+/** The latest answer time per card, from this deck's sessions (cleared too), for cards still in it. */
+export function lastAnsweredAtByCard(deck: Deck, sessions: Session[]): Map<string, number> {
+  const present = new Set(deck.cards.map(card => card.id));
+  const latest = new Map<string, number>();
+  for (const session of sessions) {
+    if (session.deckId !== deck.id) {
+      continue;
+    }
+    for (const result of session.results) {
+      const known = latest.get(result.cardId);
+      if (present.has(result.cardId) && (known === undefined || result.answeredAt > known)) {
+        latest.set(result.cardId, result.answeredAt);
+      }
+    }
+  }
+  return latest;
+}
+
+/** The newest `limit` sessions of a deck by start time, oldest first; cleared and active included. */
+export function getSessionHistory(
+  sessions: Session[],
+  deckId: string,
+  limit: number,
+): SessionHistoryEntry[] {
+  if (limit <= 0) {
+    return [];
+  }
+  return sessions
+    .filter(session => session.deckId === deckId)
+    .sort((a, b) => b.startedAt - a.startedAt)
+    .slice(0, limit)
+    .reverse()
+    .map(session => {
+      const tally = getSessionTally(session);
+      return {
+        sessionId: session.id,
+        startedAt: session.startedAt,
+        cardCount: session.cardIds.length,
+        tally,
+        shares: sessionProgressShares(tally, session.cardIds.length),
+        rate: successRate(tally.okCount, tally.okeishCount, tally.notOkCount),
+        active: isSessionActive(session),
+      };
+    });
+}
+
+/** A new array in the requested order; never-answered cards come last under 'recent'. */
+export function sortCards(
+  cards: Card[],
+  order: CardSortOrder,
+  lastAnsweredAt: Map<string, number>,
+): Card[] {
+  if (order === 'hardest') {
+    return sortCardsByDifficulty(cards);
+  }
+  if (order === 'deck') {
+    return [...cards];
+  }
+  return [...cards].sort((a, b) => {
+    const timeA = lastAnsweredAt.get(a.id);
+    const timeB = lastAnsweredAt.get(b.id);
+    if (timeA === undefined || timeB === undefined) {
+      return timeA === timeB ? 0 : timeA === undefined ? 1 : -1;
+    }
+    return timeB - timeA;
+  });
+}
+
+/**
+ * Percentage points the deck's Ok-only rate moved because of the session holding its newest
+ * answer: the rate over the whole answer log minus the rate without that session. Only answers
+ * on cards still in the deck count. Null unless two or more sessions have such answers.
+ */
+export function rateChangeSinceLastSession(deck: Deck, sessions: Session[]): number | null {
+  const present = new Set(deck.cards.map(card => card.id));
+  const deckSessions = sessions.filter(session => session.deckId === deck.id);
+
+  let latest: Session | null = null;
+  let latestAt = 0;
+  for (const session of deckSessions) {
+    for (const result of session.results) {
+      if (!present.has(result.cardId)) {
+        continue;
+      }
+      const isNewer =
+        latest === null ||
+        result.answeredAt > latestAt ||
+        (result.answeredAt === latestAt && session.startedAt > latest.startedAt);
+      if (isNewer) {
+        latest = session;
+        latestAt = result.answeredAt;
+      }
+    }
+  }
+  if (latest === null) {
+    return null;
+  }
+
+  const rateOf = (list: Session[]) =>
+    getDeckStatsSince([deck], list, null).get(deck.id)?.successRate ?? null;
+  const rateWith = rateOf(deckSessions);
+  const rateWithout = rateOf(deckSessions.filter(session => session !== latest));
+  return rateWith === null || rateWithout === null ? null : rateWith - rateWithout;
 }

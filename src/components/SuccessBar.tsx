@@ -1,6 +1,14 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { colors, radius } from '../theme';
+import { rateBand } from '../utils/stats';
+
+const BAND_COLORS = {
+  none: colors.border,
+  low: colors.danger,
+  mid: colors.warning,
+  high: colors.success,
+};
 
 type Props = {
   /** 0-100, or null when the card/deck has never been reviewed. */
@@ -12,9 +20,7 @@ type Props = {
 
 export default function SuccessBar({ rate, height = 8, color: fixedColor }: Props) {
   const value = rate === null ? 0 : Math.max(0, Math.min(100, rate));
-  const rateColor =
-    rate === null ? colors.border : value >= 70 ? colors.success : value >= 40 ? colors.warning : colors.danger;
-  const color = fixedColor ?? rateColor;
+  const color = fixedColor ?? BAND_COLORS[rateBand(rate)];
 
   return (
     <View style={[styles.track, { height, borderRadius: height / 2 }]}>

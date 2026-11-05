@@ -5,14 +5,17 @@ import {
   applyReviewAnswer,
   canRecordAnswer,
   cardReviewCount,
+  cardStatus,
   clearableSessionCount,
   clearCompletedSessionsAt,
   clearSessionAt,
+  countCardStatuses,
   countSessionsByDeckSince,
   countSessionsSince,
   describeAnswerShares,
   EMPTY_SESSION_SUMMARY,
   formatDate,
+  formatShortDate,
   getDeckStats,
   getDeckStatsSince,
   getGlobalStats,
@@ -21,16 +24,21 @@ import {
   getOutstandingReviewCardIds,
   getReviewableCardIds,
   getReviewState,
+  getSessionHistory,
   getSessionTally,
   formatRate,
   isSessionActive,
   isSessionCleared,
+  lastAnsweredAtByCard,
   listedSessions,
   normalizeFixedCardIds,
   prependSessionClearing,
   previousReviewIndex,
+  rateBand,
+  rateChangeSinceLastSession,
   resolvableCardIds,
   sessionProgressShares,
+  sortCards,
   sortCardsByDifficulty,
   sortSessions,
   successRate,
@@ -1157,5 +1165,390 @@ describe('countSessionsSince', () => {
     const sessions = [{ ...loggedSession('s', 'd', at(10, 5), [], at(10, 6)), clearedAt: at(10, 7) }];
 
     expect(countSessionsSince(sessions, at(10, 1))).toEqual({ total: 1, active: 0 });
+  });
+});
+
+describe('rateBand', () => {
+  it('is none when never reviewed', () => {
+    expect(rateBand(null)).toBe('none');
+  });
+
+  it('is low below 40', () => {
+    expect(rateBand(0)).toBe('low');
+    expect(rateBand(39.99)).toBe('low');
+  });
+
+  it('is mid from 40 up to below 70', () => {
+    expect(rateBand(40)).toBe('mid');
+    expect(rateBand(69.99)).toBe('mid');
+  });
+
+  it('is high from 70 up', () => {
+    expect(rateBand(70)).toBe('high');
+    expect(rateBand(100)).toBe('high');
+  });
+});
+
+describe('cardStatus', () => {
+  it('is new for a card never answered', () => {
+    expect(cardStatus(card('a', 0, 0))).toBe('new');
+  });
+
+  it('needs review for a card answered only Okeish', () => {
+    expect(cardStatus(card('a', 0, 0, 3))).toBe('needsReview');
+  });
+
+  it('needs review below 40% Ok', () => {
+    expect(cardStatus(card('a', 1, 2))).toBe('needsReview');
+    expect(cardStatus(card('a', 0, 1))).toBe('needsReview');
+  });
+
+  it('is learning from 40% up to below 70%', () => {
+    expect(cardStatus(card('a', 2, 3))).toBe('learning');
+    expect(cardStatus(card('a', 2, 1))).toBe('learning');
+  });
+
+  it('is mastered from 70% up', () => {
+    expect(cardStatus(card('a', 7, 3))).toBe('mastered');
+    expect(cardStatus(card('a', 1, 0))).toBe('mastered');
+  });
+
+  it('counts Okeish as a review that earns no credit', () => {
+    expect(cardStatus(card('a', 1, 0, 1))).toBe('learning');
+    expect(cardStatus(card('a', 1, 0, 2))).toBe('needsReview');
+  });
+});
+
+describe('countCardStatuses', () => {
+  it('tallies each status and the counts add up to the card count', () => {
+    const cards = [
+      card('new1', 0, 0),
+      card('new2', 0, 0),
+      card('okeish', 0, 0, 2),
+      card('learning', 2, 3),
+      card('mastered', 7, 3),
+    ];
+
+    const counts = countCardStatuses(cards);
+
+    expect(counts).toEqual({ new: 2, needsReview: 1, learning: 1, mastered: 1 });
+    expect(counts.new + counts.needsReview + counts.learning + counts.mastered).toBe(cards.length);
+  });
+
+  it('is all zeros for an empty deck', () => {
+    expect(countCardStatuses([])).toEqual({ new: 0, needsReview: 0, learning: 0, mastered: 0 });
+  });
+});
+
+describe('lastAnsweredAtByCard', () => {
+  const d = deck('d', [card('a', 0, 0), card('b', 0, 0)]);
+
+  it('is empty when no session has results', () => {
+    const sessions = [loggedSession('s1', 'd', at(10, 1), [])];
+
+    expect(lastAnsweredAtByCard(d, sessions).size).toBe(0);
+    expect(lastAnsweredAtByCard(d, []).size).toBe(0);
+  });
+
+  it('keeps the latest answer time per card across sessions', () => {
+    const sessions = [
+      loggedSession('s1', 'd', at(10, 1), [answered('a', 'ok', at(10, 5)), answered('b', 'ok', at(10, 1))]),
+      loggedSession('s2', 'd', at(10, 2), [answered('a', 'notOk', at(10, 3))]),
+    ];
+
+    const latest = lastAnsweredAtByCard(d, sessions);
+
+    expect(latest.get('a')).toBe(at(10, 5));
+    expect(latest.get('b')).toBe(at(10, 1));
+  });
+
+  it('ignores the sessions of other decks', () => {
+    const sessions = [loggedSession('s1', 'other', at(10, 1), [answered('a', 'ok', at(10, 9))])];
+
+    expect(lastAnsweredAtByCard(d, sessions).size).toBe(0);
+  });
+
+  it('ignores answers for cards that left the deck', () => {
+    const sessions = [
+      loggedSession('s1', 'd', at(10, 1), [answered('gone', 'ok', at(10, 9)), answered('a', 'ok', at(10, 2))]),
+    ];
+
+    const latest = lastAnsweredAtByCard(d, sessions);
+
+    expect(latest.has('gone')).toBe(false);
+    expect(latest.get('a')).toBe(at(10, 2));
+  });
+
+  it('includes cleared sessions', () => {
+    const cleared = {
+      ...loggedSession('s1', 'd', at(10, 1), [answered('a', 'ok', at(10, 4))], at(10, 4)),
+      clearedAt: at(10, 5),
+    };
+
+    expect(lastAnsweredAtByCard(d, [cleared]).get('a')).toBe(at(10, 4));
+  });
+});
+
+describe('getSessionHistory', () => {
+  it('returns the newest sessions of the deck, oldest first', () => {
+    const sessions = [
+      loggedSession('s2', 'd', at(10, 2), []),
+      loggedSession('s4', 'd', at(10, 4), []),
+      loggedSession('s1', 'd', at(10, 1), []),
+      loggedSession('s3', 'd', at(10, 3), []),
+    ];
+
+    const history = getSessionHistory(sessions, 'd', 3);
+
+    expect(history.map(entry => entry.sessionId)).toEqual(['s2', 's3', 's4']);
+  });
+
+  it('returns fewer entries when the deck has fewer sessions than the limit', () => {
+    const sessions = [loggedSession('s1', 'd', at(10, 1), [])];
+
+    expect(getSessionHistory(sessions, 'd', 10)).toHaveLength(1);
+    expect(getSessionHistory([], 'd', 10)).toEqual([]);
+  });
+
+  it('is empty for a limit of zero', () => {
+    expect(getSessionHistory([loggedSession('s1', 'd', at(10, 1), [])], 'd', 0)).toEqual([]);
+  });
+
+  it('leaves out the sessions of other decks', () => {
+    const sessions = [
+      loggedSession('mine', 'd', at(10, 1), []),
+      loggedSession('theirs', 'other', at(10, 2), []),
+    ];
+
+    expect(getSessionHistory(sessions, 'd', 5).map(entry => entry.sessionId)).toEqual(['mine']);
+  });
+
+  it('includes cleared sessions', () => {
+    const cleared = {
+      ...loggedSession('s1', 'd', at(10, 1), [answered('a', 'ok', at(10, 1))], at(10, 2)),
+      clearedAt: at(10, 3),
+    };
+
+    const history = getSessionHistory([cleared], 'd', 5);
+
+    expect(history).toHaveLength(1);
+    expect(history[0].active).toBe(false);
+  });
+
+  it('reports a part-answered active session as active with shares below 100', () => {
+    const active: Session = {
+      ...loggedSession('s1', 'd', at(10, 1), [answered('a', 'ok', at(10, 1))]),
+      cardIds: ['a', 'b', 'c', 'd'],
+    };
+
+    const [entry] = getSessionHistory([active], 'd', 5);
+
+    expect(entry.active).toBe(true);
+    expect(entry.cardCount).toBe(4);
+    expect(entry.shares).toEqual(sessionProgressShares(getSessionTally(active), 4));
+    expect(entry.shares.ok + entry.shares.okeish + entry.shares.notOk).toBeLessThan(100);
+  });
+
+  it('has a null rate when nothing was answered', () => {
+    const [entry] = getSessionHistory([loggedSession('s1', 'd', at(10, 1), [])], 'd', 5);
+
+    expect(entry.rate).toBeNull();
+    expect(entry.tally).toEqual({ okCount: 0, okeishCount: 0, notOkCount: 0 });
+  });
+
+  it('takes the tally and the Ok-only rate from the results', () => {
+    const results = [answered('a', 'ok', 1), answered('b', 'okeish', 1), answered('c', 'notOk', 1), answered('d', 'ok', 1)];
+    const done = loggedSession('s1', 'd', at(10, 1), results, at(10, 2));
+
+    const [entry] = getSessionHistory([done], 'd', 5);
+
+    expect(entry.tally).toEqual({ okCount: 2, okeishCount: 1, notOkCount: 1 });
+    expect(entry.rate).toBe(50);
+    expect(entry.startedAt).toBe(at(10, 1));
+  });
+
+  it('sizes a subset session by its own card count', () => {
+    const subset: Session = {
+      ...loggedSession('s1', 'd', at(10, 1), [answered('a', 'ok', 1), answered('b', 'ok', 1)], at(10, 2)),
+      cardIds: ['a', 'b'],
+    };
+
+    const [entry] = getSessionHistory([subset], 'd', 5);
+
+    expect(entry.cardCount).toBe(2);
+    expect(entry.shares).toEqual({ ok: 100, okeish: 0, notOk: 0 });
+  });
+
+  it('does not reorder the input', () => {
+    const sessions = [loggedSession('s2', 'd', at(10, 2), []), loggedSession('s1', 'd', at(10, 1), [])];
+
+    getSessionHistory(sessions, 'd', 5);
+
+    expect(sessions.map(s => s.id)).toEqual(['s2', 's1']);
+  });
+});
+
+describe('sortCards', () => {
+  const a = card('a', 1, 0);
+  const b = card('b', 0, 1);
+  const c = card('c', 0, 0);
+  const d = card('d', 1, 1);
+  const cards = [a, b, c, d];
+
+  it('hardest equals sortCardsByDifficulty', () => {
+    expect(sortCards(cards, 'hardest', new Map())).toEqual(sortCardsByDifficulty(cards));
+  });
+
+  it('deck keeps the input order in a new array', () => {
+    const sorted = sortCards(cards, 'deck', new Map());
+
+    expect(sorted).toEqual(cards);
+    expect(sorted).not.toBe(cards);
+  });
+
+  it('recent puts the newest answer first and never-answered cards last', () => {
+    const lastAnsweredAt = new Map([
+      ['a', 10],
+      ['b', 30],
+      ['d', 20],
+    ]);
+
+    expect(sortCards(cards, 'recent', lastAnsweredAt).map(x => x.id)).toEqual(['b', 'd', 'a', 'c']);
+  });
+
+  it('recent keeps input order for equal times and for never-answered cards', () => {
+    const lastAnsweredAt = new Map([
+      ['b', 5],
+      ['d', 5],
+    ]);
+
+    expect(sortCards([c, d, a, b], 'recent', lastAnsweredAt).map(x => x.id)).toEqual([
+      'd',
+      'b',
+      'c',
+      'a',
+    ]);
+  });
+
+  it('never mutates the input', () => {
+    const input = [...cards];
+
+    sortCards(input, 'hardest', new Map());
+    sortCards(input, 'recent', new Map([['d', 1]]));
+    sortCards(input, 'deck', new Map());
+
+    expect(input).toEqual(cards);
+  });
+});
+
+describe('rateChangeSinceLastSession', () => {
+  const d = deck('d', [card('a', 0, 0), card('b', 0, 0)]);
+
+  it('is null with no sessions', () => {
+    expect(rateChangeSinceLastSession(d, [])).toBeNull();
+  });
+
+  it('is null with a single session that has answers', () => {
+    const sessions = [loggedSession('s1', 'd', at(10, 1), [answered('a', 'ok', at(10, 1))], at(10, 1))];
+
+    expect(rateChangeSinceLastSession(d, sessions)).toBeNull();
+  });
+
+  it('is positive in points when the latest session raised the rate', () => {
+    const sessions = [
+      loggedSession('s1', 'd', at(10, 1), [answered('a', 'notOk', at(10, 1)), answered('b', 'notOk', at(10, 1))], at(10, 1)),
+      loggedSession('s2', 'd', at(10, 2), [answered('a', 'ok', at(10, 2)), answered('b', 'ok', at(10, 2))], at(10, 2)),
+    ];
+
+    expect(rateChangeSinceLastSession(d, sessions)).toBe(50);
+  });
+
+  it('is negative in points when the latest session lowered the rate', () => {
+    const sessions = [
+      loggedSession('s1', 'd', at(10, 1), [answered('a', 'ok', at(10, 1)), answered('b', 'ok', at(10, 1))], at(10, 1)),
+      loggedSession('s2', 'd', at(10, 2), [answered('a', 'notOk', at(10, 2)), answered('b', 'notOk', at(10, 2))], at(10, 2)),
+    ];
+
+    expect(rateChangeSinceLastSession(d, sessions)).toBe(-50);
+  });
+
+  it('finds the latest session by answer time, not by list order', () => {
+    const sessions = [
+      loggedSession('s2', 'd', at(10, 2), [answered('a', 'ok', at(10, 2)), answered('b', 'ok', at(10, 2))], at(10, 2)),
+      loggedSession('s1', 'd', at(10, 1), [answered('a', 'notOk', at(10, 1)), answered('b', 'notOk', at(10, 1))], at(10, 1)),
+    ];
+
+    expect(rateChangeSinceLastSession(d, sessions)).toBe(50);
+  });
+
+  it('counts Okeish as a review that earns no credit', () => {
+    const sessions = [
+      loggedSession('s1', 'd', at(10, 1), [answered('a', 'ok', at(10, 1))], at(10, 1)),
+      loggedSession('s2', 'd', at(10, 2), [answered('a', 'okeish', at(10, 2))], at(10, 2)),
+    ];
+
+    expect(rateChangeSinceLastSession(d, sessions)).toBe(-50);
+  });
+
+  it('ignores answers for cards that left the deck', () => {
+    const sessions = [
+      loggedSession('s1', 'd', at(10, 1), [answered('a', 'ok', at(10, 1))], at(10, 1)),
+      loggedSession('s2', 'd', at(10, 2), [answered('a', 'notOk', at(10, 2))], at(10, 2)),
+      loggedSession('s3', 'd', at(10, 3), [answered('gone', 'ok', at(10, 3))], at(10, 3)),
+    ];
+
+    expect(rateChangeSinceLastSession(d, sessions)).toBe(-50);
+  });
+
+  it('is null when only one session has answers for cards still in the deck', () => {
+    const sessions = [
+      loggedSession('s1', 'd', at(10, 1), [answered('a', 'ok', at(10, 1))], at(10, 1)),
+      loggedSession('s2', 'd', at(10, 2), [answered('gone', 'ok', at(10, 2))], at(10, 2)),
+    ];
+
+    expect(rateChangeSinceLastSession(d, sessions)).toBeNull();
+  });
+
+  it('ignores the sessions of other decks', () => {
+    const sessions = [
+      loggedSession('s1', 'd', at(10, 1), [answered('a', 'ok', at(10, 1))], at(10, 1)),
+      loggedSession('s2', 'other', at(10, 2), [answered('a', 'notOk', at(10, 2))], at(10, 2)),
+    ];
+
+    expect(rateChangeSinceLastSession(d, sessions)).toBeNull();
+  });
+
+  it('does not take an active session with no answers as the latest session', () => {
+    const sessions = [
+      loggedSession('s1', 'd', at(10, 1), [answered('a', 'notOk', at(10, 1)), answered('b', 'notOk', at(10, 1))], at(10, 1)),
+      loggedSession('s2', 'd', at(10, 2), [answered('a', 'ok', at(10, 2)), answered('b', 'ok', at(10, 2))], at(10, 2)),
+      loggedSession('s3', 'd', at(10, 3), []),
+    ];
+
+    expect(rateChangeSinceLastSession(d, sessions)).toBe(50);
+  });
+
+  it('is null when the only other session is an empty active one', () => {
+    const sessions = [
+      loggedSession('s1', 'd', at(10, 1), [answered('a', 'ok', at(10, 1))], at(10, 1)),
+      loggedSession('s2', 'd', at(10, 2), []),
+    ];
+
+    expect(rateChangeSinceLastSession(d, sessions)).toBeNull();
+  });
+});
+
+describe('formatShortDate', () => {
+  it('shows month and day in the device locale', () => {
+    const stamp = at(10, 5);
+
+    expect(formatShortDate(stamp)).toBe(
+      new Date(stamp).toLocaleDateString(undefined, { month: 'numeric', day: 'numeric' }),
+    );
+  });
+
+  it('says Never for a null timestamp, like formatDate', () => {
+    expect(formatShortDate(null)).toBe('Never');
+    expect(formatShortDate(null)).toBe(formatDate(null));
   });
 });

@@ -1,4 +1,9 @@
-import { filterByTitle, splitSearchWords, titleMatchesWords } from '../src/utils/search';
+import {
+  cardSearchText,
+  filterByTitle,
+  splitSearchWords,
+  titleMatchesWords,
+} from '../src/utils/search';
 
 type Item = { title: string };
 
@@ -130,5 +135,66 @@ describe('filterByTitle', () => {
 
     expect(list).toEqual(snapshot);
     expect(result).not.toBe(list);
+  });
+});
+
+type SearchCard = { question: string; answer: string };
+
+const cardsOf = (...pairs: Array<[string, string]>): SearchCard[] =>
+  pairs.map(([question, answer]) => ({ question, answer }));
+const searchCards = (list: SearchCard[], query: string) =>
+  filterByTitle(list, query, cardSearchText).map(found => found.question);
+
+describe('cardSearchText', () => {
+  it('joins the question and the answer as plain text with a space', () => {
+    expect(cardSearchText({ question: '<b>Haus</b>', answer: 'the<br>house' })).toBe('Haus the house');
+  });
+
+  it('decodes entities', () => {
+    expect(cardSearchText({ question: 'Buenos d&iacute;as', answer: 'good day' })).toBe(
+      'Buenos días good day',
+    );
+  });
+});
+
+describe('filterByTitle over cardSearchText', () => {
+  const list = cardsOf(
+    ['<b>Haus</b>', 'the house'],
+    ['Buenos d&iacute;as', 'good <i>morning</i>'],
+    ['Katze', 'cat'],
+  );
+
+  it('finds a card by its question', () => {
+    expect(searchCards(list, 'haus')).toEqual(['<b>Haus</b>']);
+  });
+
+  it('finds a card by its answer', () => {
+    expect(searchCards(list, 'morning')).toEqual(['Buenos d&iacute;as']);
+  });
+
+  it('finds a card by an entity-decoded word', () => {
+    expect(searchCards(list, 'días')).toEqual(['Buenos d&iacute;as']);
+  });
+
+  it('matches words from both sides in any order', () => {
+    expect(searchCards(list, 'house haus')).toEqual(['<b>Haus</b>']);
+    expect(searchCards(list, 'cat katze')).toEqual(['Katze']);
+  });
+
+  it('does not match a tag name', () => {
+    const tagged = cardsOf(['<b>Haus</b>', 'the<br>house'], ['Katze', '<i>cat</i>']);
+
+    expect(searchCards(tagged, 'b')).toEqual([]);
+    expect(searchCards(tagged, 'br')).toEqual([]);
+    expect(searchCards(tagged, 'i')).toEqual([]);
+  });
+
+  it('does not match an entity name', () => {
+    expect(searchCards(list, 'iacute')).toEqual([]);
+  });
+
+  it('returns the same array for a blank query', () => {
+    expect(filterByTitle(list, '   ', cardSearchText)).toBe(list);
+    expect(filterByTitle(list, '', cardSearchText)).toBe(list);
   });
 });

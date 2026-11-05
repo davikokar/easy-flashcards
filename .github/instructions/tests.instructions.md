@@ -131,3 +131,9 @@ apply, recorded now so they are not rediscovered:
   `SessionCard`, and every screen that renders one of them. Check a component's imports before
   assuming it loads. Logic that a test needs belongs in `src/utils/categories.ts`, which imports no
   drawable.
+- `SessionHistoryChart` imports `react-native-svg`, which the preset's `transformIgnorePatterns`
+  does not exempt, so it — and `DeckStatsScreen`, which renders it — will not load until the
+  pattern is widened and the package mocked
+  ([ADR-0018](../../docs/architecture/decisions/0018-react-native-svg-draws-charts.md)). Its
+  geometry is already tested in `__tests__/historyChart.test.ts`; test the drawing, not the
+  arithmetic again.

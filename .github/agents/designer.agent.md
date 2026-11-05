@@ -16,7 +16,8 @@ materially harm the user experience instead of ignoring them.
 ## Project context
 
 This is **Easy Flashcards**, a React Native app built with plain React Native primitives — **no
-component library, no icon font, no SVG library**. It is **dark-only**: there is no light scheme and no
+component library, no icon font**, and `react-native-svg` for **data charts only**, never for an
+icon (ADR-0018; the UI vocabulary's *Writing UI* says where the line is). It is **dark-only**: there is no light scheme and no
 theme switch. The design system is one file, [`src/theme.ts`](../../src/theme.ts): its tokens, and
 nothing else — read it rather than a copy. The accent is `colors.primary`.
 

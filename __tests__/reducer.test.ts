@@ -80,6 +80,18 @@ describe('reducer: addDeck and deleteDeck', () => {
     expect(next.decks.map(d => d.id)).toEqual(['new', 'old']);
   });
 
+  it('adds a hand-made deck with no cards and no source file at the top', () => {
+    const state = stateOf([deck('old', ['a'])], []);
+    const byHand: Deck = { ...deck('new', []), description: 'About', sourceFileName: null };
+
+    const next = reducer(state, { type: 'addDeck', deck: byHand });
+
+    expect(next.decks.map(d => d.id)).toEqual(['new', 'old']);
+    expect(next.decks[0].cards).toEqual([]);
+    expect(next.decks[0].sourceFileName).toBeNull();
+    expect(next.decks[0].description).toBe('About');
+  });
+
   it('keeps the description and a default category id', () => {
     const imported: Deck = { ...deck('new', ['a']), description: 'About', categoryId: 'default_astronomy' };
 

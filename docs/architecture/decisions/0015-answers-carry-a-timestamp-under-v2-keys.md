@@ -201,6 +201,82 @@ both lands its answers at the time it is loaded, in every window at that moment,
 save fixes that time. Under `/v2` every session and result is written with both, so this is a
 corrupt record only; the rule stands.
 
+## Amendment 2 — 2026-11-04
+
+Recorded ahead of the work it governs. The decision above is unchanged. This settles both items of
+*Not decided here* that concern the **Deck statistics screen**, for that screen only, as part of
+its redesign.
+
+- **The Deck statistics screen stays all time.** It has no Timeframe chips and does not follow the
+  Statistics screen's selection, as *What a timeframe changes* already says. That settles
+  "whether the Deck statistics screen follows the selected timeframe": it does not.
+- **It gains three figures over time, all derived from this deck's sessions** — their snapshots
+  and their results, the answer log — and none from the counters:
+  - **A session history:** one column per recent session of this deck, the newest N by
+    `startedAt`, each built from the session's own snapshot: its `cardIds` length, its tally of
+    results by answer, and its `startedAt`. Active and cleared sessions are included, as every
+    session statistic includes them ([ADR-0008](0008-clear-completed-sessions.md)). N is a
+    presentation constant, not stored.
+  - **Each card's last-reviewed date:** the latest `answeredAt` among that card's results in this
+    deck's sessions, *Never* when there is none. It deliberately does **not** read
+    `Card.lastReviewedAt`: a **Discard session** withdraws its answers from the counters but leaves
+    `lastReviewedAt` as it was (*The counters and the log are kept equal*, above), so after a
+    discard it can name a review that no longer exists. Read from the log, a discarded answer
+    leaves the date with it. `lastReviewedAt` stays written and unread.
+  - **A change since the last session:** the success rate computed from the log over the cards
+    still in the deck, minus the same rate computed without the session holding the newest answer,
+    in percentage points. It is `null`, not `0`, when either rate cannot be computed. By the
+    equality above, the first of the two rates is the headline rate.
+- **The headline success rate, the answer tiles and the card rows still read the counters**, as
+  the decision says. Only the three figures above read the log.
+- **Settles "charts over time" for this screen only.** Charts over time on the Statistics screen,
+  custom date ranges, and remembering the selected timeframe across launches are still not decided.
+- Every figure is a pure function in [`src/utils/`](../../../src/utils/), called from the screen
+  and never stored. **No storage change, no new key, no store action, nothing stored**, and no
+  dependency is added.
+- **Accepted inconsistency, recorded as known debt:** a session column counts the answers of cards
+  removed from the deck since, exactly as the Learn screen's Session card does (the last *Negative*
+  consequence above), while the headline, the answer tiles and the change since the last session
+  do not. After an edit that removes answered cards, a session column can therefore show more
+  answers than the headline accounts for. The architecture overview's *Known debt* records it once
+  the work lands.
+
+## Amendment 3 — 2026-11-04
+
+Recorded ahead of the work it governs. The decision above is unchanged, and so are Amendment 2's
+data rules. This replaces only the **look** of Amendment 2's session history: it was one column
+per session; it becomes a **stacked area chart**.
+
+- **What is drawn.** The newest N sessions of the deck, oldest on the left. Each session is a
+  point on the X axis, and its bands stack bottom to top: one per answer and one for
+  **unanswered** cards. Smooth curves join each band from one session to the next.
+- **The Y axis is a percentage of each session's own cards**, not a count. Each band's height at a
+  session is its share of that session's snapshot — results by answer, and unanswered, over its
+  `cardIds` length — so every session spans the full height. Counts are not used because session
+  sizes differ: a session over 5 cards beside one over 56 would make the small one unreadable.
+- **The X axis is ordered by session start, not spaced by time.** Sessions sit at equal intervals in
+  `startedAt` order, whatever the time between them.
+- **The curves between sessions are visual only.** They do not mean the deck passed through those
+  states between two sessions; nothing was measured there. Markers sit only at the real sessions,
+  and only they carry values.
+- **Each curve is a cubic Bézier with horizontal tangents at both sessions.** Every boundary
+  between two bands is then monotonic between neighbouring sessions, so stacked boundaries can
+  never cross or overshoot a band, as an unconstrained spline could.
+- **One session is drawn as a single column** of the same bands, since there is nothing to join.
+  **No session** keeps the empty state the card shows today.
+- **Active and cleared sessions stay included**, as Amendment 2 says; an active session's
+  unanswered cards are its **unanswered** band.
+- **N stays a presentation constant, 5**, not stored.
+- **The latest session is emphasised neutrally**, not in green. Green means **Ok** on this screen,
+  and a success rate of 70% or more, so a green highlight would read as a verdict on the session.
+- **Nothing persisted changes.** No storage key, no store action, nothing stored. The geometry is a
+  pure function in [`src/utils/`](../../../src/utils/), Jest-tested.
+- **This drawing relies on [ADR-0018](0018-react-native-svg-draws-charts.md)**, which adds
+  `react-native-svg` for data charts. Amendment 2 said no dependency is added; that was true of
+  Amendment 2, and it is this amendment that needs one.
+- The accepted inconsistency Amendment 2 records is unchanged: a session's bands still count the
+  answers of cards removed from the deck since.
+
 ## References
 
 - [ADR-0002](0002-sessions-are-snapshots.md) — Amendment 7, a result records its time
@@ -211,6 +287,9 @@ corrupt record only; the rule stands.
 - [ADR-0008](0008-clear-completed-sessions.md) — Amendment 2, Discard withdraws answers
 - [ADR-0009](0009-error-review-marks-cards-fixed.md) — review answers are not results
 - [ADR-0011](0011-deck-editing-is-one-action.md) — a removed card takes its counters
+- [ADR-0014](0014-deck-belongs-to-one-category.md) — Amendment 6, the same redesign's category row
+- [ADR-0018](0018-react-native-svg-draws-charts.md) — the drawing dependency the stacked area
+  Session history needs (Amendment 3)
 - [`src/types.ts`](../../../src/types.ts) — `SessionResult`, `SessionCount`
 - [`src/state/reducer.ts`](../../../src/state/reducer.ts) — `recordAnswer`, `deleteSession`
 - [`src/storage/decksStorage.ts`](../../../src/storage/decksStorage.ts),
@@ -222,6 +301,11 @@ corrupt record only; the rule stands.
   [`src/screens/StatsScreen.tsx`](../../../src/screens/StatsScreen.tsx)
 - [`src/screens/LearnScreen.tsx`](../../../src/screens/LearnScreen.tsx) — the Discard session
   confirmation
+- [`src/screens/DeckStatsScreen.tsx`](../../../src/screens/DeckStatsScreen.tsx) — the Deck
+  statistics screen, all time, with its figures over time (Amendment 2)
+- [`src/components/SessionHistoryChart.tsx`](../../../src/components/SessionHistoryChart.tsx) —
+  the session history, redrawn as a stacked area chart (Amendment 3); its geometry goes in
+  `src/utils/historyChart.ts`, created by that work
 - [`__tests__/reducer.test.ts`](../../../__tests__/reducer.test.ts) — *counters and the answer log*
 - [ARCHITECTURE.md §1–§5, §8](../ARCHITECTURE.md) — updated for this record by the change that
   implemented it

@@ -99,7 +99,9 @@ These coding principles are mandatory:
 - Use React Native primitives directly and simply. **There is no component library and no icon
   font** — every glyph is drawn from nested `View`s, except the category icons, which are Android
   vector drawables (ADR-0013; `AGENTS.md` *Tech stack* states the exception). A design that needs
-  a new non-category icon needs one drawn.
+  a new non-category icon needs one drawn. Data charts, and only charts, are drawn with
+  `react-native-svg`, imported only from `src/components/`, with their geometry pure in
+  `src/utils/` (ADR-0018; `AGENTS.md` *Dependency traps* lists its traps).
 - Follow the layering in `AGENTS.md`: screens call `useDecks()` and `useNavigation()`; components
   take plain props and callbacks and read neither. A screen never reads state and writes it back —
   it calls a function the context exposes.

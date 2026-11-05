@@ -4,17 +4,12 @@ import { AnswerShares } from '../types';
 import { describeAnswerShares, formatRate } from '../utils/stats';
 import { colors, radius, spacing } from '../theme';
 import { AnswerIcon } from './AnswerIcons';
+import MasteryTrack, { ANSWER_SEGMENTS } from './MasteryTrack';
 
 type Props = {
   /** Percentages of all reviews (0-100), or null when nothing has been reviewed. */
   shares: AnswerShares | null;
 };
-
-const SEGMENTS = [
-  { key: 'ok', icon: 'tick', color: colors.success },
-  { key: 'okeish', icon: 'question', color: colors.warning },
-  { key: 'notOk', icon: 'cross', color: colors.danger },
-] as const;
 
 const LEGEND_ICON_SIZE = 16;
 
@@ -24,18 +19,9 @@ export default function MasteryBar({ shares }: Props) {
       accessible
       accessibilityLabel={`Mastery: ${describeAnswerShares(shares)}`}
       style={styles.panel}>
-      <View style={styles.track}>
-        {shares
-          ? SEGMENTS.filter(s => shares[s.key] > 0).map(s => (
-              <View
-                key={s.key}
-                style={[styles.segment, { flex: shares[s.key], backgroundColor: s.color }]}
-              />
-            ))
-          : null}
-      </View>
+      <MasteryTrack shares={shares} />
       <View style={styles.legend}>
-        {SEGMENTS.map(s => (
+        {ANSWER_SEGMENTS.map(s => (
           <View key={s.key} style={styles.legendItem}>
             <AnswerIcon
               name={s.icon}
@@ -58,21 +44,6 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     padding: spacing.sm,
     gap: spacing.sm,
-  },
-  // Fixed 10-point track: the 2-point inset and gap are below the spacing scale on purpose.
-  track: {
-    flexDirection: 'row',
-    height: 10,
-    padding: 2,
-    gap: 2,
-    borderRadius: radius.sm,
-    backgroundColor: colors.surfaceAlt,
-    overflow: 'hidden',
-  },
-  segment: {
-    height: '100%',
-    minWidth: 4,
-    borderRadius: 3,
   },
   legend: {
     flexDirection: 'row',

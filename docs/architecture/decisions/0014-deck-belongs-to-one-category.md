@@ -243,6 +243,48 @@ open item "reading a category back on import", under
   category aggregation in Statistics.
 - Nothing persisted changes and no dependency is added.
 
+## Amendment 5 — 2026-11-04
+
+Recorded ahead of the work it governs. The decision above is unchanged; this records a second place
+a category is chosen, for the deck created by hand on the **New deck screen**
+([ADR-0011](0011-deck-editing-is-one-action.md) Amendment 4).
+
+- **A category can be set when a deck is created by hand.** The New deck screen is the Edit deck
+  screen's form started blank, so it carries the same **Category field**. Its default is `null`,
+  *no category*.
+- **It travels as `addDeck`'s requested `categoryId`, and the reducer resolves it** with
+  `findCategory` at dispatch, storing `null` for an id that resolves to neither a built-in nor a
+  stored custom category — exactly as Amendment 4 set up for a JSON import. A custom category
+  deleted on the Categories tab while the new deck's form was open is therefore stored as `null`.
+- **The *Assigning* section above is read with this in mind.** Its heading *"through
+  `updateDeck`"* and its line *"committed with the rest of the edit by the one `updateDeck`
+  action"* describe an existing deck. A new deck's category is committed with the rest of the new
+  deck by the one `addDeck` action. There is still no separate assign action, and `updateDeck`'s
+  rule for an unresolved id is unchanged.
+- **Still not decided:** a deck count on the Categories tab's tiles, filtering by category, and a
+  category aggregation in Statistics.
+- Nothing persisted changes and no dependency is added.
+
+## Amendment 6 — 2026-11-04
+
+Recorded ahead of the work it governs. The decision above is unchanged; this adds one more place a
+deck's category is shown, as part of the Deck statistics screen redesign.
+
+- **The Deck statistics screen shows the deck's category.** An identity row beneath the screen's
+  header shows the deck's **Category square** and the category's name, resolved only with
+  `findCategory` — the *Resolving an id* rule above.
+- **The *Display* rule applies unchanged.** A deck with no category, or whose `categoryId` no longer
+  resolves, shows no square and no category name, and reserves no gap for them. A deck deleted
+  while the screen is open shows the screen's *Deck not found* state, with no category.
+- **The lists of where a category shows are extended, not rewritten.** The *Display* section above
+  and Amendments 1 and 2 each name the places a category appears; read with this amendment, the
+  Deck statistics screen is one of them. Amendment 1's "No other Menu sheet shows a category" still
+  holds — this is a screen, not a Menu sheet.
+- **Still not decided:** a deck count on the Categories tab's tiles, filtering by category, and a
+  category aggregation in Statistics. Showing one deck's own category is not an aggregation.
+- Sessions still store no category. Nothing persisted changes and no dependency is added. On iOS
+  the square would show without its glyph, as Amendment 1 records for the other places.
+
 ## References
 
 - [ADR-0002](0002-sessions-are-snapshots.md) — snapshots; amended by this record (Amendment 6)
@@ -250,7 +292,8 @@ open item "reading a category back on import", under
   Amendment 3, the categories key and downgrades
 - [ADR-0007](0007-okeish-third-answer.md) — the downgrade loss first accepted
 - [ADR-0011](0011-deck-editing-is-one-action.md) — `updateDeck`; amended by this record
-  (Amendment 1)
+  (Amendment 1); the New deck screen that also sets a category (ADR-0011 Amendment 4, this
+  record's Amendment 5)
 - [ADR-0012](0012-custom-categories-third-storage-key.md) — categories, and the requirement for
   this record; amended by this record (Amendment 1)
 - [ADR-0013](0013-category-icons-are-android-vector-drawables.md) — the icons shown
@@ -259,7 +302,8 @@ open item "reading a category back on import", under
   (Amendment 4)
 - [`src/types.ts`](../../../src/types.ts) — `Deck`
 - [`src/storage/decksStorage.ts`](../../../src/storage/decksStorage.ts) — the `categoryId` default
-- [`src/state/reducer.ts`](../../../src/state/reducer.ts) — `updateDeck`, `deleteCategory`
+- [`src/state/reducer.ts`](../../../src/state/reducer.ts) — `updateDeck`, `deleteCategory`;
+  `addDeck`, which resolves an imported or hand-made deck's category (Amendments 4 and 5)
 - [`src/utils/categories.ts`](../../../src/utils/categories.ts),
   [`src/utils/deckEdit.ts`](../../../src/utils/deckEdit.ts)
 - [`src/components/CategorySquare.tsx`](../../../src/components/CategorySquare.tsx),
@@ -267,6 +311,8 @@ open item "reading a category back on import", under
   sheet title that shows it (Amendment 1)
 - [`src/components/DeckStatsCard.tsx`](../../../src/components/DeckStatsCard.tsx) — the Deck stats
   card that shows the square on the Statistics screen (Amendment 2)
+- [`src/screens/DeckStatsScreen.tsx`](../../../src/screens/DeckStatsScreen.tsx) — the Deck
+  statistics screen's identity row (Amendment 6)
 - [ARCHITECTURE.md §1, §2, §3, §5, §8](../ARCHITECTURE.md) — updated for this record by the change
   that implemented it
 - [AGENTS.md](../../../AGENTS.md) — *State ownership*, *Storage keys*, *What to ask before doing*

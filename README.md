@@ -5,8 +5,8 @@ them card by card, and track how well you know each card.
 
 ## Features
 
-- **Bottom tab navigation** with a *Decks* tab (import decks and start sessions), a *Learn* tab
-  (your sessions, and where you study them), a *Categories* tab and a *Statistics* tab.
+- **Bottom tab navigation** with a *Decks* tab (import or create decks and start sessions), a
+  *Learn* tab (your sessions, and where you study them), a *Categories* tab and a *Statistics* tab.
 - **Deck import** from any local file through the Android system file picker: *Import deck from
   file* asks for **CSV** or **JSON** first, and the file is read as that format whatever its
   extension.
@@ -22,6 +22,10 @@ them card by card, and track how well you know each card.
   question or answer, add a card, or remove one, then press *Save*; nothing changes until you do.
   Editing a card keeps its statistics, removing one deletes them, and the title change reaches the
   deck's sessions.
+- **Deck creation by hand**: *Add deck manually* in the add deck menu opens the same form, blank —
+  a title, an optional description, a category and no cards until you add one. *Save* asks for a
+  title and for both sides of every card, then adds the deck to the *Decks* tab. A deck may have
+  no cards; leaving before saving asks first.
 - **Deck export**: *Export to file* in a deck's menu saves the deck's title, description, category
   and cards as a JSON or CSV file wherever you choose in the system save dialog. For CSV, pick a
   comma, semicolon or tab as the separator, or type any single character that is not a letter, a
@@ -30,10 +34,12 @@ them card by card, and track how well you know each card.
   [Export formats](#export-formats).
 - **Study sessions** with an animated card flip, three icon feedback buttons — *Not Ok* (cross),
   *Okeish* (question mark) and *Ok* (tick) — a progress indicator, and an end-of-session summary
-  that offers to review the cards you missed or were unsure of, or to study the whole deck again.
-  Okeish counts as a review but not as a success.
-- **Inverted sessions**: *Start session with options* in a deck's menu lets you study the deck the
-  other way round (each card's answer first, its question on the back), shuffled, or both. A
+  that offers to review the cards you missed or were unsure of, or to study the whole deck again
+  (in deck order). Okeish counts as a review but not as a success. A deck's start button begins a
+  session over the whole deck in random order.
+- **Session options**: *Start session with options* in a deck's menu lets you study the deck the
+  other way round (each card's answer first, its question on the back), in deck order, or both.
+  *Shuffle* starts ticked and *Inverted* unticked each time; untick *Shuffle* for deck order. A
   session keeps its direction when you resume it, and a session started from it is inverted too.
   Inverted answers count towards the same card statistics as normal ones.
 - **Session list** on the *Learn* tab: every session in progress and every completed one you have
@@ -58,11 +64,21 @@ them card by card, and track how well you know each card.
 - **Statistics** on the *Statistics* tab: an overall success rate in a ring split into ok / okeish
   / not ok, with totals for decks, cards, reviews and sessions; then a card per deck with its
   category, its ok / okeish / not ok split, and its card, session and review counts and last
-  session date. Tap a deck for a per-card drill-down sorted hardest first. Chips at the top switch
-  the success rate, the review and session totals, and each deck's split, review count and session
-  count between *All
-  time*, *This month* and *Last 7 days*; deck and card counts, last session dates and the per-card
-  drill-down are always all time. The choice is not remembered.
+  session date. Chips at the top switch the success rate, the review and session totals, and each
+  deck's split, review count and session count between *All time*, *This month* and *Last 7
+  days*; deck and card counts and last session dates are always all time. The choice is not
+  remembered.
+- **Deck statistics**: tap a deck on the *Statistics* tab to see it on its own, always all time —
+  its card count and category, its success rate with the change since the last session, its ok /
+  okeish / not ok counts, its reviews, sessions and last session date, a chart of its latest five
+  sessions, and a row per card with its status, split, review count and when it was last
+  reviewed. Search the cards by question or answer text, filter them by status (*Needs review*
+  below 40% success, *Learning*, *Mastered* from 70%, or *New*), and sort them hardest first, in
+  deck order or most recently reviewed first. *Reset statistics* in the screen's menu clears the
+  deck's results and sessions. The session chart stacks each session's ok, okeish, not ok and
+  unanswered cards as shares of that session's own cards, oldest on the left with the date and
+  success rate under each, and joins the sessions with smooth curves; the curves only connect
+  them, and nothing is measured between two sessions. A deck with one session shows a single bar.
 - **Categories** on the *Categories* tab: a set of built-in subject categories (astronomy,
   mathematics, cinema and more), each with its own colour and icon, plus your own. *New category*
   lets you pick a name (up to 30 characters, not already used), a colour and an icon. The colour
@@ -70,7 +86,8 @@ them card by card, and track how well you know each card.
   (hue, saturation and brightness), as long as it is light enough for the icon to stay readable
   on it. A category you created can be deleted from its tile. Give a deck a category from *Edit deck*: its icon then
   shows on the deck's card and on its sessions on the *Learn* tab, at the top of their options
-  menus, and on the deck's card on the *Statistics* tab. Deleting a category leaves its
+  menus, on the deck's card on the *Statistics* tab, and at the top of the deck's statistics
+  screen. Deleting a category leaves its
   decks with no category (the confirmation says how many). Categories cannot be edited, and you
   cannot yet filter by category or see totals per category in *Statistics*. The category icons are
   Android-only.
@@ -166,17 +183,22 @@ npm test
 - JDK 17
 - Android SDK with platform 37 and the NDK version declared in [android/build.gradle](android/build.gradle)
 
+The app has native dependencies, so after pulling a change that adds or upgrades one — such as the
+one that added `react-native-svg` for the session chart — run `npm install` and rebuild the app
+with `npm run android`; reloading the JavaScript in Metro is not enough. The first build after
+`react-native-svg` arrived compiles its native code and takes noticeably longer.
+
 ## Project structure
 
 | Path | Purpose |
 | --- | --- |
 | [src/navigation](src/navigation) | Bottom tabs + per-tab native stacks |
 | [src/screens](src/screens) | One file per screen: decks, sessions and study, categories, statistics |
-| [src/components](src/components) | Flip card, HTML renderer, buttons, progress bars, dialogs, category tiles, squares and pickers, colour sliders |
+| [src/components](src/components) | Flip card, HTML renderer, buttons, progress bars, the session history chart, dialogs, category tiles, squares and pickers, colour sliders |
 | [src/state](src/state) | Context store (`DecksContext.tsx`) over a pure reducer (`reducer.ts`), auto-persisting |
 | [src/storage](src/storage) | AsyncStorage read/write with defensive normalisation, one module per key |
 | [src/services](src/services) | Document picker + file read + CSV or JSON parsing; deck and sample deck export through the save dialog |
-| [src/utils](src/utils) | Pure logic: CSV, JSON and HTML parsing, deck import and export formats, statistics, search, categories, colour maths, and more |
+| [src/utils](src/utils) | Pure logic: CSV, JSON and HTML parsing, deck import and export formats, statistics, the session chart's geometry, search, categories, colour maths, and more |
 | [src/assets/category-icons](src/assets/category-icons) | Category icons: Material Symbols by Google (Apache License 2.0, see its `NOTICE`) as Android vector drawables |
 | [\_\_tests\_\_](__tests__) | Jest unit tests for the utils, the reducer and the storage loaders |
 
@@ -187,3 +209,9 @@ npm test
 - `react-native-render-html` relies on `defaultProps` for function components, which React 19
   ignores, so HTML rendering is done by a small dedicated renderer
   ([src/components/RichText.tsx](src/components/RichText.tsx)) built on nested `Text` nodes.
+- `react-native-svg` draws the session chart on a deck's statistics screen, and is used for data
+  charts only: icons are drawn from plain views or Android vector drawables, and card HTML is
+  rendered as text
+  ([ADR-0018](docs/architecture/decisions/0018-react-native-svg-draws-charts.md)). It is a native
+  module, and npm does not check it against the React Native version, so a React Native upgrade
+  needs its supported versions checked by hand.

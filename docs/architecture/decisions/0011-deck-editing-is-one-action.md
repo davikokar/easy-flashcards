@@ -133,6 +133,47 @@ follow-up — reading a deck's title and description back on import — under
   Editing is unaffected: a deck is still edited by the one `updateDeck` action.
 - Nothing persisted changes; `description` keeps its shape and its `''` default.
 
+## Amendment 4 — 2026-11-04
+
+Recorded ahead of the work it governs. The decision above is unchanged — a deck is still edited by
+the one `updateDeck` action, committed once by **Save**. This records a second use of the same
+form: **Add deck manually** in the Add deck menu, until now a placeholder, creates a deck by hand
+on it.
+
+- **The Edit deck form also creates a deck.** A second route in the Decks stack, `NewDeck`, with no
+  params, is rendered by the same `EditDeckScreen` component in a *new deck* mode — the **New deck
+  screen**. It starts blank: an empty title and description, no category, and **no cards** — no
+  empty card is pre-added. The user adds cards with the form's existing **Add card** control.
+- **It commits once, through `addDeck`, not `updateDeck`.** **Save** dispatches the existing
+  `addDeck` once, with the trimmed title as `name`, the trimmed description, the chosen
+  `categoryId` (ADR-0014 Amendment 5), `sourceFileName: null`, and the cards. Nothing is written
+  while the user types, exactly as when editing. `addDeck` mints the deck and card ids, and every
+  card starts with zero counters, as an imported card does.
+- **Only the title and description are trimmed.** Card text is stored as typed, as an edit stores
+  it; the import's trimming of card text is the importer's, not `addDeck`'s.
+- **A deck may be created with no cards**, as an edit may already leave one with none. The empty
+  deck is handled wherever the existing empty deck is.
+- **Save is enabled once the draft differs from the blank form** — a non-blank trimmed title or
+  description, a category, or any card. Pressing it still validates as an edit does: a blank title
+  gives *Title needed*, and a card missing either side gives *Card incomplete*. A draft whose only
+  change is whitespace in the title or description is not a change.
+- **Leaving unsaved asks first**, with the same *Discard changes?* prompt as editing, its message
+  reading *"This deck has not been saved."*
+- **After Save the screen goes back to the Decks screen**, where the new deck appears. There is no
+  success alert.
+- **A repeated Save press must not create a second deck.** `updateDeck` is idempotent — a second
+  dispatch of the same edit writes the same deck — but `addDeck` mints new ids on every call, so a
+  double tap on **Save** would create two decks. The screen ignores any Save after the first that
+  committed.
+- **What does not apply in new-deck mode:** the *Deck not found* state, which needs a deck id, and
+  the *Remove cards?* prompt, since a new deck has no stored cards to lose. Sessions are not
+  touched; a new deck has none.
+- **A third way to create a deck.** The decision's line *"Import creates decks with `''`"*, already
+  narrowed to CSV by Amendment 3, gains a third creation path: a deck created by hand gets the
+  description typed, trimmed, and `''` when none was.
+- Nothing persisted changes: no storage key, no stored shape, and no new store action. A hand-made
+  deck is stored exactly as an imported one, with `sourceFileName` `null`.
+
 ## References
 
 - [`src/types.ts`](../../../src/types.ts) — `Deck.description`
@@ -142,7 +183,12 @@ follow-up — reading a deck's title and description back on import — under
 - [ADR-0002](0002-sessions-are-snapshots.md) — snapshots; Amendment 4's rename rule is met here
 - [ADR-0004](0004-versioned-defensive-storage.md) — Amendment 1, new fields under `/v1`
 - [ADR-0005](0005-answers-recorded-immediately.md) — card counters
-- [ADR-0014](0014-deck-belongs-to-one-category.md) — the deck's category (Amendment 1)
+- [ADR-0014](0014-deck-belongs-to-one-category.md) — the deck's category (Amendment 1); the
+  category of a deck created by hand (Amendment 4; ADR-0014 Amendment 5)
 - [ADR-0016](0016-deck-export-file-formats.md) — exporting the title and description (Amendment 2)
 - [ADR-0017](0017-deck-import-reads-exported-formats.md) — importing them back from JSON
   (Amendment 3)
+- [ADR-0003](0003-single-context-reducer-store.md) — `addDeck` gains a second caller
+  (Amendment 4; ADR-0003 Amendment 5)
+- [`src/screens/EditDeckScreen.tsx`](../../../src/screens/EditDeckScreen.tsx) — the form, in both
+  modes (Amendment 4)

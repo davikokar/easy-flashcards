@@ -27,6 +27,13 @@ explain non-obvious decisions in short commit messages.
   ([ADR-0013](docs/architecture/decisions/0013-category-icons-are-android-vector-drawables.md)).
   The exception is for category icons only: any other new icon is still drawn from `View`s, and a
   change to a drawable needs a native rebuild, not a Metro reload.
+  **Data charts are the one other exception, and they are not icons:** `react-native-svg` draws
+  them — today only the Session history chart in
+  [src/components/SessionHistoryChart.tsx](src/components/SessionHistoryChart.tsx), whose geometry
+  is pure TypeScript in [src/utils/historyChart.ts](src/utils/historyChart.ts)
+  ([ADR-0018](docs/architecture/decisions/0018-react-native-svg-draws-charts.md)). Import it only
+  from `src/components/`, and never for an icon, for card HTML, or for anything from an imported
+  file. Icons stay drawn from `View`s.
 - **Navigation:** React Navigation — one bottom tab navigator, one native stack per tab.
 - **State:** one React Context over `useReducer` — the provider in
   [src/state/DecksContext.tsx](src/state/DecksContext.tsx), the reducer in
@@ -184,8 +191,13 @@ the owning document instead, so that adding an ADR or a screen does not touch an
 - **Session results are the answer log, and the counters must equal it.** Every `SessionResult`
   carries the `answeredAt` of its answer, and the Statistics screen derives every timeframe, All
   time included, from the results through the `*Since` functions in `stats.ts`, skipping answers
-  whose card has left its deck. The Decks screen, the Deck statistics screen and Hardest first read
-  the counters. For every card in a deck, its counters equal its results by answer across the
+  whose card has left its deck. The Decks screen and Hardest first read the counters. The Deck
+  statistics screen reads both and is always all time: its headline, Answer tiles, `Reviews`
+  figure, card statuses and Card stats row figures read the counters; its session history, each
+  card's last-reviewed date, the Recently reviewed order and the Mastery change chip read the
+  results (`getSessionHistory`, `lastAnsweredAtByCard`, `rateChangeSinceLastSession`). Nothing
+  reads `Card.lastReviewedAt`, which a discard leaves stale (ADR-0015 Amendment 2). For every card
+  in a deck, its counters equal its results by answer across the
   deck's sessions, and only the reducer keeps that true: an action that changes a counter or a
   result must change the other in the same dispatch, and the *counters and the answer log* test in
   `__tests__/reducer.test.ts` must still pass
@@ -252,6 +264,13 @@ the owning document instead, so that adding an ADR or a screen does not touch an
   Amendment 3). The deck's
   category travels in the same edit: `updateDeck` writes `null` for an id that `findCategory` does
   not resolve, and does not touch sessions for it (ADR-0011 Amendment 1).
+  **Creating a deck by hand uses the same form**: the New deck screen is `EditDeckScreen` on the
+  `NewDeck` route, started blank, and its **Save** commits once through the existing `addDeck` —
+  never `updateDeck` — with the input built by `newDeckInputOf` in
+  [src/utils/deckEdit.ts](src/utils/deckEdit.ts): title and description trimmed, card text as
+  typed. `addDeck` mints new ids on every call, so the screen, not the store, ignores a second
+  **Save**; keep that guard (ADR-0011 Amendment 4,
+  [ADR-0003](docs/architecture/decisions/0003-single-context-reducer-store.md) Amendment 5).
 - **Only custom categories are state.** The built-in categories are `DEFAULT_CATEGORIES` in
   [src/utils/categories.ts](src/utils/categories.ts): constants, never in the store and never
   stored, with permanent `default_<icon key>` ids — never change or reuse one, because decks
@@ -265,7 +284,8 @@ the owning document instead, so that adding an ADR or a screen does not touch an
   `findCategory` and stores as `null` when it does not resolve — resolve it there, not in a screen,
   and never create a category from a file
   ([ADR-0017](docs/architecture/decisions/0017-deck-import-reads-exported-formats.md), ADR-0014
-  Amendment 4). Resolve it only with
+  Amendment 4). A deck created by hand on the New deck screen asks for the category chosen in its
+  Category field, resolved by the same `addDeck` case (ADR-0014 Amendment 5). Resolve it only with
   `findCategory` in [src/utils/categories.ts](src/utils/categories.ts): an id that matches neither a
   default nor a stored custom category displays as *no category* everywhere, and is not rewritten
   on load. `deleteCategory` sets `categoryId` to `null` on every deck that used the category, in the
@@ -395,6 +415,18 @@ These are not preferences. Each one cost a session.
 - **The picker returns a `content://` URI, not a path.** Reading it needs
   `@dr.pogodin/react-native-fs`, and [src/utils/fileUri.ts](src/utils/fileUri.ts) exists for the
   percent-decoding that step needs. Do not hand a `content://` URI to something expecting a path.
+- **`react-native-svg` works, but has four traps**
+  ([ADR-0018](docs/architecture/decisions/0018-react-native-svg-draws-charts.md)):
+  - **No SVG filters** (`Filter`, `Fe*`). On Android they rasterise through RenderScript,
+    deprecated since API 31. A shadow is a wider, translucent underlay stroke.
+  - **No SVG `Text` for anything the user reads.** It ignores the system font scale. Labels are
+    React Native `Text` positioned from the geometry's coordinates.
+  - **Jest cannot load it as configured.** `@react-native/jest-preset`'s `transformIgnorePatterns`
+    does not exempt `react-native-svg`, so a future component test that imports a chart needs the
+    pattern widened and the package mocked. Nothing imports a component in a test today.
+  - **npm will not warn about it on a React Native upgrade.** Its peer ranges are `*`; check its
+    supported React Native versions by hand. It is native: installing or upgrading it needs a
+    native rebuild, not a Metro reload.
 
 ## Known gaps
 
@@ -406,17 +438,23 @@ Recorded here so they are not rediscovered as surprises. The full list, with rea
   loaders, and nothing renders. A screen, a component, or the wiring in `DecksContext.tsx` can
   therefore break without any test failing. Adding a component-test setup is a dependency change —
   ask first.
-- **Several menu entries and buttons are placeholders** that alert rather than act:
-  *Add deck manually*, *Settings*, and the Header toolbar's
+- **Some menu entries and buttons are placeholders** that alert rather than act: *Settings*,
+  and the Header toolbar's
   **Filter button** on both the Decks and Learn screens. They are intentional stubs, not bugs — do
-  not "fix" one into existence without being asked. The Import format menu offers CSV and JSON
+  not "fix" one into existence without being asked. *Add deck manually* was one and now opens the
+  New deck screen ([ADR-0011](docs/architecture/decisions/0011-deck-editing-is-one-action.md)
+  Amendment 4). The Import format menu offers CSV and JSON
   only; the XML and JSONL placeholders were removed and are not to come back as stubs
   ([ADR-0017](docs/architecture/decisions/0017-deck-import-reads-exported-formats.md)).
-- **Categories are add-and-delete only, and only the Edit deck screen assigns them** — apart
+- **Categories are add-and-delete only, and only the deck form assigns them** — the Category
+  field of the Edit deck screen, and of the New deck screen when a deck is created by hand
+  (ADR-0014 Amendment 5) — apart
   from a JSON import, which keeps the file's `category.id` when it resolves on this device. A
   custom category cannot be edited. A deck's category shows on its Deck card, its sessions'
-  Session cards, the titles of their Deck options menu and Session options menu sheets, the Edit
-  deck screen's Category field and its Deck stats card on the Statistics screen, and nowhere
+  Session cards, the titles of their Deck options menu and Session options menu sheets, the
+  Category field of the Edit deck and New deck screens, its Deck stats card on the Statistics
+  screen and the Category pill of its Deck identity row on the Deck statistics screen
+  (ADR-0014 Amendment 6), and nowhere
   else: a deck count on the Categories tiles, filtering by category, a per-category aggregation
   in Statistics and reading a category from a CSV import are deliberate follow-ups
   ([ADR-0014](docs/architecture/decisions/0014-deck-belongs-to-one-category.md) *Not decided

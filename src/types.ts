@@ -90,6 +90,29 @@ export type AnswerShares = {
   notOk: number;
 };
 
+/** A success rate grouped for colour: none when never reviewed, else low (<40), mid (<70) or high. */
+export type RateBand = 'none' | 'low' | 'mid' | 'high';
+
+/** Where a card stands, from its counters: never answered, or banded by its success rate. */
+export type CardStatus = 'new' | 'needsReview' | 'learning' | 'mastered';
+
+/** How the cards of a deck are ordered on the Deck statistics screen. */
+export type CardSortOrder = 'hardest' | 'deck' | 'recent';
+
+/** One session of a deck as the Deck statistics history shows it. */
+export type SessionHistoryEntry = {
+  sessionId: string;
+  startedAt: number;
+  /** The session's own card count, not the deck's. */
+  cardCount: number;
+  tally: AnswerTally;
+  /** Each answer's percentage of `cardCount`; the shares sum to the progress filled. */
+  shares: AnswerShares;
+  /** Ok-only success rate (0-100); null with no answers. */
+  rate: number | null;
+  active: boolean;
+};
+
 /** The icons the default categories use. */
 export type DefaultCategoryIcon =
   | 'astronomy'

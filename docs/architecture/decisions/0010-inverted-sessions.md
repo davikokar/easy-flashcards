@@ -170,10 +170,66 @@ starting a session from a deck.
   `replaySession` must be edited, and every screen consumes the context value, so the blast radius
   is wider than the diff.
 
+## Amendment 1 — 2026-11-04
+
+The project owner asked for a shuffled deck to be the default way to start a session, with deck
+order as the option. The decision above is unchanged: direction is still chosen at creation,
+stored on the session and taken over by a session created from a session, and **shuffle is still
+not stored**. What moves is the default card order in *Starting a session from the Decks screen*.
+
+- **The Start session button shuffles.** It creates a new session over the whole deck, **not
+  inverted and shuffled**: `{ inverted: false }` and the deck's card ids in random order, through
+  `shuffle` in [`src/utils/shuffle.ts`](../../../src/utils/shuffle.ts), as `cardIds`. The sentence
+  above that it is "unchanged … in deck order, not inverted and not shuffled" no longer holds.
+- **The Session setup dialog opens with Shuffle checked and Inverted unchecked**, and both reset
+  to those values every time it opens; nothing chosen in one opening carries into the next. The two
+  options stay independent. With the defaults, **Start** does exactly what the Start session
+  button does.
+- **Deck order is an explicit choice:** **Start session with options**, then uncheck **Shuffle**.
+  It is the only way to start a session from a deck in deck order.
+- **Sessions created from a session keep their current order, by decision.** The owner asked only
+  about starting a session from a deck.
+  - The Learn screen's **Replay button** still passes the original's `cardIds` that still resolve,
+    in the original's order. A replay repeats that pass: a shuffled original replays in its
+    shuffled order, a deck-order original in deck order. Reshuffling would make it a different
+    pass.
+  - The Session summary's **Study the whole deck again** still starts over the whole deck in deck
+    order, with the source's direction. Whether the source was shuffled is not stored, so it cannot
+    be taken over as direction is, and following the new default would change a second screen
+    nobody asked about. Making it shuffle needs only another amendment — no storage change — if the
+    owner wants it.
+- **No storage, store or type change.** `startSession(deck, { inverted }, cardIds?)` already takes
+  an ordered `cardIds`; only the Decks screen's arguments and the dialog's initial values change.
+  `DecksContextValue` is unchanged.
+
+Alternatives considered for this amendment:
+
+- **Remember the dialog's last choice.** Rejected: across restarts it is a stored preference — a
+  storage change needing its own ADR and approval — and within one run it makes the dialog's
+  starting state depend on history the user cannot see.
+- **Keep the Start session button in deck order and only default the dialog to Shuffle.**
+  Rejected: the owner asked for the one-tap start to shuffle.
+- **Shuffle every session created from a session too.** Not chosen, for the reasons above;
+  inheriting the source's order choice is impossible without storing it.
+
+Consequences of this amendment:
+
+- *Positive:* the common start is one tap and shuffled, with no new control and no storage change.
+- *Negative:* most new sessions are now shuffled, so the *Negative* consequence that whether a
+  session was shuffled is not recorded now applies to most sessions rather than a few.
+- *Negative:* a deck-order session takes two more taps than before (the menu and unchecking
+  **Shuffle**).
+- *Negative:* a user who studied a deck shuffled and taps **Study the whole deck again** gets deck
+  order without being told.
+- *Negative:* the defaults live in the Decks screen's state, which no test renders. A regression
+  to deck order, or a dialog opening with **Shuffle** unchecked, passes `npm test` and shows only on
+  a device. `shuffle` itself is tested.
+
 ## References
 
 - [ADR-0001](0001-own-the-html-renderer.md) — both faces go through the same renderer
-- [ADR-0002](0002-sessions-are-snapshots.md) — amended by this record (Amendment 3)
+- [ADR-0002](0002-sessions-are-snapshots.md) — amended by this record (Amendment 3); its
+  Amendment 8 points to this record's Amendment 1
 - [ADR-0003](0003-single-context-reducer-store.md) — the store whose function signatures change
 - [ADR-0004](0004-versioned-defensive-storage.md) — Amendment 1, the additive-field rule under `/v1`
 - [ADR-0005](0005-answers-recorded-immediately.md) — unaffected: an answer is recorded the same way

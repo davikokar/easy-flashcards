@@ -1,6 +1,7 @@
 import React from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { AnswerIcon } from './AnswerIcons';
 import CategorySquare from './CategorySquare';
 import MenuIcon, { MenuIconName } from './MenuIcons';
 import type { Category } from '../types';
@@ -11,6 +12,8 @@ export type MenuItem = {
   onPress: () => void;
   icon?: MenuIconName;
   destructive?: boolean;
+  /** For a menu that marks a choice: primary label and a trailing tick when true. Leave unset elsewhere. */
+  selected?: boolean;
 };
 
 type Props = {
@@ -23,6 +26,7 @@ type Props = {
 };
 
 const TITLE_SQUARE_SIZE = 28;
+const SELECTED_TICK_SIZE = 20;
 
 export default function MenuSheet({ visible, items, onClose, title, category }: Props) {
   const insets = useSafeAreaInsets();
@@ -49,6 +53,9 @@ export default function MenuSheet({ visible, items, onClose, title, category }: 
               {index > 0 ? <View style={styles.separator} /> : null}
               <Pressable
                 accessibilityRole="button"
+                accessibilityState={
+                  item.selected === undefined ? undefined : { selected: item.selected }
+                }
                 onPress={() => {
                   onClose();
                   item.onPress();
@@ -60,9 +67,18 @@ export default function MenuSheet({ visible, items, onClose, title, category }: 
                     color={item.destructive ? colors.danger : colors.textMuted}
                   />
                 ) : null}
-                <Text style={[styles.itemLabel, item.destructive && styles.itemDestructive]}>
+                <Text
+                  style={[
+                    styles.itemLabel,
+                    item.selected !== undefined && styles.itemLabelFill,
+                    item.selected && styles.itemSelected,
+                    item.destructive && styles.itemDestructive,
+                  ]}>
                   {item.label}
                 </Text>
+                {item.selected ? (
+                  <AnswerIcon name="tick" color={colors.primary} size={SELECTED_TICK_SIZE} />
+                ) : null}
               </Pressable>
             </React.Fragment>
           ))}
@@ -118,6 +134,13 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 16,
     fontWeight: '600',
+  },
+  // Pushes the trailing tick to the row's end; only rows that can be selected use it.
+  itemLabelFill: {
+    flex: 1,
+  },
+  itemSelected: {
+    color: colors.primary,
   },
   itemDestructive: {
     color: colors.danger,

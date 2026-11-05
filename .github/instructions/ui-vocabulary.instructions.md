@@ -46,7 +46,13 @@ stack. The two Categories screens are described in more detail under **Categorie
   each. Root of the Decks tab. Aliases: **deck list**, **deck library**
 - **Edit deck screen** (`EditDeckScreen`, route `EditDeck`, param `deckId`): One deck's title,
   description, category and cards as editable fields. Pushed onto the Decks stack from **Edit deck**
-  in the Deck options menu. Aliases: **deck editor**
+  in the Deck options menu. The same component also serves the **New deck screen**. Aliases: **deck
+  editor**
+- **New deck screen** (`EditDeckScreen`, route `NewDeck`, no params): the **Edit deck screen**'s form
+  started blank, to create a deck by hand. Titled `New deck`. Pushed onto the Decks stack from **Add
+  deck manually** in the **Add deck menu**. One component, two routes: say **Edit deck screen** for
+  an existing deck and **New deck screen** for a new one. Described under **Edit deck screen**
+  below.
 - **Learn screen** (`LearnScreen`, route `LearnList`): The list of sessions, one **Session card**
   each, unfinished ones first. Root of the Learn tab. Aliases: **session list**
 - **Study screen** (`StudyScreen`, route `Study`, params `sessionId` and optional `mode`): One
@@ -62,8 +68,10 @@ stack. The two Categories screens are described in more detail under **Categorie
   **Aggregated stats** across every deck, then the **Decks breakdown**, one **Deck stats card** per
   deck. Root of the Statistics tab. Aliases: **stats overview**
 - **Deck statistics screen** (`DeckStatsScreen`, route `DeckStats`, param `deckId`): One deck's
-  totals, and every card in it ordered hardest first. **Always all time** — it ignores the
-  Statistics screen's timeframe. Pushed onto the Statistics stack.
+  **Deck identity row**, **Overall mastery card**, **Session history card** and **Card performance
+  section**, titled with the deck's name. **Always all time** — it ignores the Statistics screen's
+  timeframe. Its header carries the **Deck statistics menu**. Pushed onto the Statistics stack.
+  Described under **Deck statistics screen** below.
   Aliases: **per-deck statistics**, **card breakdown**
 
 Use **screen** only for a route in a navigator. Use **tab** for the four above, **dialog** for
@@ -108,10 +116,13 @@ screen can add items without `AppMenu` gaining store knowledge: each root screen
   sheet**. A sheet with a title can also show a **Category square** (28-point) on the same row,
   before the title; only the **Deck options menu** and the **Session options menu** pass one, and
   with no category the title is unchanged. The square keeps its own label (``Category: {name}``),
-  read before the title, since the title never names the category.
+  read before the title, since the title never names the category. A **Menu item** can also be
+  **selected** (the **Card sort menu** only): its label turns `colors.primary`, a trailing tick
+  (**Answer icon** `tick`) shows, and `accessibilityState.selected` is true — so the choice is not
+  marked by colour alone. Every other sheet is a list of actions and marks nothing.
 - **Menu icon** (`MenuIcon`): the small glyph on a menu item, and also used outside menus (the
-  **Header toolbar**, the **Search bar**, the **Deck meta row**, the **Session card footer**, the
-  **Stat tiles** and
+  **Header toolbar**, the **Search bar**, the **Card search field**, the **Sort button**, the
+  **Deck meta row**, the **Session card footer**, the **Stat tiles** and
   the **Remove card button**). The available names
   are the `MenuIconName` type in
   [src/components/MenuIcons.tsx](../../src/components/MenuIcons.tsx), and every glyph is drawn from
@@ -120,7 +131,9 @@ screen can add items without `AppMenu` gaining store knowledge: each root screen
   drawing it, not importing it. `tally` (four strokes struck through by a slash) is the **Total
   reviews** tile's glyph and means "answers recorded"; it is not `replay`, which belongs to the
   **Replay button** and the **Review errors button**, and reviews as a statistic are never the
-  error review.
+  error review. `sort` (two vertical arrows side by side, the left pointing up and the right
+  down) is the **Sort button**'s glyph; it is deliberately not `filter` (three decreasing bars),
+  which is the **Filter button**'s and means narrowing, not ordering.
 - **Export sample deck dialog** (in `AppMenu`): the centred `Modal` explaining the two sample
   files it saves, a CSV and a JSON of the same deck — how the CSV is laid out, what the JSON adds
   back, and that basic HTML is allowed, in a body that scrolls — with **Export** and **Cancel**
@@ -182,13 +195,23 @@ Everything else that interrupts the user is a native `Alert` — confirmations, 
 - **Deck card** (`DeckCard`): one deck's row — a header (the **Category square** at the top left
   when the deck has a category, then its name on one truncated line, its card count, and the
   **Deck options menu**), a **Mastery bar**, and a **Deck meta row**. A deck with no category shows no square and leaves no gap.
-- **Mastery bar** (`MasteryBar`): the darker inset panel on a Deck card and a **Deck stats card** — a segmented track with one
+- **Mastery bar** (`MasteryBar`): the darker inset panel on a Deck card and a **Deck stats card** — a **Mastery track** with one
   segment per answer, then a three-column legend of **Answer icon** (tick, question mark, cross) and
   percentage, with no text label. Segments and icons are green `Ok`, amber `Okeish`, red `Not ok`,
   sized by each answer's share of all reviews (`answerShares`). A deck with no reviews shows an
   empty track, `--` in every column and grey icons, not 0%. The `Ok` percentage
   is the deck's success rate. Not the **Success bar**, which carries one rate; do not call this one
-  by that name. Labelled `Mastery: {summary}` as a whole.
+  by that name. Labelled `Mastery: {summary}` as a whole. Used on a Deck card and a Deck stats
+  card only: the Deck statistics screen shows the **Mastery track** and the **Answer tiles**
+  instead, never this panel.
+- **Mastery track** (`MasteryTrack`, the track half of the Mastery bar): the segmented tri-colour
+  track on its own — one rounded segment per answer, in the order green `Ok`, amber `Okeish`,
+  red `Not ok`, sized by each answer's share of all reviews (`answerShares`) on a `surfaceAlt`
+  base, a 2-point inset and gap, and no segment narrower than 4 points. It has **no legend and no
+  text of its own**: whatever carries it says the numbers, because colour alone must not (the
+  **Mastery bar** adds a legend; the **Overall mastery card** adds the **Answer tiles**; a **Card
+  stats row** adds shares text). No reviews gives an empty track. Height is a prop: 10 points on
+  the Mastery bar and the Overall mastery card, 8 on a Card stats row.
 - **Deck meta row**: the footer of a Deck card — on the left, two lines: a clock glyph, `{n}
   session(s)` and the **Active pill**, then `Last: {date}` (or `Last: Never`); on the right, the
   **Start session button**, vertically centred. The structure is the same on every card, reviewed or
@@ -197,11 +220,14 @@ Everything else that interrupts the user is a native `Alert` — confirmations, 
   it is zero.
 - **Start session button**: the small rounded-square primary button with a play glyph at the end of
   the Deck meta row, labelled ``Start session for {deck name}``. Icon-only, with no visible text.
-  Creates a **new** session over the whole deck, in deck order, **not inverted and not shuffled**,
-  and navigates across tabs into the Study screen; it does not resume an active one.
+  Creates a **new** session over the whole deck, **shuffled and not inverted**
+  ([ADR-0010](../../docs/architecture/decisions/0010-inverted-sessions.md) Amendment 1), and
+  navigates across tabs into the Study screen; it does not resume an active one. Deck order is
+  reached only through **Start session with options** with **Shuffle** unchecked.
 - **Deck options menu**: the Kebab menu on a Deck card, labelled ``Options for {deck name}``. Its
   Menu sheet is titled with the deck name, after the deck's **Category square** when it has a
-  category. Holds **Start session with options** (play glyph; opens the **Session setup dialog**), **Edit
+  category. Holds **Start session with options** (play glyph; opens the **Session setup dialog**,
+  where **Shuffle** is checked by default and the only way to get deck order is to uncheck it), **Edit
   deck** (opens the **Edit deck screen**), **Export to file** (`export` glyph; opens the **Export
   format menu**) and **Delete deck** (destructive, confirmed by an `Alert`) — always last. It was **Shuffle and
   start session** before
@@ -214,8 +240,11 @@ Everything else that interrupts the user is a native `Alert` — confirmations, 
   - **Session options**: two checkbox rows, **Inverted** (the card front shows the answer and the
     back the question) and **Shuffle** (random card order). They are independent — either, both or
     neither. A row is a `Pressable` with `accessibilityRole="checkbox"`, labelled `Inverted` or
-    `Shuffle`, with its checked state in `accessibilityState`. **Both start unchecked every time the
-    dialog opens.** With both unchecked, **Start** does the same as the **Start session button**.
+    `Shuffle`, with its checked state in `accessibilityState`. **Every time the dialog opens,
+    Shuffle starts checked and Inverted unchecked**; nothing chosen in an earlier opening carries
+    over. With those defaults, **Start** does the same as the **Start session button**. Unchecking
+    **Shuffle** gives deck order
+    ([ADR-0010](../../docs/architecture/decisions/0010-inverted-sessions.md) Amendment 1).
   - **Start**: the primary Button. Creates a **new** session with the chosen options and navigates
     across tabs into the Study screen, as the Start session button does. An empty deck alerts
     `Empty deck` instead, on every start path including this one.
@@ -269,7 +298,7 @@ Everything else that interrupts the user is a native `Alert` — confirmations, 
   the app's only FAB. Shows a spinner while an import is in flight. Opens the **Add deck menu**.
   Aliases: **the + button**, **the FAB**
 - **Add deck menu**: the Menu sheet behind the Add deck button — **Import deck from file**, which
-  opens the **Import format menu**, and **Add deck manually** (a stub).
+  opens the **Import format menu**, and **Add deck manually**, which opens the **New deck screen**.
 - **Import format menu**: the **Menu sheet** **Import deck from file** opens, with exactly two
   items, each with the `file` glyph: **CSV**, then **JSON**. Both are implemented; there are no
   stubs and no "not available yet" alert in it. Each opens the system picker and reads the file
@@ -285,6 +314,10 @@ Titled `Edit deck`. A scrolling form: the **Deck fields**, the **Category field*
 editor** per card, then the **Add card button**. Everything is a draft held on the screen; nothing
 reaches the store until **Save**
 ([ADR-0011](../../docs/architecture/decisions/0011-deck-editing-is-one-action.md)).
+
+The same component is the **New deck screen** (route `NewDeck`), titled `New deck`. It has the same
+form, but the draft starts **blank with no cards** and the **Title** field is focused on open. The
+sections below say where the two differ; everything else applies to both.
 
 - **Deck fields**: two labelled text fields at the top. **Title** (single line) and **Description**
   (multi-line, placeholder `Optional`). Followed by the **Category field** and then a count heading,
@@ -325,11 +358,17 @@ reaches the store until **Save**
   title (`Title needed`) or a card missing its question or answer (`Card incomplete`, naming the
   card). If cards were removed, an `Alert` titled `Remove cards?` says how many go with their
   statistics, with **Cancel** and a destructive **Save**. A successful save goes back to the Decks
-  screen.
+  screen. On the **New deck screen** the button is the same `Save`, labelled `Save deck`, and is
+  **disabled until the draft differs from the blank form** — a non-blank trimmed title or
+  description, a category, or any card. It refuses a blank title and an incomplete card with the
+  same two alerts, never shows `Remove cards?` (nothing was stored to lose), and on success goes
+  back to the Decks screen with **no success alert**, the new deck first in the list.
 - **Discard prompt**: leaving by the back arrow or the Back button with unsaved changes shows an
-  `Alert` titled `Discard changes?` with **Keep editing** and a destructive **Discard**.
+  `Alert` titled `Discard changes?` with **Keep editing** and a destructive **Discard**. On the
+  **New deck screen** the message is `This deck has not been saved.`, and "unsaved changes" means
+  the draft differs from the blank form.
 - **Deck not found state**: the **Empty state** `Deck not found`, with action `Back to decks`, if
-  the deck no longer exists.
+  the deck no longer exists. The **New deck screen** has no such state.
 
 ## Learn screen
 
@@ -397,7 +436,7 @@ reaches the store until **Save**
 - **Cleared session**: a completed session the user removed from the Learn list
   ([ADR-0008](../../docs/architecture/decisions/0008-clear-completed-sessions.md)). It is hidden
   from the Learn screen but kept and **still counted everywhere** (Sessions tile, Deck meta row,
-  Deck summary), and there is no way to show it again. A session becomes cleared in three ways:
+  Figures ribbon, Session history card), and there is no way to show it again. A session becomes cleared in three ways:
   **Clear session** (one), **Clear completed sessions** (all), and the **Replay button**
   (the replayed one). Say "clear", never "delete", for this; only
   **Discard session** really deletes. An active session cannot be cleared.
@@ -449,8 +488,9 @@ The densest screen in the app, and the one with vocabulary worth being precise a
 - **History strip** (`HistoryStrip`, labelled `Answers so far`): the horizontal row of small tiles,
   one per answer — green for ok, yellow (warning) for okeish, red for not ok. The tile for the
   card on screen is taller and outlined. Auto-scrolls to keep the current card in view. In review
-  mode it shows the **pass's own** answers, not the session's.
-  Aliases: **the answer tiles**
+  mode it shows the **pass's own** answers, not the session's. Its tiles are the **History strip**'s
+  and are not the **Answer tiles** of the Deck statistics screen, which are counts.
+  Aliases: **the history tiles**
 - **Flip card** (`FlipCard`): the card itself. Two faces, **Question** and **Answer**, rotated with
   a `rotateY` animation. Its accessibility label is the **action**, not the state — `Show answer`
   while the question is up, `Show question` while the answer is. Each face scrolls independently.
@@ -492,7 +532,9 @@ The densest screen in the app, and the one with vocabulary worth being precise a
   unsure`, **review mode**) is the error review of a completed session. **`Reviewed {n}`** (the
   Session summary) and **`Reviews`** / `{n} reviews` / `Total reviews` (the Statistics screens, the Mastery bar)
   are counts of recorded answers, **which a review never adds to**. Never say "reviews" for the
-  error review, nor "reviewing" for it.
+  error review, nor "reviewing" for it. Two more uses are *not* the error review: `Reviewed {date}`
+  on a **Card stats row** (when a card was last answered) and the **Card status** `Needs review`
+  (a success rate below 40%, which a card can have without any session ever being reviewed).
 - **Session summary**: what an ordinary session becomes once every card is answered, titled
   `Session complete`. A large success rate
   and a **Success bar**, then one row of `Ok {n}`, `Okeish {n}`, `Not Ok {n}` (tinted success,
@@ -520,7 +562,7 @@ and [ADR-0013](../../docs/architecture/decisions/0013-category-icons-are-android
 A deck belongs to at most one category
 ([ADR-0014](../../docs/architecture/decisions/0014-deck-belongs-to-one-category.md)), chosen in the
   **Category field** on the Edit deck screen and shown as the **Category square** on its Deck card,
-  on its **Deck stats card** and on the Session cards of its sessions. No tile shows a deck count yet.
+  on its **Deck stats card**, in the **Category pill** of the Deck statistics screen and on the Session cards of its sessions. No tile shows a deck count yet.
 
 - **Categories tab** (`CategoriesTab`): the fourth tab, **between the Learn tab and the Statistics
   tab**, with its own stack. Where the categories are shown and the user's own are created and
@@ -574,7 +616,7 @@ A deck belongs to at most one category
   `colors.background`) centred in it — the category made small enough to sit beside a title. Shown
   at the top left of a **Deck card**, a **Session card** and a **Deck stats card**, inside the **Category field**, and in
   28-point size before the title in the Menu sheet of the **Deck options menu** and the **Session
-  options menu**. It is
+  options menu**, and in 24-point size inside the **Category pill** of the Deck statistics screen's **Deck identity row**. It is
   an image for accessibility and has no press behaviour. Not the **Category tile**, which is larger
   and carries the name below it. Do not call it a "badge" (that is the **Review badge**) or a "chip".
 - **Name field**: the `Name` text field on the New category screen (a **FormField**), at most 30
@@ -643,8 +685,9 @@ A deck belongs to at most one category
   the **App menu** only — no Filter button — and the same header style as Decks and Learn. Its
   **Search bar** filters the **Deck stats cards** by deck name and the count in the **Decks
   breakdown** heading follows it; the **Aggregated stats** are not filtered by search and stay
-  totals across every deck (though they follow the **Timeframe chips**). The Deck statistics screen
-  has no search.
+  totals across every deck (though they follow the **Timeframe chips**). The Deck statistics
+  screen has no Search button and no Search bar; it searches cards with its own always-visible
+  **Card search field**.
 - **Timeframe chips** (`TimeframeChips`, a `radiogroup` labelled `Timeframe`): the fixed,
   non-scrolling row of **Timeframe chips** at the top of the Statistics screen's content, under the
   **Search bar** when it is open and above the list. Hidden when there are no decks. The selection
@@ -707,18 +750,225 @@ A deck belongs to at most one category
   gap ([ADR-0014](../../docs/architecture/decisions/0014-deck-belongs-to-one-category.md)
   Amendment 2). It was the **Deck stats row**, a name that no longer exists; the row's success bar
   and `Tap for per-card details` line are gone.
-- **Deck summary**: the header of the Deck statistics screen — success rate, a line of
-  `{n} reviews`, `{n} ok`, `{n} okeish`, `{n} not ok`, a line of `{n} sessions` and
-  `Last session {date}`, and the **Reset statistics button** (`Reset statistics`, secondary, confirmed by an `Alert`).
-  Resetting zeroes every card counter **and deletes every session for that deck**; say both.
-- **Card stats row**: one card on the Deck statistics screen — its question and answer as
-  two-line **Rich text** previews, a **Success bar**, and its counters: the rate, `{n} reviews` (or
-  `Never reviewed`), `{n} ok`, `{n} okeish`, `{n} not ok`.
-- **Hardest first**: the order of the Card stats rows — lowest success rate first, ties broken by
-  review count, never-reviewed cards last. It is `sortCardsByDifficulty`. Do not call it "sorted by
-  score".
-- **Statistics empty state**: `No statistics yet`. **Deck not found** is the Deck statistics
-  screen's state when its `deckId` no longer resolves, with a **Back** action.
+- **Statistics empty state**: `No statistics yet`. The Deck statistics screen's own states are
+  under **Deck statistics screen**, next.
+
+## Deck statistics screen
+
+Reached from a **Deck stats card**. One scrolling list, top to bottom: the **Deck identity row**, the
+**Overall mastery card**, the **Session history card**, then the **Card performance section**, whose
+**Card stats rows** are the list's rows. **Always all time.** The sort, the status and the query are
+local to the screen and reset when it is left. The headline is the **Ok-only success rate**
+([ADR-0007](../../docs/architecture/decisions/0007-okeish-third-answer.md)): never an ok-plus-okeish
+blend, and never captioned "mastery" or "mastered" on screen — `Mastered` belongs to the **Card
+status badge** (the **Mastery track** and **Overall mastery card** are names for the code, not
+words the user reads).
+Like the rest of Statistics it prints no answer words: answers are **Answer icons** with numbers,
+and the words appear only in accessibility labels.
+
+- **Deck statistics menu**: the Kebab menu (`plain` variant) at the right of this screen's header,
+  labelled ``Options for {deck name} statistics``. Its Menu sheet is titled with the deck's name,
+  with no **Category square** (the **Deck identity row** shows it). Holds **Reset statistics** and
+  nothing else. Not the **Deck options menu** (Decks screen) and not the **App menu**.
+- **Reset statistics**: the destructive item (`delete` glyph) in the Deck statistics menu. Confirmed
+  by an `Alert` titled `Reset statistics` — ``Clear all recorded results and sessions for "{deck
+  name}"?`` — with **Cancel** and a destructive **Reset**. It zeroes every card counter **and
+  deletes every session for that deck**; say both. It was the **Reset statistics button** on the
+  **Deck summary**; neither name exists any more.
+- **Deck identity row**: the wrapping row of neutral pills under the header (`surfaceAlt` fill,
+  `border` outline, 12-point text, **not** tinted — they are facts, not states): the **Card count
+  pill**, ``{n} card(s)``, and the **Category pill**, a 24-point **Category square** before the
+  category's name on one truncated line, labelled ``Category: {name}``. A deck with no category, or
+  one whose category no longer resolves, shows **no Category pill and no gap**
+  ([ADR-0014](../../docs/architecture/decisions/0014-deck-belongs-to-one-category.md)). Neither pill
+  is pressable. Not the **Deck meta row**.
+- **Overall mastery card**: the first `surface` card — the **Success rate headline** with the
+  **Mastery change chip**, the **Mastery track**, the three **Answer tiles**, and the **Figures
+  ribbon**. It has no heading of its own; the headline's caption names it.
+- **Success rate headline**: `formatRate` of the deck's success rate at 40 points, weight 800, with
+  the muted caption `Success rate` beside it (they wrap together; the chip drops below them when
+  the row is too narrow). `--` when the deck has no reviews, not `0%`. Labelled ``Success rate:
+  {rate}`` or `Success rate: no reviews yet`, as one element.
+- **Mastery change chip**: the pill at the end of the headline row — `+{n} pts since last session`,
+  `-{n} pts since last session` or `No change since last session`, tinted success, danger or
+  neutral (`surfaceAlt`, muted text) — so the sign and the words, not the colour, carry the
+  direction. **Absent** (not empty) when the figure is null, i.e. there is nothing to compare.
+  Labelled ``Success rate up {n} points since the last session``, `down` or `unchanged since the
+  last session`. It is a difference of two success rates, computed in `src/utils`, never in the
+  screen.
+- **Answer tiles**: the three equal tiles under the Mastery track, in the order Ok, Okeish, Not ok —
+  each a `surfaceAlt` rounded square holding, centred and stacked, an **Answer icon** (20 points,
+  its answer's colour, grey with no reviews), the **count** (20 points, weight 700, one line) and
+  the **percentage** of all reviews (`formatRate`, 12 points, muted). No answer word is printed.
+  Labelled ``{n} ok, {pct}``, ``{n} okeish, {pct}`` or ``{n} not ok, {pct}`` (`no reviews yet`
+  in place of the percentage when there are none). Not the **History strip**'s tiles. Not pressable.
+- **Figures ribbon**: the inset row at the bottom of the Overall mastery card (`colors.background`
+  panel, `border` outline, as the **Mastery bar**'s) of three figures, each a small uppercase muted
+  label over a 16-point, weight-700 value: `Reviews` (every recorded answer), `Sessions` (every
+  session of the deck, **cleared and active ones included**) and `Last session` (a short date, or
+  `Never` when there is no session). `Last session` gets the widest column; labels may wrap to two
+  lines, values stay on one.
+- **Session history card**: the second `surface` card — the title `Session history`, a muted
+  subtitle (``{n} session(s)``, or ``Latest 5 of {n}`` when there are more), the **Chart legend**
+  and the **Session history chart**. With no sessions it shows the **Session history empty state**
+  in place of the legend and chart.
+- **Session history chart** (`SessionHistoryChart`): the smooth stacked area chart of **the latest
+  five** sessions (five is the most that fit a 360-point-wide phone at the largest font scale,
+  because every session needs a **Session label** under it), **oldest on the left, newest on the
+  right**. Active, completed and cleared sessions all count. It is drawn with `react-native-svg`
+  and is **a chart, not an icon**: see *Writing UI*. It replaces the five stacked **Session
+  columns**, a name that no longer exists. Its parts:
+  - **Chart plot**: the SVG and the **Latest session badge** over it, all hidden from
+    accessibility (`importantForAccessibility="no-hide-descendants"`). The plot is a fixed 150
+    points high and has a fixed
+    28-point left gutter for the **Y axis labels** and the rest for the sessions. **Y axis =
+    percent of each session's own cards, 0 to 100, not counts**, so a chart never mixes sessions of
+    different sizes and never means anything but their own shares (`sessionProgressShares`). **X
+    axis = session order, not time**: the dates are in the **Session labels**, and the spacing
+    between sessions is the same whatever the days between them. The sessions sit at the centres
+    of equal slots across the plot, never narrower than a fifth of its width, so a **Session label**
+    always has room.
+  - **Answer bands**: three stacked areas, **Ok at the bottom, then Okeish, then Not ok**, each as
+    tall as its answer's share of that session's cards, joined between sessions by smooth curves.
+    Each is filled with a vertical gradient of its answer's colour from `ANSWER_SEGMENTS` (the
+    `Ok` green, the `Okeish` amber, the `Not ok` red — theme tokens, no raw hex), about 0.7 opaque
+    at the top fading to about 0.2 at the bottom. Above Not ok sits the **Unanswered band** up to
+    100: flat `surfaceAlt` at about 0.6 opacity, with no line and no markers.
+  - **Band line**: the smooth line along the top of an answer band, in the answer's colour, with a
+    **shadow** that is a wider, darker stroke drawn underneath it (an underlay, **no SVG filters**).
+    A band's line is drawn **only if that band's share is above zero at some shown session**; a
+    band that is never present has no line, and the bands above it just sit lower.
+  - **Chart grid**: dashed horizontal lines at 0, 25, 50, 75 and 100, with the **Y axis labels**
+    `0`, `50` and `100` (11 points, muted) in the gutter, and one dashed vertical **Session guide**
+    per session, at its marker's x position. The **latest** session's guide is emphasised
+    **neutrally** — `colors.text`, heavier — **not green**, which would read as a verdict.
+  - **Session marker**: a round marker per session per band, on that band's line, **only where
+    that band's share is above zero**. The latest session's markers are larger and filled, with a
+    `colors.background` stroke so they lift off the lines.
+  - **Latest session badge**: the small badge over the **latest** session's Ok marker — a 12-point
+    **Answer icon** `tick` and that session's **Ok count** (`{n}`, 12 points, weight 700), on a
+    `surfaceAlt` pill with a `border` outline. It shows the **count**, not the success rate, because
+    for an active session the rate is not the Ok share of its cards and the badge sits on the Ok
+    marker. It is centred 14 points above that marker and clamped so its centre is never higher
+    than 9 points from the top of the plot, so a high Ok marker never pushes it out, and
+    it is hidden from accessibility. Statistics prints no answer words, so it has none.
+  - **Session label**: the text under each session's guide — its short start date (`formatShortDate`,
+    11 points, muted) over its success rate (`formatRate` of its own answers, `--` when it has none;
+    12 points, weight 700). The latest session's label is `colors.text` and bold in both lines.
+    It is **the one accessible element for its session**, and carries the label the old **Session
+    column** carried, unchanged: ``Session on {date}: success rate {rate}, {answered} of {total}
+    cards answered — {n} ok, {n} okeish, {n} not ok`` (`no answers yet` in place of the rate when it
+    has none). Not pressable. There is no `Session {n}` line.
+  - **All chart text is React Native `Text`** with `maxFontSizeMultiplier={1.3}` — the **Y axis
+    labels**, the **Session labels** and the badge — **never SVG text**, which ignores the font
+    scale.
+  - **Single-session bar**: with **one** session there is nothing to join, so the chart is a
+    single centred bar, 24 points wide (narrower only if the plot itself is), with the same
+    gradient look, the same stacking and **Session markers on its top edges**, and no curve. It
+    keeps the **Chart grid**, **Latest session badge** and **Session label**. With two or more
+    sessions it is the area chart.
+  - **Honesty note**: the curves between sessions are **visual only**. They do not mean the deck
+    passed through those states; each session stands on its own shares, and only the markers are
+    measurements. Do not add an interpolated value, tooltip or label on a curve.
+
+  Not the **Session results bar** (Learn screen), which is one horizontal bar per session; this is
+  the whole deck's history.
+- **Chart legend**: the row above the **Session history chart** — three **Answer icons** (tick,
+  question mark, cross; 16 points, in their answer colours), a grey swatch with the word
+  `Unanswered` **only when some shown session has an unanswered part** (the one word here: nothing
+  else says what the grey is), and, at the end, the muted note `% of each session's cards` (12
+  points), which names the Y axis. It was the **Session history legend**, a name that no longer
+  exists. Hidden from accessibility, since every **Session label** says it in words.
+- **Session history empty state**: inline in the card, not a full-screen **Empty state**: `No
+  sessions for this deck` over `Start one from the Decks tab and its results will show here.` No
+  chart and no legend. No action. Not `No sessions yet`, which is the Learn screen's.
+- **Card performance section**: the third area — a header, the **Card search field**, the **Card
+  status chips**, then the **Card stats rows** (or one of the empty states below). The header is the
+  title `Card performance` (18 points, weight 700, sentence case — not the uppercase muted heading
+  the Statistics screen uses, because it hosts a control and a subtitle), the muted subtitle ``{n}
+  card(s) · {sort label}``, and the **Sort button** at its end. When the status or the query
+  narrows the list the subtitle reads ``{m} of {n} cards · {sort label}`` and is a polite live
+  region. With no cards the search field, chips and Sort button are not shown.
+- **Sort button**: the icon-only secondary Button (`sort` glyph) at the end of the Card performance
+  header, labelled ``Sort cards: {sort label}`` (the current order, so state is not left to the
+  subtitle alone). Opens the **Card sort menu**.
+- **Card sort menu**: the **Menu sheet** the **Sort button** opens — its only trigger, the
+  icon-only secondary Button with the `sort` MenuIcon — titled `Sort cards`, with three
+  items in this order, the current one **selected**: **Hardest first** (the default), **Deck order**
+  and **Recently reviewed**. None has an icon. Choosing one sorts and closes the sheet.
+  - **Hardest first**: lowest success rate first, ties by review count (`sortCardsByDifficulty`),
+    never-reviewed cards last. Do not call it "sorted by score". It is the default, not the only
+    order.
+  - **Deck order**: the cards as the deck stores them — the order of the Edit deck screen and of an
+    export. The order **Start session with options** gives with **Shuffle** unchecked.
+  - **Recently reviewed**: the most recently answered card first, by its latest `answeredAt`
+    in the answer log (`lastAnsweredAtByCard` in `stats.ts`, over the deck's sessions, cleared ones
+    included); cards never answered last, in deck order. It does not read `Card.lastReviewedAt`,
+    which **Discard session** leaves stale
+    ([ADR-0015](../../docs/architecture/decisions/0015-answers-carry-a-timestamp-under-v2-keys.md)
+    Amendment 2).
+- **Card search field**: the always-visible rounded `surface` field, at least 48 points tall, at
+  the top of the Card performance section's controls — the `search` glyph, the text input and,
+  only while the query is non-empty, a 40-point clear button (`close` glyph, hit area 48) labelled
+  `Clear card search`.
+  Placeholder `Search questions and answers`; the input is labelled `Search cards`, with
+  auto-correct and auto-capitalise off and a `search` return key, and is **not** auto-focused.
+  A card matches when **every typed word appears in the plain text of its question or its answer,
+  in any order, case-insensitively** — the rule of the **Search bar**, over both sides. A blank
+  query matches everything. Not the **Search bar**: no Search button opens or closes it, and
+  it never hides. Not the Statistics screen's **Search input** (`Search text`).
+- **Card status chips** (a `radiogroup` labelled `Card status`): the wrapping row under the Card
+  search field — **All**, **Needs review**, **Learning**, **Mastered**, **New**, in that order, each
+  followed by its count in brackets: `All (56)`, `Needs review (3)`. One is always selected,
+  starting at `All`. Same pattern as the **Timeframe chips**: a `radio` per chip (48-point touch
+  target, about 36-point pill), `colors.primary` fill when selected, `surfaceAlt` otherwise, wraps
+  rather than scrolls. A **Card status chip** is labelled ``{Status}, {n} card(s)`` with its state
+  in `accessibilityState` (``Needs review, 3 cards``). **The counts ignore the search** and always
+  describe the whole deck. The chips themselves carry no status colour or glyph: that is the
+  **Card status badge**'s.
+- **Card status**: a card's band, from the success rate `SuccessBar` already uses (the same number,
+  so a badge and a bar cannot disagree): **Mastered** at 70% and above, **Learning** from 40% to
+  below 70%, **Needs review** below 40%, and **New** when the card has never been reviewed. A card
+  that has only okeish answers is 0%, so it is **Needs review**, not New. Derived, never stored.
+  This is a statement about the success rate and not a second metric. It is **not** the session
+  **review** (error review).
+- **Card status badge**: the small pill at the end of a Card stats row's first line — the status's
+  word and, in front of it, a 12-point **Answer icon**, in a tint of the status's colour
+  (`${token}26` fill, `${token}4d` outline, token-coloured text, 12 points, weight 700, one line):
+  **Mastered** `tick` on `colors.success`; **Learning** `question` on `colors.warning`;
+  **Needs review** `cross` on `colors.danger`; **New** no glyph, `surfaceAlt` fill, `border` outline,
+  `colors.textMuted` text. The word and the glyph carry the status, the colour is a third cue, so
+  the amber of Learning is not read by colour alone. The glyph names the **band**, not an answer: a
+  Needs review card may have been answered okeish. Hidden from accessibility (the row's label says
+  the status).
+- **Card stats row**: one card on the Deck statistics screen, a `surface` bordered card, not
+  pressable and labelled as one element — ``Question: {question}. Answer: {answer}. {Status},
+  success rate {rate}. {n} reviews: {n} ok, {n} okeish, {n} not ok. Reviewed {date}.`` (the last
+  two sentences become `Never reviewed.` for a card never reviewed; plain text, HTML removed). From the top: a wrapping line
+  of the question (**Rich text**, two lines, 15 points, weight 600) and the **Card status badge**
+  (the question takes the whole line and the badge drops under it if less than about 160 points
+  remain for the question); the answer (**Rich text**, two lines, 14 points, muted); an 8-point
+  **Mastery track**; and a footer line: three **Answer icons** (12 points) each with its percentage
+  of the card's reviews (`80%`; **the tick's percentage is the card's success rate**, so it is not
+  repeated), and at its end `{n} reviews · Reviewed {short date}` or `Never reviewed`. A card that
+  was never reviewed shows an empty track, `--` for each percentage and grey icons. The face shown
+  first in a session (**inverted** or not) does not matter here: the question is the question.
+- **Deck not found state**: on this screen, the **Empty state** `Deck not found` (message `This
+  deck has been deleted.`) with the action `Back`. Unchanged.
+- **No cards state**: the **Empty state** `No cards yet` (message `Add cards to this deck to see
+  how each one performs.`, no action), shown as the whole Card performance section's body when
+  the deck has no cards. The **Overall mastery card** and **Session history card** are still
+  shown.
+- **Status empty state**: the **Empty state** shown when the selected **Card status chip** has a
+  count of zero (taking precedence over the query), with the action **Show all cards**, which
+  selects `All`. Titles and messages: `No cards need review` / `No card is below 40% success.`;
+  `No cards are learning` / `No card is between 40% and 70% success.`; `No mastered cards yet` / `A
+  card is mastered at 70% success or more.`; `No new cards` / `Every card has been reviewed at
+  least once.`
+- **Search empty state** (on this screen): when the status has cards but the query leaves none:
+  `No matches`, ``Nothing matches "{query}".`` — with ``Nothing matches "{query}" with the {Status}
+  filter.`` when a status other than `All` is selected — and **Clear search**, which empties the
+  query and leaves the **Card search field** where it is.
 
 ## Shared components
 
@@ -732,7 +982,9 @@ A deck belongs to at most one category
   and no separate icon button — if you need one, that is a vocabulary change.
 - **Answer icon** (`AnswerIcon`, in `AnswerIcons.tsx`): the glyph on an Answer button, in the
   **Mastery bar**, **Mastery ring** and **Session results bar** legends (so on a **Deck card**, the
-  **Aggregated stats** and a **Deck stats card**), and in the **Session status pill** (tick) —
+  **Aggregated stats** and a **Deck stats card**), in the **Session status pill** (tick), and on the
+  Deck statistics screen in the **Answer tiles**, the **Chart legend**, the **Latest session badge**,
+  a **Card stats row**'s footer and the **Card status badge** —
   `tick`, `cross`, or `question`, drawn from nested `View`s and hidden from
   accessibility. It is separate
   from the **Menu icon** vocabulary; do not add an answer glyph to `MenuIcon` or the reverse.
@@ -741,12 +993,14 @@ A deck belongs to at most one category
   `not ok` in running text. The Statistics screen prints neither: its answer breakdown is **Answer
   icons** with percentages and counts, and the words appear only in accessibility labels. Match the
   place you are in.
-- **Success bar** (`SuccessBar`): the horizontal rate bar, used on the Study and Deck statistics
-  screens — not the Decks screen, which uses the **Mastery bar**, nor the Learn screen, which uses
-  the **Session results bar**, nor the Statistics screen, which uses the **Mastery ring** and the
-  **Mastery bar** (it used `SuccessBar` before the redesign). **Colour carries
+- **Success bar** (`SuccessBar`): the horizontal rate bar, used **on the Study screen only** (the
+  **Session progress bar**, and the rate bar of the **Session summary**) — not the Decks screen,
+  which uses the **Mastery bar**, nor the Learn screen, which uses the **Session results bar**, nor
+  the Statistics screen, which uses the **Mastery ring** and the **Mastery bar**, nor the Deck
+  statistics screen, which uses the **Mastery track** (both used `SuccessBar` before their
+  redesigns). **Colour carries
   meaning and is fixed by the rate**: border grey for *no data*, success green at 70% and above,
-  warning amber from 40%, danger red below. Grey and 0% are different states and the app
+  warning amber from 40%, danger red below — the same bands a **Card status** is read from. Grey and 0% are different states and the app
   distinguishes them. The one override is the optional `color` prop, which replaces the rate colour
   with a fixed one; only the **Session progress bar** uses it (white), because it is not a rate.
 - **Empty state** (`EmptyState`): every list's empty content — a title, a message, and an optional
@@ -772,6 +1026,12 @@ These are constraints, not suggestions. Each one is load-bearing somewhere.
   they are Android vector drawables in `src/assets/category-icons/`, rendered and tinted by
   **Category icon** (`CategoryIcon`), and used for categories only. Do not use one for anything else,
   and do not draw a category pictogram from `View`s.
+- **`react-native-svg` is for charts only.** The one dependency that draws ([ADR-0018](../../docs/architecture/decisions/0018-react-native-svg-draws-charts.md)) is used for
+  the **Session history chart** and any later chart — areas, lines, grids and markers — and
+  nothing else: **icons are still drawn from `View`s**, and category pictograms stay Android
+  drawables (ADR-0013). Text inside a chart is React Native `Text` with `maxFontSizeMultiplier`,
+  never SVG text, and a chart's plot is hidden from accessibility, so each of its meaningful parts
+  carries one accessible label of its own. No SVG filters: a shadow is an underlay stroke.
 - **Every token comes from [`src/theme.ts`](../../src/theme.ts).** `colors`, `spacing`, `radius`, and
   `categoryPalette` (the 21 colours offered for a category; a category can also take a **custom
   colour** the user picks, which is data, not a token) — and no second source of styling. A raw hex

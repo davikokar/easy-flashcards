@@ -1,41 +1,123 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useCallback, useLayoutEffect, useMemo, useState } from 'react';
 import { Alert, FlatList, StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import Button from '../components/Button';
+import CardSearchField from '../components/CardSearchField';
+import CardStatsRow from '../components/CardStatsRow';
+import CardStatusChips, {
+  CARD_STATUS_LABELS,
+  type CardStatusFilter,
+} from '../components/CardStatusChips';
+import DeckIdentityRow from '../components/DeckIdentityRow';
+import DeckMasteryCard from '../components/DeckMasteryCard';
 import EmptyState from '../components/EmptyState';
-import RichText from '../components/RichText';
-import SuccessBar from '../components/SuccessBar';
+import KebabMenu from '../components/KebabMenu';
+import MenuIcon from '../components/MenuIcons';
+import MenuSheet from '../components/MenuSheet';
+import SessionHistoryChart, { SESSION_HISTORY_LIMIT } from '../components/SessionHistoryChart';
 import { useDecks } from '../state/DecksContext';
 import { StatsStackParamList } from '../navigation/types';
+import type { CardSortOrder, CardStatus } from '../types';
+import { findCategory } from '../utils/categories';
+import { cardSearchText, filterByTitle } from '../utils/search';
 import {
-  cardReviewCount,
-  formatDate,
-  formatRate,
+  answerShares,
+  cardStatus,
+  countCardStatuses,
   getDeckStats,
-  sortCardsByDifficulty,
-  successRate,
+  getSessionHistory,
+  lastAnsweredAtByCard,
+  rateChangeSinceLastSession,
+  sortCards,
   summarizeSessions,
 } from '../utils/stats';
-import { colors, radius, spacing } from '../theme';
+import { colors, spacing } from '../theme';
 
 type Props = NativeStackScreenProps<StatsStackParamList, 'DeckStats'>;
 
+const renderSortIcon = (color: string) => <MenuIcon name="sort" color={color} />;
+
+const SORT_OPTIONS: { value: CardSortOrder; label: string }[] = [
+  { value: 'hardest', label: 'Hardest first' },
+  { value: 'deck', label: 'Deck order' },
+  { value: 'recent', label: 'Recently reviewed' },
+];
+
+const STATUS_EMPTY: Record<CardStatus, { title: string; message: string }> = {
+  needsReview: { title: 'No cards need review', message: 'No card is below 40% success.' },
+  learning: { title: 'No cards are learning', message: 'No card is between 40% and 70% success.' },
+  mastered: { title: 'No mastered cards yet', message: 'A card is mastered at 70% success or more.' },
+  new: { title: 'No new cards', message: 'Every card has been reviewed at least once.' },
+};
+
 export default function DeckStatsScreen({ route, navigation }: Props) {
   const { deckId } = route.params;
-  const { getDeck, sessions, resetDeckStats } = useDecks();
+  const { getDeck, sessions, categories, resetDeckStats } = useDecks();
   const deck = getDeck(deckId);
+  const deckName = deck?.name;
 
-  useEffect(() => {
-    navigation.setOptions({ title: deck?.name ?? 'Deck statistics' });
-  }, [navigation, deck?.name]);
+  // Local to the screen, never stored; they reset when it is left.
+  const [query, setQuery] = useState('');
+  const [status, setStatus] = useState<CardStatusFilter>('all');
+  const [sort, setSort] = useState<CardSortOrder>('hardest');
+  const [sortOpen, setSortOpen] = useState(false);
 
-  const cards = useMemo(() => (deck ? sortCardsByDifficulty(deck.cards) : []), [deck]);
-  const sessionSummary = useMemo(
-    () => summarizeSessions(sessions.filter(session => session.deckId === deckId)),
-    [sessions, deckId],
+  const confirmReset = useCallback(() => {
+    Alert.alert(
+      'Reset statistics',
+      `Clear all recorded results and sessions for "${deckName}"?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Reset', style: 'destructive', onPress: () => resetDeckStats(deckId) },
+      ],
+    );
+  }, [deckName, deckId, resetDeckStats]);
+
+  const headerMenu = useMemo(
+    () =>
+      deckName === undefined ? null : (
+        <KebabMenu
+          variant="plain"
+          accessibilityLabel={`Options for ${deckName} statistics`}
+          title={deckName}
+          items={[
+            { label: 'Reset statistics', icon: 'delete', destructive: true, onPress: confirmReset },
+          ]}
+        />
+      ),
+    [deckName, confirmReset],
   );
 
-  if (!deck) {
+  useLayoutEffect(() => {
+    navigation.setOptions({ title: deckName ?? 'Deck statistics', headerRight: () => headerMenu });
+  }, [navigation, deckName, headerMenu]);
+
+  const overview = useMemo(() => {
+    if (!deck) {
+      return null;
+    }
+    const stats = getDeckStats(deck);
+    return {
+      stats,
+      shares: answerShares(stats),
+      sessionSummary: summarizeSessions(sessions.filter(session => session.deckId === deck.id)),
+      rateChange: rateChangeSinceLastSession(deck, sessions),
+      history: getSessionHistory(sessions, deck.id, SESSION_HISTORY_LIMIT),
+      lastAnsweredAt: lastAnsweredAtByCard(deck, sessions),
+      statusCounts: countCardStatuses(deck.cards),
+    };
+  }, [deck, sessions]);
+
+  const visibleCards = useMemo(() => {
+    if (!deck || !overview) {
+      return [];
+    }
+    const sorted = sortCards(deck.cards, sort, overview.lastAnsweredAt);
+    const byStatus = status === 'all' ? sorted : sorted.filter(card => cardStatus(card) === status);
+    return filterByTitle(byStatus, query, cardSearchText);
+  }, [deck, overview, sort, status, query]);
+
+  if (!deck || !overview) {
     return (
       <View style={styles.container}>
         <EmptyState
@@ -48,65 +130,120 @@ export default function DeckStatsScreen({ route, navigation }: Props) {
     );
   }
 
-  const stats = getDeckStats(deck);
+  const { stats, shares, sessionSummary, rateChange, history, lastAnsweredAt, statusCounts } =
+    overview;
+  const cardCount = deck.cards.length;
+  const sortLabel = SORT_OPTIONS.find(option => option.value === sort)?.label ?? '';
+  const isNarrowed = visibleCards.length !== cardCount;
+  const countText = `${cardCount} ${cardCount === 1 ? 'card' : 'cards'}`;
+  const subtitle = `${
+    isNarrowed ? `${visibleCards.length} of ${cardCount} cards` : countText
+  } · ${sortLabel}`;
 
-  const confirmReset = () => {
-    Alert.alert(
-      'Reset statistics',
-      `Clear all recorded results and sessions for "${deck.name}"?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Reset', style: 'destructive', onPress: () => resetDeckStats(deck.id) },
-      ],
+  let emptyState: React.ReactElement;
+  if (cardCount === 0) {
+    emptyState = (
+      <EmptyState
+        title="No cards yet"
+        message="Add cards to this deck to see how each one performs."
+      />
     );
-  };
+  } else if (status !== 'all' && statusCounts[status] === 0) {
+    emptyState = (
+      <EmptyState
+        title={STATUS_EMPTY[status].title}
+        message={STATUS_EMPTY[status].message}
+        actionLabel="Show all cards"
+        onAction={() => setStatus('all')}
+      />
+    );
+  } else {
+    const filterNote = status === 'all' ? '' : ` with the ${CARD_STATUS_LABELS[status]} filter`;
+    emptyState = (
+      <EmptyState
+        title="No matches"
+        message={`Nothing matches "${query.trim()}"${filterNote}.`}
+        actionLabel="Clear search"
+        onAction={() => setQuery('')}
+      />
+    );
+  }
+
+  // An element, not a component type, so the search input keeps its identity across keystrokes.
+  const header = (
+    <View style={styles.header}>
+      <DeckIdentityRow
+        cardCount={cardCount}
+        category={findCategory(deck.categoryId, categories)}
+      />
+      <DeckMasteryCard
+        successRate={stats.successRate}
+        rateChange={rateChange}
+        shares={shares}
+        tally={stats}
+        reviewCount={stats.reviewCount}
+        sessionCount={sessionSummary.total}
+        lastSessionAt={sessionSummary.lastSessionAt}
+      />
+      <SessionHistoryChart entries={history} sessionCount={sessionSummary.total} />
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <View style={styles.sectionTitles}>
+            <Text accessibilityRole="header" style={styles.sectionTitle}>
+              Card performance
+            </Text>
+            <Text
+              accessibilityLiveRegion={isNarrowed ? 'polite' : 'none'}
+              style={styles.sectionSubtitle}>
+              {subtitle}
+            </Text>
+          </View>
+          {cardCount === 0 ? null : (
+            <Button
+              variant="secondary"
+              accessibilityLabel={`Sort cards: ${sortLabel}`}
+              icon={renderSortIcon}
+              onPress={() => setSortOpen(true)}
+            />
+          )}
+        </View>
+        {cardCount === 0 ? null : (
+          <>
+            <CardSearchField value={query} onChangeText={setQuery} onClear={() => setQuery('')} />
+            <CardStatusChips
+              value={status}
+              counts={statusCounts}
+              total={cardCount}
+              onChange={setStatus}
+            />
+          </>
+        )}
+      </View>
+    </View>
+  );
 
   return (
     <View style={styles.container}>
       <FlatList
-        data={cards}
+        data={visibleCards}
         keyExtractor={card => card.id}
+        keyboardShouldPersistTaps="handled"
         contentContainerStyle={styles.listContent}
-        ListHeaderComponent={
-          <View style={styles.summary}>
-            <Text style={styles.summaryValue}>{formatRate(stats.successRate)}</Text>
-            <SuccessBar rate={stats.successRate} height={10} />
-            <View style={styles.metaRow}>
-              <Text style={styles.meta}>{stats.reviewCount} reviews</Text>
-              <Text style={[styles.meta, styles.ok]}>{stats.okCount} ok</Text>
-              <Text style={[styles.meta, styles.okeish]}>{stats.okeishCount} okeish</Text>
-              <Text style={[styles.meta, styles.notOk]}>{stats.notOkCount} not ok</Text>
-            </View>
-            <View style={styles.metaRow}>
-              <Text style={styles.meta}>
-                {sessionSummary.total} {sessionSummary.total === 1 ? 'session' : 'sessions'}
-              </Text>
-              <Text style={styles.meta}>
-                Last session {formatDate(sessionSummary.lastSessionAt)}
-              </Text>
-            </View>
-            <Text style={styles.sectionTitle}>Cards, hardest first</Text>
-            <Button label="Reset statistics" variant="secondary" onPress={confirmReset} />
-          </View>
-        }
-        renderItem={({ item }) => {
-          const reviews = cardReviewCount(item);
-          const rate = successRate(item.okCount, item.okeishCount, item.notOkCount);
-          return (
-            <View style={styles.card}>
-              <RichText html={item.question} style={styles.question} numberOfLines={2} />
-              <RichText html={item.answer} style={styles.answer} numberOfLines={2} />
-              <SuccessBar rate={rate} height={6} />
-              <View style={styles.metaRow}>
-                <Text style={styles.cardRate}>{formatRate(rate)}</Text>
-                <Text style={styles.meta}>{reviews === 0 ? 'Never reviewed' : `${reviews} reviews`}</Text>
-                <Text style={[styles.meta, styles.ok]}>{item.okCount} ok</Text>
-                <Text style={[styles.meta, styles.okeish]}>{item.okeishCount} okeish</Text>
-                <Text style={[styles.meta, styles.notOk]}>{item.notOkCount} not ok</Text>
-              </View>
-            </View>
-          );
-        }}
+        ListHeaderComponent={header}
+        ListEmptyComponent={emptyState}
+        renderItem={({ item }) => (
+          <CardStatsRow card={item} lastAnsweredAt={lastAnsweredAt.get(item.id) ?? null} />
+        )}
+      />
+      <MenuSheet
+        visible={sortOpen}
+        title="Sort cards"
+        items={SORT_OPTIONS.map(option => ({
+          label: option.label,
+          selected: option.value === sort,
+          onPress: () => setSort(option.value),
+        }))}
+        onClose={() => setSortOpen(false)}
       />
     </View>
   );
@@ -121,65 +258,28 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     gap: spacing.md,
   },
-  summary: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
+  header: {
+    gap: spacing.md,
+  },
+  section: {
     gap: spacing.sm,
   },
-  summaryValue: {
-    color: colors.text,
-    fontSize: 40,
-    fontWeight: '800',
-  },
-  sectionTitle: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: '700',
-    marginTop: spacing.sm,
-  },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
-    gap: spacing.xs,
-  },
-  question: {
-    color: colors.text,
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  answer: {
-    color: colors.textMuted,
-    fontSize: 14,
-    marginBottom: spacing.xs,
-  },
-  metaRow: {
+  sectionHeader: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     alignItems: 'center',
     gap: spacing.md,
   },
-  meta: {
-    color: colors.textMuted,
-    fontSize: 13,
+  sectionTitles: {
+    flex: 1,
+    gap: 2,
   },
-  cardRate: {
+  sectionTitle: {
     color: colors.text,
-    fontSize: 14,
+    fontSize: 18,
     fontWeight: '700',
   },
-  ok: {
-    color: colors.success,
-  },
-  okeish: {
-    color: colors.warning,
-  },
-  notOk: {
-    color: colors.danger,
+  sectionSubtitle: {
+    color: colors.textMuted,
+    fontSize: 13,
   },
 });

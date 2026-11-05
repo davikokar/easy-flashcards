@@ -63,7 +63,23 @@ for the required format and status rules.
 > ADR-0016; it changes nothing persisted, and ARCHITECTURE.md links to it now that the work has
 > landed. ADR-0016 carries an Amendment 3, recorded ahead of the work that makes Export sample
 > deck save the sample in both export formats, as two files; it changes nothing persisted, and
-> ARCHITECTURE.md links to it now that the work has landed.
+> ARCHITECTURE.md links to it now that the work has landed. ADR-0010 carries an Amendment 1,
+> recorded ahead of the work that makes the Start session button start a shuffled session, together
+> with Amendment 8 to ADR-0002; it changes nothing persisted, and ARCHITECTURE.md links to it now
+> that the work has landed. ADR-0011 carries an Amendment 4, recorded ahead of the work that makes
+> **Add deck manually** open the Edit deck form blank as the New deck screen and commit it through
+> `addDeck`, together with Amendment 5 to ADR-0003 and Amendment 5 to ADR-0014; it changes no
+> storage key and nothing persisted, and ARCHITECTURE.md links to it now that the work has landed.
+> ADR-0014 carries an Amendment 6 and ADR-0015 an Amendment 2, both recorded ahead of the Deck
+> statistics screen redesign: the deck's Category square and name in an identity row, and — with
+> the screen still all time — a session history, each card's last-reviewed date and a change since
+> the last session, derived from the answer log rather than the counters. They change no storage
+> key and nothing persisted, and ARCHITECTURE.md links to them now that the work has landed.
+> ADR-0018 was recorded ahead of its work, together with Amendment 3 to ADR-0015 and Amendment 3
+> to ADR-0013: it adds `react-native-svg`, approved by the owner, to draw data charts, starting
+> with the Deck statistics screen's Session history as a stacked area chart; icons and card HTML
+> are not drawn with it. It changes no storage key and nothing persisted, and ARCHITECTURE.md
+> links to it and to both amendments now that the work has landed.
 
 ### Index
 
@@ -86,3 +102,4 @@ for the required format and status rules.
 | [ADR-0015](decisions/0015-answers-carry-a-timestamp-under-v2-keys.md) | Each answer records when it was given, and statistics by timeframe are derived from session results under new v2 keys | Active | 2026-11-03 |
 | [ADR-0016](decisions/0016-deck-export-file-formats.md) | A deck is exported to a JSON or CSV file in formats the app defines, carrying no progress data | Active | 2026-11-03 |
 | [ADR-0017](decisions/0017-deck-import-reads-exported-formats.md) | Deck import reads the formats the app exports — CSV with any supported separator and leading comments, and the versioned JSON file | Active | 2026-11-04 |
+| [ADR-0018](decisions/0018-react-native-svg-draws-charts.md) | react-native-svg draws charts | Active | 2026-11-04 |

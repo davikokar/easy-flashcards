@@ -25,18 +25,28 @@ import {
   draftsOf,
   firstIncompleteCard,
   isDeckEditChanged,
+  isNewDeckDraftBlank,
+  newDeckInputOf,
   removedCardIds,
 } from '../utils/deckEdit';
 import { findCategory, getAllCategories } from '../utils/categories';
 import { colors, spacing } from '../theme';
 
-type Props = NativeStackScreenProps<DecksStackParamList, 'EditDeck'>;
+// One component serves both routes: EditDeck edits a stored deck, NewDeck creates one by hand.
+type Props =
+  | NativeStackScreenProps<DecksStackParamList, 'EditDeck'>
+  | NativeStackScreenProps<DecksStackParamList, 'NewDeck'>;
 
 // A draft card plus a key that is stable while the user edits, whether or not the card is saved yet.
 type KeyedDraft = CardDraft & { key: string };
 
 export default function EditDeckScreen({ navigation, route }: Props) {
   const { getDeck } = useDecks();
+
+  if (route.name === 'NewDeck') {
+    return <DeckEditor deck={null} navigation={navigation} />;
+  }
+
   const deck = getDeck(route.params.deckId);
 
   if (!deck) {
@@ -54,20 +64,23 @@ export default function EditDeckScreen({ navigation, route }: Props) {
   return <DeckEditor deck={deck} navigation={navigation} />;
 }
 
+// `deck` is null in new-deck mode: the form starts blank and Save creates the deck.
 function DeckEditor({
   deck,
   navigation,
 }: {
-  deck: Deck;
-  navigation: NativeStackNavigationProp<DecksStackParamList, 'EditDeck'>;
+  deck: Deck | null;
+  navigation: NativeStackNavigationProp<DecksStackParamList, 'EditDeck' | 'NewDeck'>;
 }) {
-  const { updateDeck, categories } = useDecks();
-  const [name, setName] = useState(deck.name);
-  const [description, setDescription] = useState(deck.description);
-  const [draftCategoryId, setDraftCategoryId] = useState<string | null>(deck.categoryId);
+  const { addDeck, updateDeck, categories } = useDecks();
+  const [name, setName] = useState(deck ? deck.name : '');
+  const [description, setDescription] = useState(deck ? deck.description : '');
+  const [draftCategoryId, setDraftCategoryId] = useState<string | null>(
+    deck ? deck.categoryId : null,
+  );
   const [pickerVisible, setPickerVisible] = useState(false);
   const [cards, setCards] = useState<KeyedDraft[]>(() =>
-    draftsOf(deck).map(draft => ({ ...draft, key: draft.id as string })),
+    deck ? draftsOf(deck).map(draft => ({ ...draft, key: draft.id as string })) : [],
   );
   const [focusKey, setFocusKey] = useState<string | null>(null);
   const scrollToEndOnResize = useRef(false);
@@ -83,9 +96,9 @@ function DeckEditor({
   );
   const categoryId = category ? category.id : null;
   const storedCategoryId = useMemo(() => {
-    const stored = findCategory(deck.categoryId, categories);
+    const stored = findCategory(deck ? deck.categoryId : null, categories);
     return stored ? stored.id : null;
-  }, [deck.categoryId, categories]);
+  }, [deck, categories]);
   const allCategories = useMemo(() => getAllCategories(categories), [categories]);
 
   const edit = useMemo<DeckEdit>(
@@ -98,7 +111,10 @@ function DeckEditor({
     [name, description, categoryId, cards],
   );
   const isChanged = useMemo(
-    () => isDeckEditChanged({ ...deck, categoryId: storedCategoryId }, edit),
+    () =>
+      deck
+        ? isDeckEditChanged({ ...deck, categoryId: storedCategoryId }, edit)
+        : !isNewDeckDraftBlank(edit),
     [deck, storedCategoryId, edit],
   );
 
@@ -110,6 +126,16 @@ function DeckEditor({
     const incomplete = firstIncompleteCard(edit.cards);
     if (incomplete !== null) {
       Alert.alert('Card incomplete', `Card ${incomplete} needs both a question and an answer.`);
+      return;
+    }
+    if (!deck) {
+      // addDeck mints new ids on every call, so a repeated press must not reach it.
+      if (saved.current) {
+        return;
+      }
+      saved.current = true;
+      addDeck(newDeckInputOf(edit));
+      navigation.goBack();
       return;
     }
     const commit = () => {
@@ -131,7 +157,7 @@ function DeckEditor({
         { text: 'Save', style: 'destructive', onPress: commit },
       ],
     );
-  }, [deck, edit, navigation, updateDeck]);
+  }, [deck, edit, navigation, addDeck, updateDeck]);
 
   const saveButton = useMemo(
     () => (
@@ -160,16 +186,20 @@ function DeckEditor({
           return;
         }
         event.preventDefault();
-        Alert.alert('Discard changes?', 'Your edits to this deck have not been saved.', [
-          { text: 'Keep editing', style: 'cancel' },
-          {
-            text: 'Discard',
-            style: 'destructive',
-            onPress: () => navigation.dispatch(event.data.action),
-          },
-        ]);
+        Alert.alert(
+          'Discard changes?',
+          deck ? 'Your edits to this deck have not been saved.' : 'This deck has not been saved.',
+          [
+            { text: 'Keep editing', style: 'cancel' },
+            {
+              text: 'Discard',
+              style: 'destructive',
+              onPress: () => navigation.dispatch(event.data.action),
+            },
+          ],
+        );
       }),
-    [navigation, isChanged],
+    [navigation, isChanged, deck],
   );
 
   const changeCard = useCallback(
@@ -199,7 +229,7 @@ function DeckEditor({
 
   const header = (
     <View style={styles.header}>
-      <FormField label="Title" value={name} onChangeText={setName} />
+      <FormField label="Title" value={name} onChangeText={setName} autoFocus={!deck} />
       <FormField
         label="Description"
         value={description}

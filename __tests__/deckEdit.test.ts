@@ -4,6 +4,8 @@ import {
   draftsOf,
   firstIncompleteCard,
   isDeckEditChanged,
+  isNewDeckDraftBlank,
+  newDeckInputOf,
   reconcileSession,
   removedCardIds,
 } from '../src/utils/deckEdit';
@@ -182,5 +184,68 @@ describe('reconcileSession', () => {
 
   it('deletes an active session left with no cards and no answers', () => {
     expect(reconcileSession(session(), 'Deck', ['a', 'b', 'c'], 9)).toBeNull();
+  });
+});
+
+describe('isNewDeckDraftBlank', () => {
+  const blank = () => ({
+    name: '',
+    description: '',
+    categoryId: null as string | null,
+    cards: [] as { id: string | null; question: string; answer: string }[],
+  });
+
+  it('is true for the blank form', () => {
+    expect(isNewDeckDraftBlank(blank())).toBe(true);
+  });
+
+  it('treats a whitespace-only title or description as blank', () => {
+    expect(isNewDeckDraftBlank({ ...blank(), name: '   ' })).toBe(true);
+    expect(isNewDeckDraftBlank({ ...blank(), description: ' \t ' })).toBe(true);
+  });
+
+  it('is false once a title, a description, a category or a card is added', () => {
+    expect(isNewDeckDraftBlank({ ...blank(), name: 'Deck' })).toBe(false);
+    expect(isNewDeckDraftBlank({ ...blank(), description: 'About' })).toBe(false);
+    expect(isNewDeckDraftBlank({ ...blank(), categoryId: 'default_astronomy' })).toBe(false);
+    expect(
+      isNewDeckDraftBlank({ ...blank(), cards: [{ id: null, question: '', answer: '' }] }),
+    ).toBe(false);
+  });
+});
+
+describe('newDeckInputOf', () => {
+  it('trims the title and description and has no source file', () => {
+    const input = newDeckInputOf({
+      name: '  Deck ',
+      description: ' About  ',
+      categoryId: 'default_astronomy',
+      cards: [],
+    });
+
+    expect(input).toEqual({
+      name: 'Deck',
+      description: 'About',
+      categoryId: 'default_astronomy',
+      sourceFileName: null,
+      cards: [],
+    });
+  });
+
+  it('drops card ids and keeps card order and text as typed', () => {
+    const input = newDeckInputOf({
+      name: 'Deck',
+      description: '',
+      categoryId: null,
+      cards: [
+        { id: null, question: ' second ', answer: 'b' },
+        { id: 'new-2', question: 'first', answer: ' a ' },
+      ],
+    });
+
+    expect(input.cards).toEqual([
+      { question: ' second ', answer: 'b' },
+      { question: 'first', answer: ' a ' },
+    ]);
   });
 });

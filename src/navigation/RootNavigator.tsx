@@ -63,6 +63,11 @@ function DecksNavigator() {
         component={EditDeckScreen}
         options={{ title: 'Edit deck' }}
       />
+      <DecksStack.Screen
+        name="NewDeck"
+        component={EditDeckScreen}
+        options={{ title: 'New deck' }}
+      />
     </DecksStack.Navigator>
   );
 }

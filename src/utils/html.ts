@@ -45,6 +45,12 @@ const ENTITIES: Record<string, string> = {
   uuml: '\u00fc',
   ouml: '\u00f6',
   auml: '\u00e4',
+  aacute: '\u00e1',
+  iacute: '\u00ed',
+  oacute: '\u00f3',
+  uacute: '\u00fa',
+  ntilde: '\u00f1',
+  szlig: '\u00df',
 };
 
 export function decodeEntities(input: string): string {
@@ -154,4 +160,29 @@ export function parseHtml(source: string): HtmlNode[] {
 
   pushText(source.slice(lastIndex));
   return root;
+}
+
+function appendPlainText(nodes: HtmlNode[], parts: string[]): void {
+  for (const node of nodes) {
+    if (node.type === 'text') {
+      parts.push(node.text);
+      continue;
+    }
+    // A break or block boundary becomes a space so words on either side never fuse.
+    const separates = node.tag === 'br' || BLOCK_TAGS.has(node.tag);
+    if (separates) {
+      parts.push(' ');
+    }
+    appendPlainText(node.children, parts);
+    if (separates) {
+      parts.push(' ');
+    }
+  }
+}
+
+/** The visible text of `html`: no tags, entities decoded, whitespace collapsed and trimmed. */
+export function htmlToPlainText(html: string): string {
+  const parts: string[] = [];
+  appendPlainText(parseHtml(html), parts);
+  return parts.join('').replace(/\s+/g, ' ').trim();
 }

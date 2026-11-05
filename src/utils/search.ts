@@ -1,3 +1,6 @@
+import { Card } from '../types';
+import { htmlToPlainText } from './html';
+
 // Whitespace plus the separators deck names keep from file names (german-work-words).
 const WORD_SEPARATORS = /[\s\-_.]+/;
 
@@ -23,4 +26,9 @@ export function filterByTitle<T>(items: T[], query: string, getTitle: (item: T) 
     return items;
   }
   return items.filter(item => titleMatchesWords(getTitle(item), words));
+}
+
+// Both sides as visible text, so a query never matches a tag name or an entity's source form.
+export function cardSearchText(card: Pick<Card, 'question' | 'answer'>): string {
+  return `${htmlToPlainText(card.question)} ${htmlToPlainText(card.answer)}`;
 }

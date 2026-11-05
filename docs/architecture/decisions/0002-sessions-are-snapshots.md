@@ -193,6 +193,13 @@ details moved:
   ([ADR-0004](0004-versioned-defensive-storage.md) Amendment 4). The *Decision* above and the
   earlier amendments name `/v1`; read them as the key of their time.
 
+## Amendment 8 — 2026-11-04
+
+[ADR-0010](0010-inverted-sessions.md) Amendment 1 makes shuffling the default start; the decision
+above is unchanged. In Amendment 2's list of callers, the Decks screen's **Start session button**
+now passes the whole deck's card ids **shuffled** as `cardIds` (not "no `cardIds`"), and the
+Session setup dialog opens with **Shuffle** ticked.
+
 ## References
 
 - [`src/types.ts`](../../../src/types.ts) — `Session`, `SessionResult`
@@ -202,7 +209,8 @@ details moved:
 - [ADR-0005](0005-answers-recorded-immediately.md) — what writing into a session looks like
 - [ADR-0008](0008-clear-completed-sessions.md) — the cleared state (Amendment 1)
 - [ADR-0009](0009-error-review-marks-cards-fixed.md) — reviewing without a session (Amendment 2)
-- [ADR-0010](0010-inverted-sessions.md) — a session's direction (Amendment 3)
+- [ADR-0010](0010-inverted-sessions.md) — a session's direction (Amendment 3); a shuffled default
+  start (Amendment 8)
 - [ADR-0014](0014-deck-belongs-to-one-category.md) — a session's category comes from its deck
   (Amendment 6)
 - [ADR-0015](0015-answers-carry-a-timestamp-under-v2-keys.md) — a result's time, and the `/v2`

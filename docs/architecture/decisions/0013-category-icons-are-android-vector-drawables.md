@@ -181,12 +181,36 @@ Consequences of this amendment:
 - **The Icon picker grows.** The layout, the order and the accessibility labels are UI decisions
   and are not made here.
 
+## Amendment 3 — 2026-11-04
+
+Recorded ahead of the work that adds `react-native-svg`
+([ADR-0018](0018-react-native-svg-draws-charts.md)). The decision above **stands**.
+
+*Alternatives Considered* rejects `react-native-svg` first because *"it is a new native dependency,
+which this repo adds only when nothing else works"*. Once ADR-0018 adds it to draw data charts,
+that is no longer true as a fact: the package is installed. It is still not a reason to move the
+category icons onto it, because the second half of that rejection is unchanged and the decision
+never rested on the first half alone:
+
+- **nothing here needs more than one tint** — a category icon is one white drawable recoloured as a
+  whole (Amendment 1), and per-path colour is not wanted;
+- **the drawables are already shipped and keyed** — every icon key is permanent (Amendment 2), and
+  the one `require` map in [`CategoryIcon`](../../../src/components/CategoryIcon.tsx) is typed
+  against the key list, so moving them would be churn with nothing gained on Android.
+
+ADR-0018 says so from its side too: it is for data charts only, and icons — category icons
+included — are not drawn with SVG. The iOS gap stated above is unchanged; `react-native-svg` being
+installed would be one way to close it if an iOS build is ever wanted, and that would be a new
+decision.
+
 ## References
 
 - [ADR-0001](0001-own-the-html-renderer.md) — the precedent for owning a rendering path rather than
   adding a library
 - [ADR-0012](0012-custom-categories-third-storage-key.md) — the categories these icons belong to;
   its Amendment 2 lets a custom category choose from the full icon set (Amendment 2 here)
+- [ADR-0018](0018-react-native-svg-draws-charts.md) — `react-native-svg` added for data charts
+  only; icons stay as they are (Amendment 3 here)
 - [React Native 0.78 release notes — Android XML drawables](https://reactnative.dev/blog/2025/02/19/react-native-0.78)
 - [Material Symbols](https://fonts.google.com/icons) — source of the icons, Apache License 2.0
 - [`src/assets/category-icons/`](../../../src/assets/category-icons/) — the drawables and their

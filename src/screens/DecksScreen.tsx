@@ -54,7 +54,7 @@ export default function DecksScreen({ navigation }: Props) {
   const [setupDeckId, setSetupDeckId] = useState<string | null>(null);
   const [setupVisible, setSetupVisible] = useState(false);
   const [setupInverted, setSetupInverted] = useState(false);
-  const [setupShuffled, setSetupShuffled] = useState(false);
+  const [setupShuffled, setSetupShuffled] = useState(true);
   // The deck id stays set after the export menus close so the Custom separator dialog keeps its title.
   const [exportDeckId, setExportDeckId] = useState<string | null>(null);
   const [exportMenu, setExportMenu] = useState<'format' | 'separator' | null>(null);
@@ -149,7 +149,7 @@ export default function DecksScreen({ navigation }: Props) {
   );
 
   const handleStartSession = useCallback(
-    (deck: Deck, inverted = false, shuffled = false) => {
+    (deck: Deck, inverted = false, shuffled = true) => {
       if (deck.cards.length === 0) {
         Alert.alert('Empty deck', 'This deck has no cards to learn.');
         return;
@@ -179,7 +179,7 @@ export default function DecksScreen({ navigation }: Props) {
     }
     setSetupDeckId(deck.id);
     setSetupInverted(false);
-    setSetupShuffled(false);
+    setSetupShuffled(true);
     setSetupVisible(true);
   }, []);
 
@@ -207,11 +207,10 @@ export default function DecksScreen({ navigation }: Props) {
       {
         label: 'Add deck manually',
         icon: 'edit' as const,
-        onPress: () =>
-          Alert.alert('Add deck manually', 'Creating a deck by hand is not available yet.'),
+        onPress: () => navigation.navigate('NewDeck'),
       },
     ],
-    [],
+    [navigation],
   );
 
   const formatMenuItems = useMemo(

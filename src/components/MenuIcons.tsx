@@ -12,6 +12,7 @@ export type MenuIconName =
   | 'settings'
   | 'search'
   | 'filter'
+  | 'sort'
   | 'clock'
   | 'shuffle'
   | 'replay'
@@ -117,6 +118,15 @@ function Glyph({ name, color }: { name: MenuIconName; color: string }) {
           <View style={[styles.filterBar, styles.filterTop, { backgroundColor: color }]} />
           <View style={[styles.filterBar, styles.filterMiddle, { backgroundColor: color }]} />
           <View style={[styles.filterBar, styles.filterBottom, { backgroundColor: color }]} />
+        </View>
+      );
+    case 'sort':
+      return (
+        <View style={styles.container}>
+          <View style={[styles.sortHeadUp, { borderBottomColor: color }]} />
+          <View style={[styles.sortStemUp, { backgroundColor: color }]} />
+          <View style={[styles.sortStemDown, { backgroundColor: color }]} />
+          <View style={[styles.sortHeadDown, { borderTopColor: color }]} />
         </View>
       );
     case 'clock':
@@ -372,6 +382,45 @@ const styles = StyleSheet.create({
   filterBottom: {
     top: 14,
     width: 6,
+  },
+  // Two arrows side by side, 14 points tall: the left points up, the right points down.
+  sortHeadUp: {
+    position: 'absolute',
+    top: 3,
+    left: 2,
+    width: 0,
+    height: 0,
+    borderBottomWidth: 5,
+    borderLeftWidth: 4,
+    borderRightWidth: 4,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+  },
+  sortStemUp: {
+    position: 'absolute',
+    top: 7,
+    left: 5,
+    width: 2,
+    height: 10,
+  },
+  sortStemDown: {
+    position: 'absolute',
+    top: 3,
+    left: 13,
+    width: 2,
+    height: 10,
+  },
+  sortHeadDown: {
+    position: 'absolute',
+    top: 12,
+    left: 10,
+    width: 0,
+    height: 0,
+    borderTopWidth: 5,
+    borderLeftWidth: 4,
+    borderRightWidth: 4,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
   },
   clockFace: {
     position: 'absolute',

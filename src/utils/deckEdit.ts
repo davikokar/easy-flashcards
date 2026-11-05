@@ -48,6 +48,27 @@ export function firstIncompleteCard(cards: CardDraft[]): number | null {
   return index === -1 ? null : index + 1;
 }
 
+/** True when the new-deck form still equals the blank form: no title, description, category or card. */
+export function isNewDeckDraftBlank(edit: DeckEdit): boolean {
+  return (
+    edit.name.trim() === '' &&
+    edit.description.trim() === '' &&
+    edit.categoryId === null &&
+    edit.cards.length === 0
+  );
+}
+
+/** The `addDeck` input for a new-deck draft: card ids are dropped, order and text are unchanged. */
+export function newDeckInputOf(edit: DeckEdit) {
+  return {
+    name: edit.name.trim(),
+    description: edit.description.trim(),
+    categoryId: edit.categoryId,
+    sourceFileName: null,
+    cards: edit.cards.map(({ question, answer }) => ({ question, answer })),
+  };
+}
+
 /** Existing cards keep their counters, new ones start at zero, and the list's order becomes the deck's. */
 export function applyDeckEdit(
   deck: Deck,
