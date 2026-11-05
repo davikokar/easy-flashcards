@@ -60,9 +60,10 @@ You are a subagent and start with no memory of earlier phases. Spend the time to
   change, not a styling detail.
 - **There is one menu surface**: a Kebab menu opening a bottom Menu sheet. Everything else that
   interrupts the user is a native `Alert` or one of the few dialogs the UI vocabulary lists.
-- **Colour carries meaning in `SuccessBar` and it is fixed**: grey for no data, green at 70% and
-  above, amber from 40%, red below. "No reviews yet" and "0%" are different states and the app
-  distinguishes them — `formatRate` returns `--` for the first. Do not collapse them.
+- **Colour carries fixed meaning**, and the UI vocabulary says what each colour means where — read
+  its **Success bar** and **Card status** entries rather than a copy here. "No reviews yet" and
+  "0%" are different states and the app distinguishes them — `formatRate` returns `--` for the
+  first. Do not collapse them.
 - **Every control needs an `accessibilityLabel` on the same element as its press handler**, not on
   the child that draws it. This is both accessibility and the only way a control could ever be
   found by a test. The app has **no `testID`s**; if a label is too vague to identify a control by,

@@ -174,6 +174,21 @@ on it.
 - Nothing persisted changes: no storage key, no stored shape, and no new store action. A hand-made
   deck is stored exactly as an imported one, with `sourceFileName` `null`.
 
+## Amendment 5 — 2026-11-05
+
+Recorded after the work it describes, under [ADR-0019](0019-deck-file-format-version-2.md)
+Amendment 1. The decision is unchanged.
+
+- **A CSV import reads both.** Amendment 3's *"A CSV import reads neither"* no longer holds, and
+  nor does its *"ADR-0016's escaping of line breaks in the comment is therefore never reversed by
+  the app"*: the importer turns `\n` back into a line feed and `\\` into a backslash. The deck is
+  named after the `# title:` line, or after its file when the line is missing or blank; its
+  description is the `# description:` line, or `''`. Both are trimmed, as JSON's are, but before
+  unescaping (ADR-0019 Amendment 1).
+- The decision's line *"Import creates decks with `''`"*, narrowed to CSV by Amendment 3, now holds
+  only for a file of either format that carries no description.
+- Nothing persisted changes; `description` keeps its shape and its `''` default.
+
 ## References
 
 - [`src/types.ts`](../../../src/types.ts) — `Deck.description`
@@ -192,3 +207,5 @@ on it.
   (Amendment 4; ADR-0003 Amendment 5)
 - [`src/screens/EditDeckScreen.tsx`](../../../src/screens/EditDeckScreen.tsx) — the form, in both
   modes (Amendment 4)
+- [ADR-0019](0019-deck-file-format-version-2.md) — the CSV title and description read back on
+  import (Amendment 5; ADR-0019 Amendment 1)

@@ -159,6 +159,32 @@ recorded:
   itself; the store does not deduplicate.
 - Nothing persisted changes: no storage key and no stored shape.
 
+## Amendment 6 — 2026-11-05
+
+Recorded ahead of the work it governs, under [ADR-0019](0019-deck-file-format-version-2.md). The
+decision above is unchanged — one store, one `addDeck` action, one dispatch per deck.
+
+- **`addDeck` resolves its requested category with ADR-0019's resolver, not `findCategory`.**
+  Amendment 4's *"resolves the new deck's `categoryId` with `findCategory`"* now reads: with the
+  resolver in `src/utils/categories.ts`, which matches a built-in id, then a stored custom id, then
+  a stored custom name ignoring case. It still runs in the reducer, against `state.categories`, and
+  still stores only a resolved id or `null`. `updateDeck` keeps `findCategory`.
+- **No shape changes.** The `addDeck` action and `DecksContextValue.addDeck` keep their fields; the
+  input's `categoryId` is documented as a request — an id, or from an imported file a category
+  reference — which it already was in being unresolved.
+- Nothing persisted changes.
+
+## Amendment 7 — 2026-11-05
+
+Recorded after the work it describes, under [ADR-0019](0019-deck-file-format-version-2.md)
+Amendment 1. The decision and `addDeck`'s shape are unchanged.
+
+- Amendment 4's *"a CSV import passes `''` and `null`"* no longer holds. A CSV import passes the
+  file's title as `name` (the file name when it has none), its `# description:` line as
+  `description` (`''` when it has none) and, since Amendment 6, its `# category:` reference as
+  `categoryId` — the same fields a JSON import passes.
+- Nothing persisted changes.
+
 ## References
 
 - [`src/state/reducer.ts`](../../../src/state/reducer.ts)
@@ -171,4 +197,6 @@ recorded:
   category (Amendment 4)
 - [ADR-0011](0011-deck-editing-is-one-action.md) — the New deck screen, `addDeck`'s second caller
   (Amendment 5; ADR-0011 Amendment 4)
+- [ADR-0019](0019-deck-file-format-version-2.md) — `addDeck` resolves a category reference
+  (Amendment 6); a CSV import passes its title and description (Amendment 7)
 - [ARCHITECTURE.md §2, §3](../ARCHITECTURE.md)

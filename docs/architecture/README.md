@@ -79,7 +79,24 @@ for the required format and status rules.
 > to ADR-0013: it adds `react-native-svg`, approved by the owner, to draw data charts, starting
 > with the Deck statistics screen's Session history as a stacked area chart; icons and card HTML
 > are not drawn with it. It changes no storage key and nothing persisted, and ARCHITECTURE.md
-> links to it and to both amendments now that the work has landed.
+> links to it and to both amendments now that the work has landed. ADR-0014 carries an
+> Amendment 7, recorded **after** the work it describes: the Header toolbar's placeholder Filter
+> button was removed rather than kept, and filtering by category stays undecided. It changes
+> nothing persisted, and ARCHITECTURE.md links to it. ADR-0017 carries an Amendment 1, recorded
+> ahead of the work that removes the Import format menu: **Import deck from file** opens the
+> picker directly and the importer chooses CSV or JSON from the file's content, reversing, with
+> the owner's approval, ADR-0017's rule that the format is never sniffed. It changes nothing
+> persisted, and ARCHITECTURE.md links to it now that the work has landed. ADR-0019 was recorded
+> ahead of its work, together with Amendment 6 to ADR-0003, Amendment 8 to ADR-0014, Amendment 4
+> to ADR-0016 and Amendment 2 to ADR-0017: deck files move to format version 2, the CSV gains
+> `format` and `version` comment lines, both files name a category by one language-neutral
+> reference — a built-in id or a custom name — and both importers resolve it. It changes nothing
+> persisted, and ARCHITECTURE.md links to it now that the work has landed. ADR-0019 carries an
+> Amendment 1, recorded after the work it describes, together with Amendment 7 to ADR-0003,
+> Amendment 5 to ADR-0011, Amendment 5 to ADR-0016 and Amendment 3 to ADR-0017: a CSV import now
+> reads its `# title:` and `# description:` lines, so the deck is named after the file's title in
+> either format and keeps its description. It changes nothing persisted, and ARCHITECTURE.md links
+> to it.
 
 ### Index
 
@@ -103,3 +120,4 @@ for the required format and status rules.
 | [ADR-0016](decisions/0016-deck-export-file-formats.md) | A deck is exported to a JSON or CSV file in formats the app defines, carrying no progress data | Active | 2026-11-03 |
 | [ADR-0017](decisions/0017-deck-import-reads-exported-formats.md) | Deck import reads the formats the app exports — CSV with any supported separator and leading comments, and the versioned JSON file | Active | 2026-11-04 |
 | [ADR-0018](decisions/0018-react-native-svg-draws-charts.md) | react-native-svg draws charts | Active | 2026-11-04 |
+| [ADR-0019](decisions/0019-deck-file-format-version-2.md) | Deck files move to format version 2 — CSV and JSON carry the same metadata, and the category as one language-neutral reference | Active | 2026-11-05 |

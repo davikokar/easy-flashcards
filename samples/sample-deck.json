@@ -1,15 +1,9 @@
 {
   "format": "easy-flashcards-deck",
-  "version": 1,
+  "version": 2,
   "title": "Sample deck",
   "description": "Five cards showing how a deck file is laid out.",
-  "category": {
-    "id": "default_geography",
-    "name": "Geography",
-    "color": "#829ef7",
-    "icon": "geography",
-    "builtIn": true
-  },
+  "category": "default_geography",
   "cards": [
     {
       "question": "What is the capital of <b>France</b>?",
@@ -17,7 +11,7 @@
     },
     {
       "question": "Translate <i>\"good morning\"</i> to Spanish",
-      "answer": "Buenos d&iacute;as"
+      "answer": "Buenos días"
     },
     {
       "question": "What does HTML stand for?",

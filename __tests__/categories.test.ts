@@ -9,6 +9,7 @@ import {
   DEFAULT_CATEGORY_ICONS,
   EXTRA_CATEGORY_ICONS,
   FALLBACK_CATEGORY_ICON,
+  categoryReference,
   countDecksInCategory,
   findCategory,
   getAllCategories,
@@ -16,6 +17,7 @@ import {
   isCategoryIcon,
   isDefaultCategoryId,
   isHexColor,
+  resolveCategoryReference,
   sortCategoriesByName,
   validateCategoryName,
 } from '../src/utils/categories';
@@ -230,6 +232,74 @@ describe('findCategory', () => {
 
   it('returns null for a custom id once the category is gone', () => {
     expect(findCategory('category_a', [])).toBeNull();
+  });
+});
+
+describe('categoryReference', () => {
+  it('is a built-in category\'s id, not its name', () => {
+    expect(categoryReference(findCategory('default_geography', []))).toBe('default_geography');
+  });
+
+  it('is a custom category\'s name, not its id', () => {
+    expect(categoryReference(custom('category_a', 'Chess'))).toBe('Chess');
+  });
+
+  it('is null for no category', () => {
+    expect(categoryReference(null)).toBeNull();
+  });
+});
+
+describe('resolveCategoryReference', () => {
+  const customs = [custom('category_a', 'Chess'), custom('category_b', 'Verbs')];
+
+  it('resolves a built-in id', () => {
+    expect(resolveCategoryReference('default_law', customs)?.id).toBe('default_law');
+  });
+
+  it('resolves a custom id', () => {
+    expect(resolveCategoryReference('category_b', customs)).toBe(customs[1]);
+  });
+
+  it('resolves a custom name ignoring case and surrounding whitespace', () => {
+    expect(resolveCategoryReference('  cHESS ', customs)).toBe(customs[0]);
+  });
+
+  it('trims a built-in id', () => {
+    expect(resolveCategoryReference(' default_law ', customs)?.id).toBe('default_law');
+  });
+
+  it('never matches a built-in by its name', () => {
+    expect(resolveCategoryReference('Geography', customs)).toBeNull();
+    expect(resolveCategoryReference('geography', [])).toBeNull();
+  });
+
+  it('prefers a built-in id over a custom category named like it', () => {
+    const lookalike = [custom('category_c', 'default_law')];
+
+    expect(resolveCategoryReference('default_law', lookalike)?.id).toBe('default_law');
+  });
+
+  it('prefers a custom id over another category\'s name', () => {
+    const tricky = [custom('Verbs', 'Other'), custom('category_b', 'Verbs')];
+
+    expect(resolveCategoryReference('Verbs', tricky)).toBe(tricky[0]);
+  });
+
+  it('takes the first of two custom categories with the same name', () => {
+    const twins = [custom('category_a', 'Chess'), custom('category_b', 'chess')];
+
+    expect(resolveCategoryReference('CHESS', twins)).toBe(twins[0]);
+  });
+
+  it('returns null for null, blank and unknown references', () => {
+    expect(resolveCategoryReference(null, customs)).toBeNull();
+    expect(resolveCategoryReference('', customs)).toBeNull();
+    expect(resolveCategoryReference('   ', customs)).toBeNull();
+    expect(resolveCategoryReference('Nothing', customs)).toBeNull();
+  });
+
+  it('returns null for a custom name once the category is gone', () => {
+    expect(resolveCategoryReference('Chess', [])).toBeNull();
   });
 });
 

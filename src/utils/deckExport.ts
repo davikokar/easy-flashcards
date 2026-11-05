@@ -1,6 +1,9 @@
 import Papa from 'papaparse';
 import { Category, Deck } from '../types';
-import { isDefaultCategoryId } from './categories';
+import { categoryReference } from './categories';
+
+export const DECK_FILE_FORMAT = 'easy-flashcards-deck';
+export const DECK_FILE_VERSION = 2;
 
 export type DeckExportFormat = 'json' | 'csv';
 
@@ -60,17 +63,11 @@ function commentLine(key: string, value: string): string {
 export function serializeDeckJson(deck: Deck, category: Category | null): string {
   return JSON.stringify(
     {
-      format: 'easy-flashcards-deck',
-      version: 1,
+      format: DECK_FILE_FORMAT,
+      version: DECK_FILE_VERSION,
       title: deck.name,
       description: deck.description,
-      category: category && {
-        id: category.id,
-        name: category.name,
-        color: category.color,
-        icon: category.icon,
-        builtIn: isDefaultCategoryId(category.id),
-      },
+      category: categoryReference(category),
       cards: deck.cards.map(card => ({ question: card.question, answer: card.answer })),
     },
     null,
@@ -89,9 +86,11 @@ export function serializeDeckCsv(deck: Deck, category: Category | null, separato
   }
 
   const comments = [
+    commentLine('format', DECK_FILE_FORMAT),
+    commentLine('version', String(DECK_FILE_VERSION)),
     commentLine('title', deck.name),
     commentLine('description', deck.description),
-    commentLine('category', category ? category.name : ''),
+    commentLine('category', categoryReference(category) ?? ''),
   ];
   // The comment convention invites readers to skip `#` lines, so a field starting with # is quoted.
   const table = Papa.unparse(

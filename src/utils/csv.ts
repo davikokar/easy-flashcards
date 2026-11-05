@@ -1,11 +1,23 @@
 import Papa from 'papaparse';
-import { validateCustomSeparator } from './deckExport';
-import { DeckImportError, EMPTY_FILE_MESSAGE, ParsedCard, stripBom } from './deckImport';
+import { DECK_FILE_FORMAT, DECK_FILE_VERSION, validateCustomSeparator } from './deckExport';
+import {
+  DeckImportError,
+  EMPTY_FILE_MESSAGE,
+  NEWER_VERSION_MESSAGE,
+  ParsedCard,
+  stripBom,
+} from './deckImport';
 
 export type ParsedCsv = {
   cards: ParsedCard[];
   delimiter: string;
   skippedRows: number;
+  /** From the `# title:` line; null when absent or blank, and the caller then names the deck after the file. */
+  title: string | null;
+  /** From the `# description:` line; '' when absent. */
+  description: string;
+  /** The category reference from the `# category:` line, unresolved; null when absent or empty. */
+  categoryRef: string | null;
 };
 
 const NO_HEADER_MESSAGE =
@@ -43,9 +55,39 @@ function findSeparator(headerLine: string): string | null {
   );
 }
 
+/** Reads `# key: value` lines; the key is lower-cased, the value trimmed and unescaped, the first line per key wins. */
+function readComments(lines: string[]): Map<string, string> {
+  const comments = new Map<string, string>();
+  for (const line of lines) {
+    if (!line.startsWith('#')) {
+      continue;
+    }
+    const colon = line.indexOf(':');
+    if (colon < 0) {
+      continue;
+    }
+    const key = line.slice(1, colon).trim().toLowerCase();
+    if (!comments.has(key)) {
+      const value = line.slice(colon + 1).trim();
+      comments.set(key, value.replace(/\\([\\n])/g, (_match, char) => (char === 'n' ? '\n' : '\\')));
+    }
+  }
+  return comments;
+}
+
+function assertNotNewerVersion(comments: Map<string, string>): void {
+  const version = comments.get('version') ?? '';
+  if (comments.get('format') === DECK_FILE_FORMAT && /^\d+$/.test(version)) {
+    if (Number(version) > DECK_FILE_VERSION) {
+      throw new DeckImportError(NEWER_VERSION_MESSAGE);
+    }
+  }
+}
+
 /**
- * Parses a flashcards CSV. Blank and `#` lines before the header are skipped, the header row
- * must name `Question` and `Answer` (case-insensitive), and its separator is detected from it.
+ * Parses a flashcards CSV. The header row must name `Question` and `Answer` (case-insensitive),
+ * and its separator is detected from it. The `# key: value` lines above it are read for the
+ * title, description and category, and to refuse a file from a newer version.
  */
 export function parseFlashcardsCsv(raw: string): ParsedCsv {
   const text = stripBom(raw).replace(/\r\n?/g, '\n');
@@ -55,6 +97,9 @@ export function parseFlashcardsCsv(raw: string): ParsedCsv {
 
   const lines = text.split('\n');
   const headerIndex = lines.findIndex(line => !isCommentOrBlank(line));
+  const comments = readComments(headerIndex < 0 ? lines : lines.slice(0, headerIndex));
+  assertNotNewerVersion(comments);
+
   const delimiter = headerIndex < 0 ? null : findSeparator(lines[headerIndex]);
   if (delimiter === null) {
     throw new DeckImportError(NO_HEADER_MESSAGE);
@@ -90,7 +135,14 @@ export function parseFlashcardsCsv(raw: string): ParsedCsv {
     throw new DeckImportError('No usable rows found. Every row needs a question and an answer.');
   }
 
-  return { cards, delimiter, skippedRows };
+  return {
+    cards,
+    delimiter,
+    skippedRows,
+    title: comments.get('title') || null,
+    description: comments.get('description') ?? '',
+    categoryRef: comments.get('category') || null,
+  };
 }
 
 export function deckNameFromFileName(fileName: string | null | undefined): string {

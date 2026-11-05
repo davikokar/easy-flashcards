@@ -20,7 +20,7 @@ type SessionOptions = { inverted: boolean };
 type DecksContextValue = State & {
   getDeck: (deckId: string) => Deck | undefined;
   getSession: (sessionId: string) => Session | undefined;
-  /** The returned deck carries the requested `categoryId`; the reducer stores null if it does not resolve. */
+  /** `categoryId` is a request, an id or an imported file's category reference; the reducer stores the id it resolves to, else null. The returned deck still carries the request. */
   addDeck: (input: {
     name: string;
     description: string;

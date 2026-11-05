@@ -128,6 +128,34 @@ describe('reducer: addDeck and deleteDeck', () => {
     expect(next.decks[0].categoryId).toBeNull();
   });
 
+  it('resolves a custom category name from a file to its stored id', () => {
+    const customs = [{ ...category('category_a'), name: 'Chess' }];
+    const imported: Deck = { ...deck('new', ['a']), categoryId: ' chess ' };
+
+    const next = reducer(stateOf([], [], customs), { type: 'addDeck', deck: imported });
+
+    expect(next.decks[0].categoryId).toBe('category_a');
+  });
+
+  it('does not resolve a built-in category by its name', () => {
+    const imported: Deck = { ...deck('new', ['a']), categoryId: 'Astronomy' };
+
+    const next = reducer(stateOf([], []), { type: 'addDeck', deck: imported });
+
+    expect(next.decks[0].categoryId).toBeNull();
+  });
+
+  it('stores no category for a custom name once no stored category has it', () => {
+    const imported: Deck = { ...deck('new', ['a']), categoryId: 'Chess' };
+
+    const next = reducer(stateOf([], [], [category('category_a')]), {
+      type: 'addDeck',
+      deck: imported,
+    });
+
+    expect(next.decks[0].categoryId).toBeNull();
+  });
+
   it('removes the deck and every session of it, cleared ones included', () => {
     const state = stateOf(
       [deck('d1', ['a']), deck('d2', ['a'])],

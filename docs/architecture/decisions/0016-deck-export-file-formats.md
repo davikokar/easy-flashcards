@@ -323,6 +323,38 @@ as well — two files in two formats.
   second file because two files can be separated. Each sample file is a whole deck on its own; the
   second is the same deck in the other format, and either one can be lost without harming the other.
 
+## Amendment 4 — 2026-11-05
+
+Recorded ahead of the work it governs. The decision — two formats the app defines, carrying a
+deck's content and no progress — is unchanged. The formats themselves move to **version 2**, under
+[ADR-0019](0019-deck-file-format-version-2.md), which this record's own versioning rule requires:
+
+- **JSON `version` is `2`, and `category` is one string or `null`.** The object
+  `{ id, name, color, icon, builtIn }` in *JSON* is no longer written. The string is the *category
+  reference*: a built-in category's id, or a custom category's name.
+- **The CSV has five comment lines, in the order `format`, `version`, `title`, `description`,
+  `category`.** *CSV*'s "three comment lines … in the order `title`, `description`, `category`"
+  no longer holds, and its `category` line carries the category reference rather than the
+  category's display name.
+- **`format` and `version` are defined once and shared** by both serialisations.
+- Everything else here — what is exported, the header row, separators, quoting, escaping, encoding,
+  the file name and the save mechanism, including Amendments 1 and 3 — is unchanged. The samples of
+  Amendment 3 are regenerated in version 2.
+
+## Amendment 5 — 2026-11-05
+
+Recorded after the work it describes, under [ADR-0019](0019-deck-file-format-version-2.md)
+Amendment 1. The formats are unchanged; what the importer reads back from a CSV widens.
+
+- **The CSV comment lines are written and read.** Amendment 2's *"The CSV comment lines are written
+  but not read"* — already narrowed by ADR-0019 to `title` and `description` — no longer holds. A
+  CSV-imported deck is named after its `# title:` line, or after its file when that is missing or
+  blank, and gets its `# description:` line, so the escaping this record defines is reversed on
+  import. JSON is no longer the only file that carries a deck's metadata back.
+- Amendment 3's *"the CSV through its file name, the JSON through its title"* now reads: each
+  through its title. The sample still imports as `Sample deck`.
+- Nothing persisted changes, and nothing new is written.
+
 ## References
 
 - [`src/utils/csv.ts`](../../../src/utils/csv.ts) — the importer, unchanged by this record
@@ -330,8 +362,8 @@ as well — two files in two formats.
   mechanism reused
 - [`src/utils/sampleDeck.ts`](../../../src/utils/sampleDeck.ts) and
   [`samples/`](../../../samples/) — the sample deck, exported in both formats (Amendment 3)
-- [`src/services/importDeck.ts`](../../../src/services/importDeck.ts) — the import picker and the
-  deck name taken from the file name
+- [`src/services/importDeck.ts`](../../../src/services/importDeck.ts) — the import picker, and the
+  deck name: the file's title, else its file name (Amendment 5)
 - [`src/utils/categories.ts`](../../../src/utils/categories.ts) — `findCategory`,
   `isDefaultCategoryId`
 - [ADR-0001](0001-own-the-html-renderer.md) — card text is HTML
@@ -342,6 +374,9 @@ as well — two files in two formats.
 - [ADR-0015](0015-answers-carry-a-timestamp-under-v2-keys.md) — counters equal the answer log
 - [ADR-0017](0017-deck-import-reads-exported-formats.md) — the importer that reads these formats
   (Amendment 2)
+- [ADR-0019](0019-deck-file-format-version-2.md) — format version 2: the shared `format` and
+  `version`, and the category reference (Amendment 4); the CSV title and description read back
+  (Amendment 5; ADR-0019 Amendment 1)
 - `@react-native-documents/picker` `saveDocuments` — `fileName` and `mimeType` are Android-only;
   on iOS the target name is taken from the source URI
 - [ARCHITECTURE.md](../ARCHITECTURE.md) — links to this record now that the work has landed

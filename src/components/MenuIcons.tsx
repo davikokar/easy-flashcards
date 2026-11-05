@@ -11,12 +11,12 @@ export type MenuIconName =
   | 'file'
   | 'settings'
   | 'search'
-  | 'filter'
   | 'sort'
   | 'clock'
   | 'shuffle'
   | 'replay'
   | 'tally'
+  | 'back'
   | 'close';
 
 type Props = { name: MenuIconName; color: string; size?: number };
@@ -112,14 +112,6 @@ function Glyph({ name, color }: { name: MenuIconName; color: string }) {
           <View style={[styles.searchHandle, { backgroundColor: color }]} />
         </View>
       );
-    case 'filter':
-      return (
-        <View style={styles.container}>
-          <View style={[styles.filterBar, styles.filterTop, { backgroundColor: color }]} />
-          <View style={[styles.filterBar, styles.filterMiddle, { backgroundColor: color }]} />
-          <View style={[styles.filterBar, styles.filterBottom, { backgroundColor: color }]} />
-        </View>
-      );
     case 'sort':
       return (
         <View style={styles.container}>
@@ -167,6 +159,13 @@ function Glyph({ name, color }: { name: MenuIconName; color: string }) {
           <View style={[styles.tallyBar, styles.tallyBar3, { backgroundColor: color }]} />
           <View style={[styles.tallyBar, styles.tallyBar4, { backgroundColor: color }]} />
           <View style={[styles.tallySlash, { backgroundColor: color }]} />
+        </View>
+      );
+    case 'back':
+      return (
+        <View style={styles.container}>
+          <View style={[styles.backHead, { borderRightColor: color }]} />
+          <View style={[styles.backStem, { backgroundColor: color }]} />
         </View>
       );
     case 'close':
@@ -366,23 +365,6 @@ const styles = StyleSheet.create({
     borderRadius: 1,
     transform: [{ rotate: '45deg' }],
   },
-  filterBar: {
-    position: 'absolute',
-    height: 2,
-    borderRadius: 1,
-  },
-  filterTop: {
-    top: 4,
-    width: 16,
-  },
-  filterMiddle: {
-    top: 9,
-    width: 11,
-  },
-  filterBottom: {
-    top: 14,
-    width: 6,
-  },
   // Two arrows side by side, 14 points tall: the left points up, the right points down.
   sortHeadUp: {
     position: 'absolute',
@@ -535,6 +517,27 @@ const styles = StyleSheet.create({
     height: 2,
     borderRadius: 1,
     transform: [{ rotate: '-35deg' }],
+  },
+  // A left-pointing arrow: a triangular head with a stem running to the right.
+  backHead: {
+    position: 'absolute',
+    top: 4,
+    left: 2,
+    width: 0,
+    height: 0,
+    borderTopWidth: 6,
+    borderBottomWidth: 6,
+    borderRightWidth: 8,
+    borderTopColor: 'transparent',
+    borderBottomColor: 'transparent',
+  },
+  backStem: {
+    position: 'absolute',
+    top: 9,
+    left: 8,
+    width: 10,
+    height: 2,
+    borderRadius: 1,
   },
   closeBar: {
     position: 'absolute',

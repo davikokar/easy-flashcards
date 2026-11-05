@@ -1,5 +1,10 @@
-import { DeckImportError, parseDeckJson } from '../src/utils/deckImport';
-import { serializeDeckJson } from '../src/utils/deckExport';
+import {
+  DeckImportError,
+  NEWER_VERSION_MESSAGE,
+  detectDeckFormat,
+  parseDeckJson,
+} from '../src/utils/deckImport';
+import { SEPARATOR_PRESETS, serializeDeckCsv, serializeDeckJson } from '../src/utils/deckExport';
 import { DEFAULT_CATEGORIES } from '../src/utils/categories';
 import { Category, Deck } from '../src/types';
 
@@ -27,7 +32,7 @@ function deckOf(name: string, description: string, cards: Array<[string, string]
 function fileOf(overrides: Record<string, unknown>): string {
   return JSON.stringify({
     format: 'easy-flashcards-deck',
-    version: 1,
+    version: 2,
     title: 'Deck',
     description: '',
     category: null,
@@ -53,7 +58,7 @@ describe('parseDeckJson', () => {
     ];
     const expected = cards.map(([question, answer]) => ({ question, answer }));
 
-    it('reads the title, description, cards and a default category id', () => {
+    it('reads the title, description, cards and a built-in category id', () => {
       const category = DEFAULT_CATEGORIES[0];
 
       const result = parseDeckJson(
@@ -63,22 +68,22 @@ describe('parseDeckJson', () => {
       expect(result).toEqual({
         title: 'Verbs',
         description: 'Irregular ones',
-        categoryId: category.id,
+        categoryRef: category.id,
         cards: expected,
         skippedCards: 0,
       });
     });
 
-    it('reads a custom category id without resolving it', () => {
+    it('reads a custom category by its name, without resolving it', () => {
       const result = parseDeckJson(serializeDeckJson(deckOf('Verbs', '', cards), CUSTOM));
 
-      expect(result.categoryId).toBe('category_abc');
+      expect(result.categoryRef).toBe('Mine');
     });
 
     it('reads no category as null', () => {
       const result = parseDeckJson(serializeDeckJson(deckOf('Verbs', '', cards), null));
 
-      expect(result.categoryId).toBeNull();
+      expect(result.categoryRef).toBeNull();
     });
   });
 
@@ -103,17 +108,52 @@ describe('parseDeckJson', () => {
   });
 
   describe('category', () => {
-    it('passes an unknown id through for the reducer to resolve', () => {
-      const result = parseDeckJson(fileOf({ category: { id: 'category_unknown', name: 'X' } }));
-
-      expect(result.categoryId).toBe('category_unknown');
+    it('reads a string as the reference, unresolved', () => {
+      expect(parseDeckJson(fileOf({ category: 'default_math' })).categoryRef).toBe('default_math');
+      expect(parseDeckJson(fileOf({ category: 'Anything at all' })).categoryRef).toBe(
+        'Anything at all',
+      );
     });
 
-    it('reads a category without a string id, or not an object, as null', () => {
-      expect(parseDeckJson(fileOf({ category: { name: 'X' } })).categoryId).toBeNull();
-      expect(parseDeckJson(fileOf({ category: { id: 7 } })).categoryId).toBeNull();
-      expect(parseDeckJson(fileOf({ category: 'default_math' })).categoryId).toBeNull();
-      expect(parseDeckJson(fileOf({ category: undefined })).categoryId).toBeNull();
+    it('reads a string in a version 1 file too', () => {
+      expect(parseDeckJson(fileOf({ version: 1, category: 'default_geography' })).categoryRef).toBe(
+        'default_geography',
+      );
+    });
+
+    describe('as the object version 1 wrote', () => {
+      it('is its id when that is a built-in id', () => {
+        const category = { id: 'default_law', name: 'Droit', builtIn: true };
+
+        expect(parseDeckJson(fileOf({ version: 1, category })).categoryRef).toBe('default_law');
+      });
+
+      it('is its name when the id is not a built-in id', () => {
+        const category = { id: 'category_abc', name: 'Mine', builtIn: false };
+
+        expect(parseDeckJson(fileOf({ version: 1, category })).categoryRef).toBe('Mine');
+      });
+
+      it('is its id when there is no usable name', () => {
+        expect(parseDeckJson(fileOf({ category: { id: 'category_x' } })).categoryRef).toBe(
+          'category_x',
+        );
+        expect(
+          parseDeckJson(fileOf({ category: { id: 'category_x', name: '  ' } })).categoryRef,
+        ).toBe('category_x');
+      });
+
+      it('is its name when there is no id', () => {
+        expect(parseDeckJson(fileOf({ category: { name: 'X' } })).categoryRef).toBe('X');
+      });
+    });
+
+    it('reads anything else as null', () => {
+      expect(parseDeckJson(fileOf({ category: { id: 7 } })).categoryRef).toBeNull();
+      expect(parseDeckJson(fileOf({ category: {} })).categoryRef).toBeNull();
+      expect(parseDeckJson(fileOf({ category: 7 })).categoryRef).toBeNull();
+      expect(parseDeckJson(fileOf({ category: ['default_math'] })).categoryRef).toBeNull();
+      expect(parseDeckJson(fileOf({ category: undefined })).categoryRef).toBeNull();
     });
   });
 
@@ -186,6 +226,12 @@ describe('parseDeckJson', () => {
     expect(result.cards).toEqual([{ question: 'Q', answer: 'A' }]);
   });
 
+  it.each([1, 2])('reads version %i', version => {
+    const result = parseDeckJson(fileOf({ version }));
+
+    expect(result.cards).toEqual([{ question: 'Q', answer: 'A' }]);
+  });
+
   describe('errors', () => {
     it('rejects an empty file', () => {
       expect(() => parseDeckJson('')).toThrow(DeckImportError);
@@ -232,8 +278,16 @@ describe('parseDeckJson', () => {
     });
 
     it('rejects a newer version with its own message', () => {
-      expect(() => parseDeckJson(fileOf({ version: 2 }))).toThrow(
-        'This deck file was made by a newer version of Easy Flashcards. Update the app to import it.',
+      expect(() => parseDeckJson(fileOf({ version: 3 }))).toThrow(NEWER_VERSION_MESSAGE);
+      expect(() => parseDeckJson(fileOf({ version: 2.5 }))).toThrow(NEWER_VERSION_MESSAGE);
+    });
+
+    it('rejects a version that is not a whole number from 1', () => {
+      expect(() => parseDeckJson(fileOf({ version: 1.5 }))).toThrow(
+        /not an Easy Flashcards deck file/,
+      );
+      expect(() => parseDeckJson(fileOf({ version: -1 }))).toThrow(
+        /not an Easy Flashcards deck file/,
       );
     });
 
@@ -251,6 +305,76 @@ describe('parseDeckJson', () => {
 
       expect(() => parseDeckJson(fileOf({ cards: [] }))).toThrow(message);
       expect(() => parseDeckJson(fileOf({ cards: [{ question: 'Q' }, 'x'] }))).toThrow(message);
+    });
+  });
+});
+
+describe('detectDeckFormat', () => {
+  const cards: Array<[string, string]> = [
+    ['plain', 'simple'],
+    ['#hashtag; with, separators', '{"braces"}'],
+  ];
+
+  describe('json', () => {
+    it('reads a leading brace as JSON', () => {
+      expect(detectDeckFormat('{"format":"easy-flashcards-deck"}')).toBe('json');
+    });
+
+    it('skips a BOM, spaces and newlines before the brace', () => {
+      expect(detectDeckFormat('\ufeff{"a":1}')).toBe('json');
+      expect(detectDeckFormat('   {"a":1}')).toBe('json');
+      expect(detectDeckFormat('\r\n\n\t{\n"a":1}')).toBe('json');
+      expect(detectDeckFormat('\ufeff \n {"a":1}')).toBe('json');
+    });
+
+    it('reads a leading bracket as JSON', () => {
+      expect(detectDeckFormat('[{"question":"Q","answer":"A"}]')).toBe('json');
+      expect(detectDeckFormat('\n [')).toBe('json');
+    });
+
+    it('reads what serializeDeckJson writes as JSON', () => {
+      const text = serializeDeckJson(deckOf('Verbs', 'Irregular ones', cards), CUSTOM);
+
+      expect(detectDeckFormat(text)).toBe('json');
+    });
+  });
+
+  describe('csv', () => {
+    it('reads a # title: comment first line as CSV', () => {
+      expect(detectDeckFormat('# title: Verbs\nquestion;answer\nQ;A')).toBe('csv');
+    });
+
+    it('reads a bare header row as CSV', () => {
+      expect(detectDeckFormat('question;answer\nQ;A')).toBe('csv');
+    });
+
+    it('reads a quoted header row as CSV', () => {
+      expect(detectDeckFormat('"question","answer"\n"Q","A"')).toBe('csv');
+    });
+
+    it('reads a header row after blank lines as CSV', () => {
+      expect(detectDeckFormat('\n\n  \nquestion,answer\nQ,A')).toBe('csv');
+    });
+
+    it('reads empty and whitespace-only text as CSV without throwing', () => {
+      expect(detectDeckFormat('')).toBe('csv');
+      expect(detectDeckFormat('\ufeff')).toBe('csv');
+      expect(detectDeckFormat(' \r\n\t ')).toBe('csv');
+    });
+
+    it.each(SEPARATOR_PRESETS.map(preset => [preset.label, preset.value]))(
+      'reads what serializeDeckCsv writes with a %s separator as CSV',
+      (_label, separator) => {
+        const text = serializeDeckCsv(deckOf('Verbs', 'Irregular ones', cards), CUSTOM, separator);
+
+        expect(detectDeckFormat(text)).toBe('csv');
+      },
+    );
+
+    it('reads what serializeDeckCsv writes with a custom separator as CSV', () => {
+      const text = serializeDeckCsv(deckOf('Verbs', '', cards), null, '|');
+
+      expect(detectDeckFormat(text)).toBe('csv');
     });
   });
 });

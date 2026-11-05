@@ -189,6 +189,35 @@ export function findCategory(id: string | null, customs: readonly Category[]): C
   return [...DEFAULT_CATEGORIES, ...customs].find(category => category.id === id) ?? null;
 }
 
+/** What a deck file names a category by: a built-in's id (language-neutral), a custom category's name. */
+export function categoryReference(category: Category | null): string | null {
+  if (category === null) {
+    return null;
+  }
+  return isDefaultCategoryId(category.id) ? category.id : category.name;
+}
+
+/**
+ * The category a file's reference names: a built-in id, then a custom id, then a custom name
+ * (ignoring case and surrounding whitespace). A built-in's name never matches.
+ */
+export function resolveCategoryReference(
+  reference: string | null,
+  customs: readonly Category[],
+): Category | null {
+  const trimmed = reference?.trim() ?? '';
+  if (trimmed === '') {
+    return null;
+  }
+  const lower = trimmed.toLowerCase();
+  return (
+    findCategory(trimmed, []) ??
+    customs.find(category => category.id === trimmed) ??
+    customs.find(category => category.name.trim().toLowerCase() === lower) ??
+    null
+  );
+}
+
 export function countDecksInCategory(
   decks: readonly Pick<Deck, 'categoryId'>[],
   categoryId: string,

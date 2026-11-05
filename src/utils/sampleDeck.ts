@@ -25,7 +25,7 @@ export const SAMPLE_DECK: Deck = {
   lastStudiedAt: null,
   cards: [
     sampleCard(1, 'What is the capital of <b>France</b>?', 'Paris'),
-    sampleCard(2, 'Translate <i>"good morning"</i> to Spanish', 'Buenos d&iacute;as'),
+    sampleCard(2, 'Translate <i>"good morning"</i> to Spanish', 'Buenos días'),
     sampleCard(
       3,
       'What does HTML stand for?',

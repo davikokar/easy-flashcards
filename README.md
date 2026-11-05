@@ -8,13 +8,17 @@ them card by card, and track how well you know each card.
 - **Bottom tab navigation** with a *Decks* tab (import or create decks and start sessions), a
   *Learn* tab (your sessions, and where you study them), a *Categories* tab and a *Statistics* tab.
 - **Deck import** from any local file through the Android system file picker: *Import deck from
-  file* asks for **CSV** or **JSON** first, and the file is read as that format whatever its
+  file* opens the picker straight away, and the app tells CSV from JSON by the file's content —
+  a file starting with `{` or `[` is read as JSON, anything else as CSV — whatever its name or
   extension.
   - **CSV**: columns `Question` and `Answer` (header matching is case-insensitive), separated by a
-    comma, semicolon, tab or any single symbol the export accepts; the deck is named after the
+    comma, semicolon, tab or any single symbol the export accepts; a `# title:`, `# description:`
+    or `# category:` comment line above the header gives the deck its title, description and —
+    when it exists on this device — its category, and without a title the deck is named after the
     file. See [CSV format](#csv-format).
   - **JSON**: a deck file exported by the app, bringing its title, description and — when it
-    exists on this device — its category. See [Export formats](#export-formats).
+    exists on this device — its category; without a title the deck is named after the file. See
+    [Export formats](#export-formats).
   - BOM and CRLF tolerant; incomplete rows or cards are skipped and reported, and a file that
     cannot be read is refused with the reason. Every imported card starts with no statistics.
 - **Deck editing**: *Edit deck* in a deck's menu opens a form for the deck's title, an optional
@@ -30,8 +34,8 @@ them card by card, and track how well you know each card.
   and cards as a JSON or CSV file wherever you choose in the system save dialog. For CSV, pick a
   comma, semicolon or tab as the separator, or type any single character that is not a letter, a
   digit, whitespace, a double quote or `#`. Statistics and sessions are not exported. Both formats
-  import back; JSON keeps the title, description and category, CSV only the cards. See
-  [Export formats](#export-formats).
+  import back with the title, description and cards, and the category when it exists on this
+  device. See [Export formats](#export-formats).
 - **Study sessions** with an animated card flip, three icon feedback buttons — *Not Ok* (cross),
   *Okeish* (question mark) and *Ok* (tick) — a progress indicator, and an end-of-session summary
   that offers to review the cards you missed or were unsure of, or to study the whole deck again
@@ -113,14 +117,21 @@ The header row is the first line that is neither blank nor starts with `#`; blan
 above it are skipped, so the app's own CSV exports import as they are. The separator is detected
 from the header row: a semicolon, tab or comma, or any other single symbol that is not a letter,
 digit, whitespace, a double quote or `#`. Extra columns are ignored, card text is trimmed, and a row
-missing its question or its answer is skipped and counted. The deck is named after the file, with
-no description and no category.
+missing its question or its answer is skipped and counted. Comment lines above the header give the
+deck its metadata, as the export writes them — see [Export formats](#export-formats): `# title:`
+names the deck, `# description:` gives its description, and `# category:` its category when it
+names one on this device. Without a title, or with a blank one, the deck is named after the file;
+without a description it has none. The first line for each name wins, and inside one `\n` is read
+as a line break and `\\` as a backslash. Other comment lines are not read, except that a file
+marked `# format: easy-flashcards-deck` with a `# version:` newer than the app supports is refused.
+A CSV file must not start with `{` or `[` — that is how the app recognises JSON — so if your first
+column name begins with one, quote it or put a `#` comment line above the header.
 
 Ready-to-use examples live in [samples/sample-deck.csv](samples/sample-deck.csv) and
 [samples/sample-deck.json](samples/sample-deck.json): the same five-card deck in both
-[export formats](#export-formats), the CSV with its three comment lines and semicolons as the
+[export formats](#export-formats), the CSV with its five comment lines and semicolons as the
 separator. Copy one to the device (or to the emulator's Downloads folder) and import it from the
-*Decks* tab as CSV or JSON.
+*Decks* tab with *Import deck from file*; the app recognises which format it is.
 
 *Export sample deck* in the app menu (the three-dot button at the top right of each tab) saves the
 same two files from the app: `Sample deck.csv`, then `Sample deck.json`. You are asked where to
@@ -132,13 +143,20 @@ were saved; cancelling both shows nothing.
 *Export to file* writes one of two formats. Card text is written exactly as stored, HTML included.
 Both are UTF-8 with LF line endings.
 
-**CSV**: three comment lines, then a `question` / `answer` header, then one row per card, separated
+Both formats are version 2 of the app's deck file and carry the same metadata: `format`,
+`version`, `title`, `description` and `category`. The category is written as one string: a
+built-in category's id, such as `default_languages` — never its name, which a translated app
+would change — or the name of a category you created. A deck with no category has none.
+
+**CSV**: five comment lines, then a `question` / `answer` header, then one row per card, separated
 by the separator you chose:
 
 ```text
+# format: easy-flashcards-deck
+# version: 2
 # title: German words
 # description: Words from work.\nSecond line.
-# category: Languages
+# category: default_languages
 question;answer
 What is the capital of <b>France</b>?;Paris
 ```
@@ -148,18 +166,22 @@ written as `\n` and a backslash as `\\`. A field is quoted when it contains the 
 or a line break, or starts or ends with a space, and a quote inside it is doubled; a field that
 starts with `#` is always quoted, so it cannot be mistaken for a comment line.
 
-**JSON**: one object with `format` (`"easy-flashcards-deck"`), `version` (`1`), `title`,
-`description`, `category` (`null`, or its `id`, `name`, `color`, `icon` and whether it is
-`builtIn`) and `cards` (each a `question` and an `answer`).
+**JSON**: one object with `format` (`"easy-flashcards-deck"`), `version` (`2`), `title`,
+`description`, `category` (the string above, or `null`) and `cards` (each a `question` and an
+`answer`).
 
-Both formats import back. A CSV import reads past the comment lines, so the deck is named after
-the file and has no description or category. A JSON import keeps the title, description and
-category; the category is matched by its `id` only, so a built-in one always comes back and one you
-created comes back only on the device where you created it, and otherwise the deck has none. A JSON
-file from a newer version of the app is refused. Imported text is trimmed of leading and trailing
+Both formats import back, with the deck's title, description and category; a file with no title
+gives a deck named after the file. Either way the category is looked up on this device: a built-in
+id always comes back, and a category you created comes back wherever a category of yours has the
+same name, ignoring case; otherwise the deck has none, and no category is created. A built-in
+category is never matched by its name, so a CSV exported by an older version of the app, which
+wrote the built-in's name, imports without its category, though with its title and description.
+Version 1 JSON files from an older version still import. A file of either format
+from a newer version of the app is refused. Imported text is trimmed of leading and trailing
 whitespace, and a deck exported with no cards cannot be imported. The full specification is
-[ADR-0016](docs/architecture/decisions/0016-deck-export-file-formats.md), and the import rules
-[ADR-0017](docs/architecture/decisions/0017-deck-import-reads-exported-formats.md).
+[ADR-0016](docs/architecture/decisions/0016-deck-export-file-formats.md), the import rules
+[ADR-0017](docs/architecture/decisions/0017-deck-import-reads-exported-formats.md), and version 2
+[ADR-0019](docs/architecture/decisions/0019-deck-file-format-version-2.md).
 
 ## Getting started
 

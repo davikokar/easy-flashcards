@@ -6,6 +6,9 @@ import Button from '../components/Button';
 import EmptyState from '../components/EmptyState';
 import FlipCard from '../components/FlipCard';
 import HistoryStrip from '../components/HistoryStrip';
+import MenuIcon from '../components/MenuIcons';
+import ReviewErrorsButton from '../components/ReviewErrorsButton';
+import SessionResultsBar from '../components/SessionResultsBar';
 import SuccessBar from '../components/SuccessBar';
 import { useDecks } from '../state/DecksContext';
 import { LearnStackParamList } from '../navigation/types';
@@ -17,6 +20,7 @@ import {
   getSessionTally,
   isSessionActive,
   previousReviewIndex,
+  sessionProgressShares,
   successRate,
 } from '../utils/stats';
 import { colors, radius, spacing } from '../theme';
@@ -30,6 +34,27 @@ const renderQuestionIcon = (color: string) => (
   <AnswerIcon name="question" color={color} size={32} />
 );
 const renderTickIcon = (color: string) => <AnswerIcon name="tick" color={color} size={32} />;
+const renderReplayIcon = (color: string) => <MenuIcon name="replay" color={color} />;
+const renderBackIcon = (color: string) => <MenuIcon name="back" color={color} />;
+
+const reviewActionLabel = (count: number) =>
+  `Review the ${count} missed or unsure card${count === 1 ? '' : 's'}`;
+
+// One summary action: the label takes the flexible width and wraps, the button keeps its size.
+function SummaryAction({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <View style={styles.summaryAction}>
+      {/* The button carries the accessible name, so the label is not read a second time. */}
+      <Text
+        style={styles.summaryActionLabel}
+        accessibilityElementsHidden
+        importantForAccessibility="no">
+        {label}
+      </Text>
+      {children}
+    </View>
+  );
+}
 
 export default function StudyScreen({ route, navigation }: Props) {
   const { sessionId, mode } = route.params;
@@ -227,7 +252,9 @@ export default function StudyScreen({ route, navigation }: Props) {
   }
 
   // Tally of what is on screen: the session's results, or the review pass's own.
-  const { okCount, okeishCount, notOkCount } = getSessionTally({ ...session, results });
+  const tally = getSessionTally({ ...session, results });
+  const { okCount, okeishCount, notOkCount } = tally;
+  const shares = sessionProgressShares(tally, queue.length);
 
   if (isFinished && isReviewMode) {
     return (
@@ -235,11 +262,7 @@ export default function StudyScreen({ route, navigation }: Props) {
         <Text style={styles.summaryTitle}>Review complete</Text>
         <View style={styles.summaryCard}>
           {results.length > 0 ? (
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryOk}>Ok {okCount}</Text>
-              <Text style={styles.summaryOkeish}>Okeish {okeishCount}</Text>
-              <Text style={styles.summaryNotOk}>Not Ok {notOkCount}</Text>
-            </View>
+            <SessionResultsBar shares={shares} tally={tally} cardCount={queue.length} />
           ) : null}
           {outstandingIds.length > 0 ? (
             <Text style={styles.summaryMeta}>{outstandingIds.length} still to fix</Text>
@@ -253,12 +276,22 @@ export default function StudyScreen({ route, navigation }: Props) {
 
         <View style={styles.summaryActions}>
           {outstandingIds.length > 0 ? (
-            <Button
-              label={`Review the ${outstandingIds.length} missed or unsure`}
-              onPress={startNextPass}
-            />
+            <SummaryAction label="Review the missed or unsure cards">
+              <ReviewErrorsButton
+                count={outstandingIds.length}
+                accessibilityLabel={reviewActionLabel(outstandingIds.length)}
+                onPress={startNextPass}
+              />
+            </SummaryAction>
           ) : null}
-          <Button label="Back to sessions" variant="secondary" onPress={() => navigation.goBack()} />
+          <SummaryAction label="Back to sessions">
+            <Button
+              variant="secondary"
+              accessibilityLabel="Back to sessions"
+              icon={renderBackIcon}
+              onPress={() => navigation.goBack()}
+            />
+          </SummaryAction>
         </View>
       </View>
     );
@@ -271,29 +304,41 @@ export default function StudyScreen({ route, navigation }: Props) {
       <View style={[styles.container, styles.summaryContainer]}>
         <Text style={styles.summaryTitle}>Session complete</Text>
         <View style={styles.summaryCard}>
-          <Text style={styles.summaryRate}>{formatRate(rate)}</Text>
-          <SuccessBar rate={rate} height={10} />
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryOk}>Ok {okCount}</Text>
-            <Text style={styles.summaryOkeish}>Okeish {okeishCount}</Text>
-            <Text style={styles.summaryNotOk}>Not Ok {notOkCount}</Text>
-          </View>
+          <Text
+            accessibilityLabel={`Success rate ${formatRate(rate)}`}
+            style={styles.summaryRate}>
+            {formatRate(rate)}
+          </Text>
+          <SessionResultsBar shares={shares} tally={tally} cardCount={queue.length} />
           <Text style={styles.summaryMeta}>Reviewed {results.length}</Text>
         </View>
 
         <View style={styles.summaryActions}>
           {outstandingIds.length > 0 ? (
-            <Button
-              label={`Review the ${outstandingIds.length} missed or unsure`}
-              onPress={() => navigation.replace('Study', { sessionId, mode: 'review' })}
-            />
+            <SummaryAction label="Review the missed or unsure cards">
+              <ReviewErrorsButton
+                count={outstandingIds.length}
+                accessibilityLabel={reviewActionLabel(outstandingIds.length)}
+                onPress={() => navigation.replace('Study', { sessionId, mode: 'review' })}
+              />
+            </SummaryAction>
           ) : null}
-          <Button
-            label="Study the whole deck again"
-            variant="secondary"
-            onPress={startAgain}
-          />
-          <Button label="Back to sessions" variant="secondary" onPress={() => navigation.goBack()} />
+          <SummaryAction label="Study the whole deck again">
+            <Button
+              variant="secondary"
+              accessibilityLabel="Study the whole deck again"
+              icon={renderReplayIcon}
+              onPress={startAgain}
+            />
+          </SummaryAction>
+          <SummaryAction label="Back to sessions">
+            <Button
+              variant="secondary"
+              accessibilityLabel="Back to sessions"
+              icon={renderBackIcon}
+              onPress={() => navigation.goBack()}
+            />
+          </SummaryAction>
         </View>
       </View>
     );
@@ -437,29 +482,10 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   summaryRate: {
-    color: colors.text,
+    color: colors.success,
     fontSize: 44,
     fontWeight: '800',
     textAlign: 'center',
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  summaryOk: {
-    color: colors.success,
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  summaryOkeish: {
-    color: colors.warning,
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  summaryNotOk: {
-    color: colors.danger,
-    fontSize: 15,
-    fontWeight: '700',
   },
   summaryMeta: {
     color: colors.textMuted,
@@ -476,6 +502,18 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   summaryActions: {
-    gap: spacing.sm,
+    gap: spacing.md,
+  },
+  summaryAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+  },
+  summaryActionLabel: {
+    flex: 1,
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

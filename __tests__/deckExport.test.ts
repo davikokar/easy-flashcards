@@ -1,6 +1,8 @@
 import Papa from 'papaparse';
 import { Card, Category, Deck } from '../src/types';
 import {
+  DECK_FILE_FORMAT,
+  DECK_FILE_VERSION,
   EXPORT_MIME_TYPES,
   SEPARATOR_PRESETS,
   exportFileName,
@@ -99,7 +101,7 @@ describe('serializeDeckJson', () => {
       [
         '{',
         '  "format": "easy-flashcards-deck",',
-        '  "version": 1,',
+        '  "version": 2,',
         '  "title": "Title",',
         '  "description": "Desc",',
         '  "category": null,',
@@ -114,28 +116,24 @@ describe('serializeDeckJson', () => {
     );
   });
 
-  it('describes a default category as built in', () => {
+  it('writes a built-in category as its id, not its name', () => {
     const parsed = JSON.parse(serializeDeckJson(deck([]), languages));
 
-    expect(parsed.category).toEqual({
-      id: 'default_languages',
-      name: 'Languages',
-      color: languages.color,
-      icon: 'languages',
-      builtIn: true,
-    });
+    expect(parsed.category).toBe('default_languages');
   });
 
-  it('describes a custom category without its createdAt', () => {
+  it('writes a custom category as its name, not its id', () => {
     const parsed = JSON.parse(serializeDeckJson(deck([]), customCategory));
 
-    expect(parsed.category).toEqual({
-      id: 'custom_1',
-      name: 'My topic',
-      color: '#112233',
-      icon: 'anchor',
-      builtIn: false,
-    });
+    expect(parsed.category).toBe('My topic');
+  });
+
+  it('writes the format and version from the shared constants', () => {
+    const parsed = JSON.parse(serializeDeckJson(deck([]), null));
+
+    expect(parsed.format).toBe(DECK_FILE_FORMAT);
+    expect(parsed.version).toBe(DECK_FILE_VERSION);
+    expect(DECK_FILE_VERSION).toBe(2);
   });
 
   it('exports card text exactly as stored and leaves progress out', () => {
@@ -159,7 +157,7 @@ describe('serializeDeckJson', () => {
 });
 
 describe('serializeDeckCsv', () => {
-  it('writes three comment lines, a lower-case header and one row per card, ending in LF', () => {
+  it('writes five comment lines, a lower-case header and one row per card, ending in LF', () => {
     const csv = serializeDeckCsv(
       deck([card('What is the capital of <b>France</b>?', 'Paris')], 'German words', 'Words.'),
       languages,
@@ -168,9 +166,11 @@ describe('serializeDeckCsv', () => {
 
     expect(csv).toBe(
       [
+        '# format: easy-flashcards-deck',
+        '# version: 2',
         '# title: German words',
         '# description: Words.',
-        '# category: Languages',
+        '# category: default_languages',
         'question;answer',
         'What is the capital of <b>France</b>?;Paris',
         '',
@@ -178,34 +178,42 @@ describe('serializeDeckCsv', () => {
     );
   });
 
+  it('writes a custom category as its name', () => {
+    const csv = serializeDeckCsv(deck([card('Q', 'A')]), customCategory, ',');
+
+    expect(csv.split('\n')[4]).toBe('# category: My topic');
+  });
+
   it('writes empty comment values as the key and colon only', () => {
     const csv = serializeDeckCsv(deck([card('Q', 'A')], 'T', ''), null, ',');
 
-    expect(csv.split('\n').slice(0, 3)).toEqual(['# title: T', '# description:', '# category:']);
+    expect(csv.split('\n').slice(2, 5)).toEqual(['# title: T', '# description:', '# category:']);
   });
 
   it('keeps a comment value on one line, escaping backslash and line feed and dropping CR', () => {
     const csv = serializeDeckCsv(deck([], 'a\\b', 'one\r\ntwo\nthree'), null, ',');
 
-    expect(csv.split('\n').slice(0, 2)).toEqual(['# title: a\\\\b', '# description: one\\ntwo\\nthree']);
+    expect(csv.split('\n').slice(2, 4)).toEqual(['# title: a\\\\b', '# description: one\\ntwo\\nthree']);
   });
 
   it('does not quote or escape the separator in a comment line', () => {
     const csv = serializeDeckCsv(deck([], 'a;b'), null, ';');
 
-    expect(csv.split('\n')[0]).toBe('# title: a;b');
+    expect(csv.split('\n')[2]).toBe('# title: a;b');
   });
 
   it('writes only the comment lines and the header for a deck with no cards', () => {
     const csv = serializeDeckCsv(deck([], 'T'), null, ';');
 
-    expect(csv).toBe('# title: T\n# description:\n# category:\nquestion;answer\n');
+    expect(csv).toBe(
+      '# format: easy-flashcards-deck\n# version: 2\n# title: T\n# description:\n# category:\nquestion;answer\n',
+    );
   });
 
   it('quotes a field that starts with #, and no other field of that row', () => {
     const csv = serializeDeckCsv(deck([card('#1 hit', 'plain')]), null, ';');
 
-    expect(csv.split('\n')[4]).toBe('"#1 hit";plain');
+    expect(csv.split('\n')[6]).toBe('"#1 hit";plain');
   });
 
   it('quotes a field with the separator, a quote, a line break or edge spaces', () => {
@@ -215,14 +223,14 @@ describe('serializeDeckCsv', () => {
       ';',
     );
 
-    expect(csv.split('\n').slice(4, 6)).toEqual(['"a;b";"say ""hi"""', '"one']);
+    expect(csv.split('\n').slice(6, 8)).toEqual(['"a;b";"say ""hi"""', '"one']);
     expect(csv.endsWith('two";" padded "\n')).toBe(true);
   });
 
   it('writes fields that start with =, +, - or @ unchanged', () => {
     const csv = serializeDeckCsv(deck([card('=1+1', '-x'), card('+y', '@z')]), null, ',');
 
-    expect(csv.split('\n').slice(4, 6)).toEqual(['=1+1,-x', '+y,@z']);
+    expect(csv.split('\n').slice(6, 8)).toEqual(['=1+1,-x', '+y,@z']);
   });
 
   it('writes no BOM and no carriage return', () => {

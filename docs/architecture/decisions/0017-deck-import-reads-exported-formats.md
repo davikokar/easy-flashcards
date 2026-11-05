@@ -236,10 +236,112 @@ The file must be the object ADR-0016 defines.
 - Card text from a file is untrusted HTML, as CSV text already was; it is rendered only by the
   app's own renderer and its supported tag set ([ADR-0001](0001-own-the-html-renderer.md)).
 
+## Amendment 1 — 2026-11-05
+
+Recorded ahead of the work it describes. The owner asked that **Import deck from file** stop
+offering a CSV/JSON choice — the user just picks a file and the importer chooses the parser — and
+approved reversing the one sub-decision that forbade it: *"the format is never sniffed from the
+extension or the content"* in *The flow*, and with it the rejected alternative *Sniff the format
+from the file's extension or content*, whose reason was that "the menu already asks". The menu is
+what goes. The decision itself stands — import reads exactly the two formats ADR-0016 defines, by
+every rule above for each — so this is an amendment, not a new record.
+
+- **The Import format menu is removed.** **Import deck from file** in the Add deck menu opens the
+  system picker directly. The user never names a format.
+- **The picker offers the union of the two MIME lists**: `text/csv`,
+  `text/comma-separated-values`, `text/tab-separated-values`, `text/plain`, `application/json` and
+  `*/*`. The trailing `*/*` still keeps any file pickable.
+- **The format is detected from the content only**, by a pure `detectDeckFormat(raw)` in
+  [`src/utils/deckImport.ts`](../../../src/utils/deckImport.ts), tested in Jest. It strips a leading
+  BOM, skips leading whitespace, and returns **JSON when the first remaining character is `{` or
+  `[`**; anything else, an empty or whitespace-only file included, is **CSV**. The chosen parser
+  then applies every rule of its section above, unchanged. `pickAndParseDeck` takes no format.
+- **The file name and the MIME type are not consulted.** On a `content://` URI the display name may
+  have no extension or the wrong one, and providers label MIME types inconsistently — the reason
+  both picker lists already ended in `*/*`. The first character is a signal the file itself
+  carries: a deck JSON file is an object, and a CSV deck starts with a comment line or its header
+  row.
+- **`[` goes to the JSON parser**, so a bare array of cards gets the JSON section's *not an Easy
+  Flashcards deck file* message — which says what is wrong with it — rather than a CSV header
+  error.
+- **A file that is neither format is reported by the CSV parser, with its existing messages**: an
+  empty file as empty, anything else as lacking a header row that names `question` and `answer`.
+  No new message is added; the owner chose to keep the CSV message over a dedicated one.
+- **Nothing else changes**: no dependency, no Android permission, no storage key, no stored shape,
+  no store action. The deck is still created by one `addDeck` dispatch with the same input.
+
+Consequences:
+
+- One step fewer, and no wrong choice to make: a JSON file can no longer fail by being picked as
+  CSV, nor the other way round.
+- **Accepted limitation: a CSV file whose first non-blank character is `{` or `[`** — in practice
+  an unquoted first column name starting with one, with no comment line above the header — is read
+  as JSON and rejected as *not an Easy Flashcards deck file*. No CSV the app exports does this,
+  because every one starts with a `#` comment line. Quoting that column name, or adding any comment
+  line above the header, makes such a file import.
+- The JSON parser's message, which tells the user to pick a JSON file exported from the app, is now
+  shown for any file detected as JSON, including one the user meant as CSV under the limitation
+  above.
+
+## Amendment 2 — 2026-11-05
+
+Recorded ahead of the work it governs, at the owner's request. The decision — import reads exactly
+the formats ADR-0016 defines, now at version 2 — stands. Two of its sub-decisions, and the
+alternatives they rejected, change under [ADR-0019](0019-deck-file-format-version-2.md):
+
+- **A CSV's comment lines above the header are read.** *"The comment lines are ignored, including
+  `# title:`, `# description:` and `# category:`"* no longer holds for `category`, `format` and
+  `version`. The `category` line is resolved as below, so **a CSV-imported deck may start with a
+  category**. A file whose `format` is `easy-flashcards-deck` and whose `version` is greater than
+  the current one is refused with the JSON importer's *newer version* message; otherwise `format`
+  and `version` are not validated, and a CSV without comment lines imports as before. `title` and
+  `description` are still not read: the deck is named after its file, with an empty description.
+  The rejected alternative *Read `# title:`, `# description:` and `# category:` from a CSV* is
+  thereby adopted for `category` only.
+- **A category is matched by a reference, not by `category.id` alone.** The file's reference is
+  resolved in order: a built-in id, a stored custom category's id, a stored custom category's name
+  ignoring case and surrounding whitespace; otherwise no category. A built-in category is never
+  matched by name. The rejected alternative *Match a category by name* is adopted for **custom
+  categories only**; *create a missing custom category* stays rejected — an import still never
+  creates one.
+- **The JSON importer reads versions `1` and `2`**, refusing a greater one as newer. `category` is
+  read as a string reference in either version, or, as version 1 wrote it, as an object: its `id`
+  when that is a built-in id, else its `name`, else its `id`.
+- **Resolution stays in the reducer's `addDeck` case**, at dispatch, as *Resolving the category*
+  decided; it calls ADR-0019's resolver instead of `findCategory`. *"So a built-in category always
+  matches; a custom category matches only on the device that minted it"* now reads: a custom
+  category matches on any device holding a custom category of the same name.
+- Nothing persisted changes: no storage key, no stored shape, no dependency, no permission.
+
+## Amendment 3 — 2026-11-05
+
+Recorded after the work it describes, under [ADR-0019](0019-deck-file-format-version-2.md)
+Amendment 1. The decision stands; the CSV importer now reads the two comment lines it still
+skipped.
+
+- **A CSV import reads `# title:` and `# description:`.** Amendment 2's *"`title` and
+  `description` are still not read: the deck is named after its file, with an empty description"*
+  no longer holds, and nor does anything left of *CSV*'s *"The comment lines are ignored"*. The
+  deck is named after the `title` line, trimmed and unescaped, or after its file when the line is
+  missing or blank; its description is the `description` line, the same way, or `''`. The rejected
+  alternative *Read `# title:`, `# description:` and `# category:` from a CSV* is now adopted in
+  full.
+- **The name is chosen alike for both formats**, in `src/services/importDeck.ts`: the file's title,
+  else `deckNameFromFileName`. Only the trim differs: a CSV value is trimmed before it is unescaped
+  (ADR-0019 Amendment 1).
+- The *Negative* consequence *"A CSV round trip still loses the description and the category, and
+  the title survives only as the file name"* no longer holds: a CSV round trip keeps the title, the
+  description and, where it resolves, the category, as JSON does. The whitespace consequence still
+  applies to both formats.
+- Nothing persisted changes: no storage key, no stored shape, no store action.
+
 ## References
 
 - [ADR-0016](0016-deck-export-file-formats.md) — the formats read here; amended by this record
   (Amendment 2)
+- [ADR-0019](0019-deck-file-format-version-2.md) — format version 2: CSV comment lines read, the
+  category reference and its resolution (Amendment 2); the CSV title and description read
+  (Amendment 3; ADR-0019 Amendment 1)
 - [ADR-0014](0014-deck-belongs-to-one-category.md) — resolving a category id; amended by this
   record (Amendment 4)
 - [ADR-0011](0011-deck-editing-is-one-action.md) — the description; amended by this record
@@ -251,10 +353,13 @@ The file must be the object ADR-0016 defines.
 - [ADR-0015](0015-answers-carry-a-timestamp-under-v2-keys.md) — counters equal the answer log
 - [`src/utils/csv.ts`](../../../src/utils/csv.ts) — the CSV parser, widened by this record
 - [`src/utils/deckImport.ts`](../../../src/utils/deckImport.ts) — created by the work:
-  `DeckImportError`, `ParsedCard`, `parseDeckJson`
+  `DeckImportError`, `ParsedCard`, `parseDeckJson`; `detectDeckFormat` (Amendment 1)
 - [`src/utils/deckExport.ts`](../../../src/utils/deckExport.ts) — `validateCustomSeparator`,
   `SEPARATOR_PRESETS`
-- [`src/services/importDeck.ts`](../../../src/services/importDeck.ts) — the picker
+- [`src/services/importDeck.ts`](../../../src/services/importDeck.ts) — the picker; one MIME list
+  and no format argument (Amendment 1)
+- [`src/screens/DecksScreen.tsx`](../../../src/screens/DecksScreen.tsx) — the Add deck menu, whose
+  Import format menu is removed (Amendment 1)
 - [`src/state/reducer.ts`](../../../src/state/reducer.ts),
   [`src/state/DecksContext.tsx`](../../../src/state/DecksContext.tsx) — `addDeck`
 - [`src/utils/categories.ts`](../../../src/utils/categories.ts) — `findCategory`

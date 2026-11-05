@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { parseFlashcardsCsv } from '../src/utils/csv';
 import { serializeDeck } from '../src/utils/deckExport';
-import { parseDeckJson } from '../src/utils/deckImport';
+import { detectDeckFormat, parseDeckJson } from '../src/utils/deckImport';
 import {
   SAMPLE_DECK,
   SAMPLE_DECK_CATEGORY,
@@ -51,13 +51,21 @@ describe('the shipped sample files', () => {
     expect(file).toBe(serializeDeck(SAMPLE_DECK, SAMPLE_DECK_CATEGORY, jsonOptions));
   });
 
-  it('imports from the CSV as the five cards with nothing skipped', () => {
+  it('imports from the CSV as the title, description, category and five cards, with nothing skipped', () => {
     const parsed = parseFlashcardsCsv(readSample('sample-deck.csv'));
 
     expect(parsed.skippedRows).toBe(0);
+    expect(parsed.title).toBe(SAMPLE_DECK.name);
+    expect(parsed.description).toBe(SAMPLE_DECK.description);
+    expect(parsed.categoryRef).toBe('default_geography');
     expect(parsed.cards).toEqual(
       SAMPLE_DECK.cards.map(card => ({ question: card.question, answer: card.answer })),
     );
+  });
+
+  it('is detected as CSV for the CSV sample and as JSON for the JSON sample', () => {
+    expect(detectDeckFormat(readSample('sample-deck.csv'))).toBe('csv');
+    expect(detectDeckFormat(readSample('sample-deck.json'))).toBe('json');
   });
 
   it('imports from the JSON as the title, description, category and five cards', () => {
@@ -65,7 +73,7 @@ describe('the shipped sample files', () => {
 
     expect(parsed.title).toBe(SAMPLE_DECK.name);
     expect(parsed.description).toBe(SAMPLE_DECK.description);
-    expect(parsed.categoryId).toBe(SAMPLE_DECK.categoryId);
+    expect(parsed.categoryRef).toBe('default_geography');
     expect(parsed.skippedCards).toBe(0);
     expect(parsed.cards).toEqual(
       SAMPLE_DECK.cards.map(card => ({ question: card.question, answer: card.answer })),

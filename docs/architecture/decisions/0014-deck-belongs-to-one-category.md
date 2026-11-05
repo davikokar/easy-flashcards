@@ -285,6 +285,44 @@ deck's category is shown, as part of the Deck statistics screen redesign.
 - Sessions still store no category. Nothing persisted changes and no dependency is added. On iOS
   the square would show without its glyph, as Amendment 1 records for the other places.
 
+## Amendment 7 — 2026-11-05
+
+Recorded after the work it describes. The decision above is unchanged; this corrects one line of
+*Not decided here*.
+
+- **The Header toolbar's Filter button was removed, not kept as a placeholder.** The item
+  "filtering the Decks or Learn screen by category — the Header toolbar's **Filter button** stays a
+  placeholder" no longer holds for its second half. At the owner's request the stub, which only
+  showed a "not available yet" alert on the Decks and Learn screens, was deleted with its `filter`
+  glyph; the Header toolbar is now the Search button and the App menu.
+- **Filtering by category is still not decided.** It remains a follow-up, now with no control
+  reserved for it; the change that builds it chooses its own.
+- Nothing persisted changes and no dependency is added.
+
+## Amendment 8 — 2026-11-05
+
+Recorded ahead of the work it governs. The decision above is unchanged; this revises what
+Amendments 3 and 4 said about a category in an exported or imported file, under
+[ADR-0019](0019-deck-file-format-version-2.md).
+
+- **A file names a category by one string, the same in CSV and JSON**: a built-in category's
+  permanent id, never its display name, so files stay valid when the app is translated; a custom
+  category's name. Amendment 3's `# category: <name>` line and `category` object no longer hold.
+- **A CSV-imported deck may start with a category.** Amendment 4's *"a CSV-imported deck still
+  starts with none"* no longer holds, nor does the decision's *"An imported deck starts with no
+  category"*.
+- **The reducer's `addDeck` case resolves the request with a wider rule than `findCategory`**: a
+  built-in id, then a stored custom category's id, then a stored custom category's name, ignoring
+  case and surrounding whitespace; otherwise `null`. *Resolving an id* still holds for everything a
+  deck stores and everything displayed — those are ids, resolved by `findCategory` — and the rule
+  that no state holds a deck pointing at a missing category is unchanged, because `addDeck` still
+  stores only a resolved id or `null`. A built-in category is never matched by name.
+- **A custom category from another device now matches when this device has a custom category of the
+  same name.** An import still never creates a category.
+- **Still not decided:** a deck count on the Categories tab's tiles, filtering by category, and a
+  category aggregation in Statistics.
+- Nothing persisted changes and no dependency is added.
+
 ## References
 
 - [ADR-0002](0002-sessions-are-snapshots.md) — snapshots; amended by this record (Amendment 6)
@@ -300,6 +338,8 @@ deck's category is shown, as part of the Deck statistics screen redesign.
 - [ADR-0016](0016-deck-export-file-formats.md) — the category in an exported file (Amendment 3)
 - [ADR-0017](0017-deck-import-reads-exported-formats.md) — the category read back on JSON import
   (Amendment 4)
+- [ADR-0019](0019-deck-file-format-version-2.md) — the category reference in both files, and its
+  resolution on import (Amendment 8)
 - [`src/types.ts`](../../../src/types.ts) — `Deck`
 - [`src/storage/decksStorage.ts`](../../../src/storage/decksStorage.ts) — the `categoryId` default
 - [`src/state/reducer.ts`](../../../src/state/reducer.ts) — `updateDeck`, `deleteCategory`;
@@ -313,6 +353,8 @@ deck's category is shown, as part of the Deck statistics screen redesign.
   card that shows the square on the Statistics screen (Amendment 2)
 - [`src/screens/DeckStatsScreen.tsx`](../../../src/screens/DeckStatsScreen.tsx) — the Deck
   statistics screen's identity row (Amendment 6)
+- [`src/components/HeaderToolbar.tsx`](../../../src/components/HeaderToolbar.tsx) — the toolbar
+  the Filter button was removed from (Amendment 7)
 - [ARCHITECTURE.md §1, §2, §3, §5, §8](../ARCHITECTURE.md) — updated for this record by the change
   that implemented it
 - [AGENTS.md](../../../AGENTS.md) — *State ownership*, *Storage keys*, *What to ask before doing*

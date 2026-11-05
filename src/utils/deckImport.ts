@@ -1,3 +1,6 @@
+import { isDefaultCategoryId } from './categories';
+import { DECK_FILE_FORMAT, DECK_FILE_VERSION } from './deckExport';
+
 export type DeckImportFormat = 'csv' | 'json';
 
 export type ParsedCard = { question: string; answer: string };
@@ -6,8 +9,8 @@ export type ParsedDeckJson = {
   /** Null when the file has no usable title; the caller then names the deck after the file. */
   title: string | null;
   description: string;
-  /** The id the file asks for, unresolved; the reducer matches it against the categories. */
-  categoryId: string | null;
+  /** The category reference the file holds, unresolved; the reducer matches it against the categories. */
+  categoryRef: string | null;
   cards: ParsedCard[];
   skippedCards: number;
 };
@@ -19,13 +22,13 @@ export class DeckImportError extends Error {
   }
 }
 
-const DECK_FORMAT = 'easy-flashcards-deck';
-const SUPPORTED_VERSION = 1;
+// Version 1 wrote `category` as an object; both versions are read.
+const OLDEST_VERSION = 1;
 
 export const EMPTY_FILE_MESSAGE = 'The selected file is empty.';
 const NOT_A_DECK_MESSAGE =
   'This is not an Easy Flashcards deck file. Pick a JSON file exported from the app.';
-const NEWER_VERSION_MESSAGE =
+export const NEWER_VERSION_MESSAGE =
   'This deck file was made by a newer version of Easy Flashcards. Update the app to import it.';
 const NO_CARDS_MESSAGE = 'No usable cards found. Every card needs a question and an answer.';
 
@@ -33,11 +36,35 @@ export function stripBom(input: string): string {
   return input.charCodeAt(0) === 0xfeff ? input.slice(1) : input;
 }
 
+/** Chooses the parser from the content alone: file name and MIME type are unreliable on `content://` URIs. */
+export function detectDeckFormat(raw: string): DeckImportFormat {
+  const first = stripBom(raw).trimStart().charAt(0);
+  return first === '{' || first === '[' ? 'json' : 'csv';
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-/** Reads the `easy-flashcards-deck` version 1 file that `serializeDeckJson` writes. */
+/** A string is the reference itself; a version 1 object is read as its built-in id, else its name, else its id. */
+function categoryRefOf(category: unknown): string | null {
+  if (typeof category === 'string') {
+    return category;
+  }
+  if (!isRecord(category)) {
+    return null;
+  }
+  const { id, name } = category;
+  if (typeof id === 'string' && isDefaultCategoryId(id)) {
+    return id;
+  }
+  if (typeof name === 'string' && name.trim().length > 0) {
+    return name;
+  }
+  return typeof id === 'string' ? id : null;
+}
+
+/** Reads the `easy-flashcards-deck` file, version 1 or 2, that `serializeDeckJson` writes. */
 export function parseDeckJson(raw: string): ParsedDeckJson {
   const text = stripBom(raw);
   if (text.trim().length === 0) {
@@ -51,13 +78,17 @@ export function parseDeckJson(raw: string): ParsedDeckJson {
     throw new DeckImportError(NOT_A_DECK_MESSAGE);
   }
 
-  if (!isRecord(data) || data.format !== DECK_FORMAT || typeof data.version !== 'number') {
+  if (!isRecord(data) || data.format !== DECK_FILE_FORMAT || typeof data.version !== 'number') {
     throw new DeckImportError(NOT_A_DECK_MESSAGE);
   }
-  if (data.version > SUPPORTED_VERSION) {
+  if (data.version > DECK_FILE_VERSION) {
     throw new DeckImportError(NEWER_VERSION_MESSAGE);
   }
-  if (data.version !== SUPPORTED_VERSION || !Array.isArray(data.cards)) {
+  if (
+    !Number.isInteger(data.version) ||
+    data.version < OLDEST_VERSION ||
+    !Array.isArray(data.cards)
+  ) {
     throw new DeckImportError(NOT_A_DECK_MESSAGE);
   }
 
@@ -85,8 +116,7 @@ export function parseDeckJson(raw: string): ParsedDeckJson {
   return {
     title: title.length > 0 ? title : null,
     description: typeof data.description === 'string' ? data.description.trim() : '',
-    categoryId:
-      isRecord(data.category) && typeof data.category.id === 'string' ? data.category.id : null,
+    categoryRef: categoryRefOf(data.category),
     cards,
     skippedCards,
   };

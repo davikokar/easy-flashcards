@@ -1,5 +1,5 @@
 import { Answer, AnswerTally, Category, Deck, Session, SessionResult } from '../types';
-import { findCategory } from '../utils/categories';
+import { findCategory, resolveCategoryReference } from '../utils/categories';
 import { SavedCardDraft, applyDeckEdit, reconcileSession, removedCardIds } from '../utils/deckEdit';
 import {
   applyReviewAnswer,
@@ -94,7 +94,9 @@ export function reducer(state: State, action: Action): State {
     case 'loadFailed':
       return { ...state, isLoading: false, error: action.message };
     case 'addDeck': {
-      const categoryId = findCategory(action.deck.categoryId, state.categories)?.id ?? null;
+      // The request is an id from the New deck screen, or a category reference from an import.
+      const categoryId =
+        resolveCategoryReference(action.deck.categoryId, state.categories)?.id ?? null;
       return { ...state, decks: [{ ...action.deck, categoryId }, ...state.decks] };
     }
     case 'updateDeck': {

@@ -30,8 +30,6 @@ type Props = CompositeScreenProps<
   BottomTabScreenProps<RootTabParamList>
 >;
 
-const showFilterStub = () => Alert.alert('Filter', 'Filtering sessions is not available yet.');
-
 const showDeckUnavailable = () =>
   Alert.alert('Deck unavailable', 'This deck no longer exists or has no cards.');
 
@@ -104,9 +102,7 @@ export default function LearnScreen({ navigation }: Props) {
       <HeaderToolbar
         onSearch={toggleSearch}
         searchActive={searchOpen}
-        onFilter={showFilterStub}
         searchLabel="Search sessions"
-        filterLabel="Filter sessions"
         menuItems={[
           {
             label: 'Clear completed sessions',

@@ -91,8 +91,8 @@ The split here is by **folder, not by suffix** — there is no `*Screen` / `*Con
 
 `AppMenu` is the one exception and a deliberate one: it calls `exportSampleDeck` directly because
 it has no screen to belong to. The **Header toolbar** mounts it (boxed) on the Decks, Learn and
-Statistics screens; the Categories screen mounts it (boxed) directly, with no Search button and no
-Filter button; the navigator sets no default `headerRight`. It takes optional `extraItems` so a
+Statistics screens; the Categories screen mounts it (boxed) directly, with no Search button; the
+navigator sets no default `headerRight`. It takes optional `extraItems` so a
 screen can add items without `AppMenu` gaining store knowledge: each root screen overrides
 `headerRight` itself (via `navigation.setOptions`), and the Learn screen's Header toolbar passes
 `menuItems` that supply **Clear completed sessions**.
@@ -132,8 +132,10 @@ screen can add items without `AppMenu` gaining store knowledge: each root screen
   reviews** tile's glyph and means "answers recorded"; it is not `replay`, which belongs to the
   **Replay button** and the **Review errors button**, and reviews as a statistic are never the
   error review. `sort` (two vertical arrows side by side, the left pointing up and the right
-  down) is the **Sort button**'s glyph; it is deliberately not `filter` (three decreasing bars),
-  which is the **Filter button**'s and means narrowing, not ordering.
+  down) is the **Sort button**'s glyph and means ordering the list, not narrowing it. `back` (a
+  left-pointing arrow: a triangular head and a stem) is the **Back to sessions** action's glyph and
+  means leaving the Study screen's summary for the Learn list; it is not the header's back arrow,
+  which the navigator draws.
 - **Export sample deck dialog** (in `AppMenu`): the centred `Modal` explaining the two sample
   files it saves, a CSV and a JSON of the same deck — how the CSV is laid out, what the JSON adds
   back, and that basic HTML is allowed, in a body that scrolls — with **Export** and **Cancel**
@@ -152,11 +154,9 @@ Everything else that interrupts the user is a native `Alert` — confirmations, 
 ## Header toolbar
 
 - **Header toolbar** (`HeaderToolbar`): the rounded-square buttons at the right of the header on
-  the Decks, Learn and Statistics screens, in this order: **Search button**, **Filter button**
-  (Decks and Learn only), and the **App menu** (the Kebab menu in its `boxed` variant). The Filter
-  button is rendered only when the screen supplies its handler and label, so **Statistics shows the
-  Search button and the App menu alone**. Each screen sets the toolbar as `headerRight` itself,
-  supplying the button labels and, optionally, `menuItems` for the App menu. All three screens use
+  the Decks, Learn and Statistics screens, in this order: **Search button**, then the **App menu**
+  (the Kebab menu in its `boxed` variant). Each screen sets the toolbar as `headerRight` itself,
+  supplying the Search button's label and, optionally, `menuItems` for the App menu. All three screens use
   the same header style: a `colors.background` header (not the `surface` default of the other
   screens) and a 24-point, 700-weight title; the Categories screen uses that header style too but
   not the toolbar. It was the **Decks toolbar** before the Learn screen used it.
@@ -165,8 +165,6 @@ Everything else that interrupts the user is a native `Alert` — confirmations, 
   pressing it while the bar is open behaves exactly like the **Close search button** — clears the
   query and hides the bar. While the bar is open the button is **active**: primary-coloured border
   and glyph, and `accessibilityState.expanded` is true.
-- **Filter button**: labelled `Filter decks` on the Decks screen and `Filter sessions` on the Learn
-  screen. **A stub** — shows a "not available yet" alert.
 
 ## Search
 
@@ -266,10 +264,10 @@ Everything else that interrupts the user is a native `Alert` — confirmations, 
   and shares only the `export` glyph and the verb: it saves a fixed sample deck as two files, with
   no format choice.
 - **Export format menu**: the **Menu sheet** **Export to file** opens, titled `Export deck to file`,
-  with the same shape as the **Import format menu** — one `file` glyph item per format: **JSON**,
-  then **CSV**. Both are implemented; there are no stubs in it. **JSON** goes straight to the save
-  dialog; **CSV** opens the **CSV separator menu**. Mirrors the Import format menu's wording
-  (`Import deck from file`) and is a different menu, not the same one reused.
+  with exactly two items, each with the `file` glyph: **JSON**, then **CSV**. Both are implemented;
+  there are no stubs in it. **JSON** goes straight to the save dialog; **CSV** opens the **CSV
+  separator menu**. Importing has no format menu: **Import deck from file** opens the system picker
+  and the app detects the format from the file.
 - **CSV separator menu**: the **Menu sheet** **CSV** opens in the Export format menu, titled `CSV
   separator`, with four items and no icons: `Comma (,)`, `Semicolon (;)`, `Tab` and `Custom…`
   (a real ellipsis character, because it opens another step). The first three go straight to the
@@ -297,15 +295,12 @@ Everything else that interrupts the user is a native `Alert` — confirmations, 
   labelled `Add a deck`. It is
   the app's only FAB. Shows a spinner while an import is in flight. Opens the **Add deck menu**.
   Aliases: **the + button**, **the FAB**
-- **Add deck menu**: the Menu sheet behind the Add deck button — **Import deck from file**, which
-  opens the **Import format menu**, and **Add deck manually**, which opens the **New deck screen**.
-- **Import format menu**: the **Menu sheet** **Import deck from file** opens, with exactly two
-  items, each with the `file` glyph: **CSV**, then **JSON**. Both are implemented; there are no
-  stubs and no "not available yet" alert in it. Each opens the system picker and reads the file
-  as the chosen format, whatever its extension
-  ([ADR-0017](../../docs/architecture/decisions/0017-deck-import-reads-exported-formats.md)).
-  Not the **Export format menu**, which lists the same two formats in the opposite order. Do not
-  describe the app as supporting XML or JSONL.
+- **Add deck menu**: the Menu sheet behind the Add deck button, titled `Add a deck`, with two items:
+  **Import deck from file**, which opens the system file picker directly — there is no format
+  choice; the user picks a CSV or JSON file and the app detects the format from its content
+  ([ADR-0017](../../docs/architecture/decisions/0017-deck-import-reads-exported-formats.md)) — and
+  **Add deck manually**, which opens the **New deck screen**. Do not describe the app as supporting
+  XML or JSONL.
 - **Decks empty state**: `No decks yet`.
 
 ## Edit deck screen
@@ -390,7 +385,8 @@ sections below say where the two differ; everything else applies to both.
   completed states, and absent otherwise. It wraps under the status pill when the row is too narrow.
   Labelled `Inverted session`. Deliberately not tinted: direction is not a state. The Study screen
   shows the same pill in its **Progress header**.
-- **Session results bar** (`SessionResultsBar`): the segmented track and legend on a Session card,
+- **Session results bar** (`SessionResultsBar`): the segmented track and legend on a Session card
+  and in the **Session summary** and **Review summary**,
   labelled ``Progress: {answered} of {total} answered — {n} ok, {n} okeish, {n} not ok``. One
   segment per answer — green ok, amber okeish, red not ok — each sized by its share of **all the
   session's cards** (`sessionProgressShares`), so the unfilled remainder of the track is the
@@ -422,7 +418,8 @@ sections below say where the two differ; everything else applies to both.
   screen in **review mode** and creates nothing, clears nothing and changes no statistic
   ([ADR-0009](../../docs/architecture/decisions/0009-error-review-marks-cards-fixed.md)). It was
   the **Replay missed button**, which created a counted session. "Unsure" appears in its label as in
-  the **Review summary** action. It has three parts:
+  the **Review summary** action, which uses this same button (`ReviewErrorsButton`, with no `done`
+  state). It has three parts:
   - **Review badge**: the small round badge on the button's top-right corner, a sibling of the
     button so that dimming a disabled button does not fade it, and hidden from accessibility.
     Warning-ringed and showing the **Review count** while errors are outstanding; success-ringed
@@ -431,8 +428,8 @@ sections below say where the two differ; everything else applies to both.
     number a tap would review. Capped at `99+`.
   - **Review done tick**: the tick (**Answer icon**) in the badge once every missed or unsure card is
     fixed. The button is then **disabled**, and its label says everything is fixed.
-- **Search button** and **Filter button** on this screen belong to the **Header toolbar**; the
-  Search button opens the **Search bar** (placeholder `Search sessions`).
+- The **Search button** on this screen belongs to the **Header toolbar**; it opens the
+  **Search bar** (placeholder `Search sessions`).
 - **Cleared session**: a completed session the user removed from the Learn list
   ([ADR-0008](../../docs/architecture/decisions/0008-clear-completed-sessions.md)). It is hidden
   from the Learn screen but kept and **still counted everywhere** (Sessions tile, Deck meta row,
@@ -513,7 +510,8 @@ The densest screen in the app, and the one with vocabulary worth being precise a
   an okeish-only card is 0%, not `--`), and a **review** treats it as an error along with the
   missed cards ([ADR-0007](../../docs/architecture/decisions/0007-okeish-third-answer.md)). The UI
   word is always "okeish"; "unsure" appears only in the labels of the **Review errors button** and
-  the review actions (``Review the {n} missed or unsure``).
+  the review actions (`Review the missed or unsure cards`, labelled ``Review the {n} missed or
+  unsure card(s)``).
 - **Swipe hint**: the dim line between the card and the buttons. It is **empty except while
   reviewing**, when it reads `Reviewing an answered card — swipe left to get back to where you were`.
   Nothing on screen advertises swiping right; the gesture is undiscoverable until tried. It reads
@@ -528,27 +526,44 @@ The densest screen in the app, and the one with vocabulary worth being precise a
   that is navigation.
 - **Review, Reviewing, Reviewed, Reviews** — four words that must not be mixed up:
   **Reviewing** (-ing) is the swipe-back above. **Review** as a noun, a verb or in a compound
-  (**Review errors button**, **Review pass**, **Review summary**, `Review the {n} missed or
-  unsure`, **review mode**) is the error review of a completed session. **`Reviewed {n}`** (the
+  (**Review errors button**, **Review pass**, **Review summary**, `Review the missed or unsure
+  cards`, **review mode**) is the error review of a completed session. **`Reviewed {n}`** (the
   Session summary) and **`Reviews`** / `{n} reviews` / `Total reviews` (the Statistics screens, the Mastery bar)
   are counts of recorded answers, **which a review never adds to**. Never say "reviews" for the
   error review, nor "reviewing" for it. Two more uses are *not* the error review: `Reviewed {date}`
   on a **Card stats row** (when a card was last answered) and the **Card status** `Needs review`
   (a success rate below 40%, which a card can have without any session ever being reviewed).
 - **Session summary**: what an ordinary session becomes once every card is answered, titled
-  `Session complete`. A large success rate
-  and a **Success bar**, then one row of `Ok {n}`, `Okeish {n}`, `Not Ok {n}` (tinted success,
-  warning, danger), then `Reviewed {n}` on its own line. Up to three actions:
-  ``Review the {n} missed or unsure`` (the outstanding not ok and okeish cards; **hidden when there
-  are none**) which starts a **review** — it replaces the summary with review mode, creating no
-  session — **Study the whole deck again**, and **Back to sessions**. Aliases: **end-of-session
-  summary**
+  `Session complete`. A card holding the large success rate in success green (the share of Ok
+  answers, labelled ``Success rate {rate}``), the **Session results bar** — the same segmented
+  green / amber / red bar as a Session card, with the **Answer icon** legend and counts in place of
+  `Ok {n}` / `Okeish {n}` / `Not Ok {n}` text — and `Reviewed {n}` on its own line. Below the card,
+  up to three **Summary buttons**, one **Summary action** row each, in this order:
+  `Review the missed or unsure cards` (the **Review errors button** itself — warning variant,
+  `replay` glyph and **Review badge** with the outstanding not ok and okeish count; **hidden when
+  there are none**) which starts a **review** — it replaces the summary with review mode, creating
+  no session — `Study the whole deck again` (not the **Replay button**: it starts a new session over
+  the whole deck with `startSession` and clears nothing; it only borrows the Replay button's look —
+  secondary variant, `replay` glyph) and `Back to sessions` (the secondary icon-only Button with the `back` glyph). Aliases:
+  **end-of-session summary**
+- **Summary action**: one row under the **Session summary** or the **Review summary**: the
+  explanatory text on the left, taking the flexible width and wrapping at large font sizes, and
+  the **Summary button** at the right at its fixed size, vertically centred. One row per action,
+  full width. The text is hidden from accessibility because the button's label says the same.
+- **Summary buttons**: the icon-only Buttons at the right of the **Summary actions**. They are
+  the Learn screen's footer buttons, same size, shape, variants and glyphs — the **Review errors
+  button** (shared component `ReviewErrorsButton`), the **Replay button**'s look and a `back`
+  button — with the text beside them rather than in them. Labelled ``Review the {n} missed or
+  unsure card(s)`` (the count is in the **Review badge** and the label, not in the visible text),
+  `Study the whole deck again` and `Back to sessions`. Never disabled: the review button is
+  absent when nothing is outstanding.
 - **Review summary**: what review mode becomes when a **Review pass** ends (or at once, when nothing
-  is outstanding), titled `Review complete`. A card, not a rate: the pass's own `Ok {n}`,
-  `Okeish {n}`, `Not Ok {n}` row (omitted when the pass answered nothing), then either
-  `{n} still to fix` or, when none remain, the **All fixed state**. Actions: ``Review the {n}
-  missed or unsure`` (the **next pass**, only while any remain) and **Back to sessions**. There is
-  no success rate, no Success bar and no `Reviewed {n}`, because nothing was recorded.
+  is outstanding), titled `Review complete`. A card, not a rate: the **Session results bar** of the
+  pass's own answers (omitted when the pass answered nothing), then either
+  `{n} still to fix` or, when none remain, the **All fixed state**. Actions, as **Summary
+  actions**: `Review the missed or unsure cards` (the **next pass**, only while any remain) and
+  `Back to sessions`. There is no success rate, no Success bar and no `Reviewed {n}`, because
+  nothing was recorded.
 - **All fixed state**: the success-coloured tick (**Answer icon**) over `All fixed`, shown in the
   Review summary in place of `{n} still to fix` once every missed or unsure card is fixed.
 - **Study empty state**: `Nothing to study` (message `This session is no longer available.`), with
@@ -568,7 +583,7 @@ A deck belongs to at most one category
   tab**, with its own stack. Where the categories are shown and the user's own are created and
   deleted. Aliases: **categories**
 - **Categories screen** (`CategoriesScreen`, route `CategoriesList`): root of the Categories tab.
-  Its header carries the boxed **App menu** only — no Search button, no Filter button, so it does
+  Its header carries the boxed **App menu** only — no Search button, so it does
   not use the **Header toolbar**. One scrolling column of two sections, with the **New category
   button** pinned below it.
 - **New category screen** (`NewCategoryScreen`, route `NewCategory`): pushed onto the Categories
@@ -682,7 +697,7 @@ A deck belongs to at most one category
 ## Statistics screens
 
 - The **Statistics screen** has a **Header toolbar** with the **Search button** (`Search decks`) and
-  the **App menu** only — no Filter button — and the same header style as Decks and Learn. Its
+  the **App menu** only, and the same header style as Decks and Learn. Its
   **Search bar** filters the **Deck stats cards** by deck name and the count in the **Decks
   breakdown** heading follows it; the **Aggregated stats** are not filtered by search and stay
   totals across every deck (though they follow the **Timeframe chips**). The Deck statistics
@@ -926,9 +941,10 @@ and the words appear only in accessibility labels.
   in `accessibilityState` (``Needs review, 3 cards``). **The counts ignore the search** and always
   describe the whole deck. The chips themselves carry no status colour or glyph: that is the
   **Card status badge**'s.
-- **Card status**: a card's band, from the success rate `SuccessBar` already uses (the same number,
-  so a badge and a bar cannot disagree): **Mastered** at 70% and above, **Learning** from 40% to
-  below 70%, **Needs review** below 40%, and **New** when the card has never been reviewed. A card
+- **Card status**: a card's band, from its success rate through `rateBand` in `stats.ts` (the same
+  band function `SuccessBar` keeps for its rate colours): **Mastered** at 70% and above,
+  **Learning** from 40% to below 70%, **Needs review** below 40%, and **New** when the card has
+  never been reviewed. A card
   that has only okeish answers is 0%, so it is **Needs review**, not New. Derived, never stored.
   This is a statement about the success rate and not a second metric. It is **not** the session
   **review** (error review).
@@ -982,27 +998,33 @@ and the words appear only in accessibility labels.
   and no separate icon button — if you need one, that is a vocabulary change.
 - **Answer icon** (`AnswerIcon`, in `AnswerIcons.tsx`): the glyph on an Answer button, in the
   **Mastery bar**, **Mastery ring** and **Session results bar** legends (so on a **Deck card**, the
-  **Aggregated stats** and a **Deck stats card**), in the **Session status pill** (tick), and on the
+  **Aggregated stats**, a **Deck stats card** and the **Session summary**), in the **Session status pill** (tick), and on the
   Deck statistics screen in the **Answer tiles**, the **Chart legend**, the **Latest session badge**,
   a **Card stats row**'s footer and the **Card status badge** —
   `tick`, `cross`, or `question`, drawn from nested `View`s and hidden from
   accessibility. It is separate
   from the **Menu icon** vocabulary; do not add an answer glyph to `MenuIcon` or the reverse.
 - **Not ok / Not Ok**: capitalisation differs by place. The Answer button's label is `Not ok`
-  (sentence case); the **Session summary** and **Review summary** say `Not Ok`; the meta rows say
-  `not ok` in running text. The Statistics screen prints neither: its answer breakdown is **Answer
+  (sentence case); the meta rows say
+  `not ok` in running text. The **Session summary** and **Review summary** print neither: their
+  breakdown is **Answer icons** with counts, and the words appear only in the **Session results
+  bar**'s accessibility label. The Statistics screen prints neither: its answer breakdown is **Answer
   icons** with percentages and counts, and the words appear only in accessibility labels. Match the
   place you are in.
 - **Success bar** (`SuccessBar`): the horizontal rate bar, used **on the Study screen only** (the
-  **Session progress bar**, and the rate bar of the **Session summary**) — not the Decks screen,
+  **Session progress bar**) — not the **Session summary**, which uses the **Session results bar**,
+  nor the Decks screen,
   which uses the **Mastery bar**, nor the Learn screen, which uses the **Session results bar**, nor
   the Statistics screen, which uses the **Mastery ring** and the **Mastery bar**, nor the Deck
   statistics screen, which uses the **Mastery track** (both used `SuccessBar` before their
-  redesigns). **Colour carries
-  meaning and is fixed by the rate**: border grey for *no data*, success green at 70% and above,
-  warning amber from 40%, danger red below — the same bands a **Card status** is read from. Grey and 0% are different states and the app
-  distinguishes them. The one override is the optional `color` prop, which replaces the rate colour
-  with a fixed one; only the **Session progress bar** uses it (white), because it is not a rate.
+  redesigns). **The component still carries rate colouring, but no screen uses it**: with no `color`
+  prop it paints border grey for *no data*, success green at 70% and above, warning amber from
+  40%, danger red below (the bands of `rateBand` in `stats.ts`, which also give a **Card status**
+  its bands). Grey and 0% are different states and the app distinguishes them. Every caller
+  today passes the optional `color` prop, which replaces the rate colour with a fixed one: the
+  **Session progress bar** passes white, because it is not a rate. Do not draw a rate with a
+  `SuccessBar` on a new screen without choosing it deliberately; the other bars above were
+  designed to replace it.
 - **Empty state** (`EmptyState`): every list's empty content — a title, a message, and an optional
   action. Each one's title is listed with its screen above; the **Search empty state** is under
   **Search**.

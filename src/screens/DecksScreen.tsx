@@ -21,7 +21,6 @@ import {
   summarizeSessionsByDeck,
 } from '../utils/stats';
 import { findCategory } from '../utils/categories';
-import { DeckImportFormat } from '../utils/deckImport';
 import {
   DeckExportOptions,
   SEPARATOR_PRESETS,
@@ -39,15 +38,13 @@ type Props = CompositeScreenProps<
   BottomTabScreenProps<RootTabParamList>
 >;
 
-const showFilterStub = () => Alert.alert('Filter', 'Filtering decks is not available yet.');
-
 const START_DEBOUNCE_MS = 1000;
 
 export default function DecksScreen({ navigation }: Props) {
   const { decks, sessions, categories, error, addDeck, deleteDeck, startSession } = useDecks();
   const [isImporting, setIsImporting] = useState(false);
   const lastStartAt = useRef(0);
-  const [openMenu, setOpenMenu] = useState<'add' | 'format' | null>(null);
+  const [openMenu, setOpenMenu] = useState<'add' | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState('');
   // The deck id stays set after the dialog closes so its title does not blank during the fade-out.
@@ -82,9 +79,7 @@ export default function DecksScreen({ navigation }: Props) {
       <HeaderToolbar
         onSearch={toggleSearch}
         searchActive={searchOpen}
-        onFilter={showFilterStub}
         searchLabel="Search decks"
-        filterLabel="Filter decks"
       />
     ),
     [toggleSearch, searchOpen],
@@ -98,41 +93,38 @@ export default function DecksScreen({ navigation }: Props) {
     });
   }, [navigation, toolbar]);
 
-  const handleImport = useCallback(
-    async (format: DeckImportFormat) => {
-      setIsImporting(true);
-      try {
-        const imported = await pickAndParseDeck(format);
-        const deck = addDeck({
-          name: imported.deckName,
-          description: imported.description,
-          categoryId: imported.categoryId,
-          sourceFileName: imported.fileName,
-          cards: imported.cards,
-        });
-        const skipped = imported.skipped;
-        const unit = format === 'csv' ? 'row' : 'card';
-        Alert.alert(
-          'Deck imported',
-          `"${deck.name}" now has ${deck.cards.length} card${deck.cards.length === 1 ? '' : 's'}.` +
-            (skipped > 0 ? `\n${skipped} incomplete ${unit}${skipped === 1 ? '' : 's'} skipped.` : ''),
-        );
-      } catch (importError) {
-        if (importError instanceof ImportCancelledError) {
-          return;
-        }
-        Alert.alert(
-          'Import failed',
-          importError instanceof Error
-            ? importError.message
-            : 'Unknown error while importing the file.',
-        );
-      } finally {
-        setIsImporting(false);
+  const handleImport = useCallback(async () => {
+    setIsImporting(true);
+    try {
+      const imported = await pickAndParseDeck();
+      const deck = addDeck({
+        name: imported.deckName,
+        description: imported.description,
+        categoryId: imported.categoryRef,
+        sourceFileName: imported.fileName,
+        cards: imported.cards,
+      });
+      const skipped = imported.skipped;
+      const unit = imported.format === 'csv' ? 'row' : 'card';
+      Alert.alert(
+        'Deck imported',
+        `"${deck.name}" now has ${deck.cards.length} card${deck.cards.length === 1 ? '' : 's'}.` +
+          (skipped > 0 ? `\n${skipped} incomplete ${unit}${skipped === 1 ? '' : 's'} skipped.` : ''),
+      );
+    } catch (importError) {
+      if (importError instanceof ImportCancelledError) {
+        return;
       }
-    },
-    [addDeck],
-  );
+      Alert.alert(
+        'Import failed',
+        importError instanceof Error
+          ? importError.message
+          : 'Unknown error while importing the file.',
+      );
+    } finally {
+      setIsImporting(false);
+    }
+  }, [addDeck]);
 
   const confirmDelete = useCallback(
     (deck: Deck) => {
@@ -202,7 +194,7 @@ export default function DecksScreen({ navigation }: Props) {
       {
         label: 'Import deck from file',
         icon: 'import' as const,
-        onPress: () => setOpenMenu('format'),
+        onPress: handleImport,
       },
       {
         label: 'Add deck manually',
@@ -210,15 +202,7 @@ export default function DecksScreen({ navigation }: Props) {
         onPress: () => navigation.navigate('NewDeck'),
       },
     ],
-    [navigation],
-  );
-
-  const formatMenuItems = useMemo(
-    () => [
-      { label: 'CSV', icon: 'file' as const, onPress: () => handleImport('csv') },
-      { label: 'JSON', icon: 'file' as const, onPress: () => handleImport('json') },
-    ],
-    [handleImport],
+    [handleImport, navigation],
   );
 
   const exportDeckToFile = useMemo(
@@ -402,8 +386,8 @@ export default function DecksScreen({ navigation }: Props) {
 
       <MenuSheet
         visible={openMenu !== null}
-        title={openMenu === 'format' ? 'Import deck from file' : 'Add a deck'}
-        items={openMenu === 'format' ? formatMenuItems : addMenuItems}
+        title="Add a deck"
+        items={addMenuItems}
         onClose={() => setOpenMenu(null)}
       />
 

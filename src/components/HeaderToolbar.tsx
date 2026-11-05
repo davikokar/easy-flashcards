@@ -10,9 +10,6 @@ type Props = {
   searchLabel: string;
   /** True while the Search bar is open; tints the Search button and sets it expanded. */
   searchActive?: boolean;
-  /** The Filter button is rendered only when both of these are given. */
-  onFilter?: () => void;
-  filterLabel?: string;
   /** Passed to the App menu as its extra items. */
   menuItems?: MenuItem[];
 };
@@ -21,8 +18,6 @@ export default function HeaderToolbar({
   onSearch,
   searchLabel,
   searchActive = false,
-  onFilter,
-  filterLabel,
   menuItems,
 }: Props) {
   return (
@@ -40,16 +35,6 @@ export default function HeaderToolbar({
         ]}>
         <MenuIcon name="search" color={searchActive ? colors.primary : colors.textMuted} />
       </Pressable>
-      {onFilter && filterLabel ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={filterLabel}
-          hitSlop={6}
-          onPress={onFilter}
-          style={({ pressed }) => [styles.button, pressed && styles.pressed]}>
-          <MenuIcon name="filter" color={colors.textMuted} />
-        </Pressable>
-      ) : null}
       <AppMenu variant="boxed" extraItems={menuItems} />
     </View>
   );
