@@ -210,6 +210,24 @@ second store. One sentence of it is narrowed:
   then belongs in this store or in a decision that says otherwise.
 - Nothing persisted changes.
 
+## Amendment 9 — 2026-11-06
+
+Recorded ahead of the work it governs, under
+[ADR-0021](0021-settings-screen-language-choice-and-tip-purchase.md), with the owner's approval.
+The decision stands: `DecksContext` is the only store of **app data**. Amendment 8's *What would
+make it a store* is the one thing it answers: the owner asked for an in-app language choice, and
+that decision is "a decision that says otherwise".
+
+- **The language choice is configuration owned by `I18nProvider`**, not state in this store. The
+  provider loads and saves one small key of its own, `@easy-flashcards/settings/v1`, through
+  `src/storage/settingsStorage.ts`; it still has no reducer, no actions and no dispatch.
+- **`DecksContext` does not read, hold or save it**, and `DecksContextValue` is unchanged. The save
+  effect and its failed-load guard are unaffected: that guard protects the decks, sessions and
+  categories keys, and the settings key is written only when the user picks a language.
+- **It is still not a place for app data.** Anything the user creates or the app records still goes
+  in this store; the provider's key holds a language and nothing else without a new decision.
+- A new storage key is added; nothing in the three existing keys changes.
+
 ## References
 
 - [`src/state/reducer.ts`](../../../src/state/reducer.ts)

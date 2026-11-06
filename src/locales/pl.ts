@@ -296,10 +296,6 @@ export const pl: Language = {
         exportSampleDeckItem: 'Eksportuj przykładową talię',
         settingsItem: 'Ustawienia',
       },
-      settingsAlert: {
-        title: 'Ustawienia',
-        message: 'Ustawienia nie są jeszcze dostępne.',
-      },
       exportSampleDeckDialog: {
         title: 'Eksportuj przykładową talię',
         body: 'Zapisuje tę samą przykładową talię jako dwa pliki: CSV i JSON. Dla każdego z nich wybierasz miejsce zapisu i możesz anulować, aby go pominąć.\n\nCSV: wiersze zaczynające się od # (tytuł, opis, kategoria) są pomijane przy imporcie, dalej nagłówek "question" / "answer" i jedna fiszka w wierszu, tu oddzielone średnikami (działa też przecinek, tabulator lub inny pojedynczy znak).\n\nJSON: przywraca także tytuł, opis i kategorię.\n\nPodstawowy HTML, taki jak <b>, <i> i <br />, jest dozwolony po obu stronach fiszki.',
@@ -310,6 +306,48 @@ export const pl: Language = {
       searchBar: {
         inputA11yLabel: 'Tekst wyszukiwania',
         closeButtonA11yLabel: 'Zamknij wyszukiwanie',
+      },
+    },
+    settings: {
+      settingsScreen: {
+        title: 'Ustawienia',
+        generalSection: 'Ogólne',
+        appSection: 'Aplikacja',
+        communitySection: 'Społeczność i wsparcie',
+        legalSection: 'Informacje prawne',
+        changeLanguageItem: 'Zmień język',
+        shareAppItem: 'Udostępnij aplikację',
+        shareMessage: 'Wypróbuj Easy Flashcards, aplikację do nauki z talii fiszek: {url}',
+        rateAppItem: 'Oceń aplikację',
+        customerSupportItem: 'Obsługa klienta',
+        aboutItem: 'O aplikacji',
+        buyCoffeeItem: 'Postaw mi kawę',
+        privacyPolicyItem: 'Polityka prywatności',
+        termsItem: 'Regulamin',
+      },
+      languageDialog: {
+        title: 'Zmień język',
+        systemDefaultOption: 'Domyślny język systemu',
+      },
+      aboutAlert: {
+        title: 'O aplikacji',
+        message: '{name}, wersja {version}',
+      },
+      linkFailedAlert: {
+        title: 'Nie można otworzyć linku',
+        message: 'Żadna aplikacja na tym urządzeniu nie mogła go otworzyć.',
+      },
+      emailFailedAlert: {
+        title: 'Brak aplikacji pocztowej',
+        message: 'Aby skontaktować się z obsługą klienta, napisz na adres {email}.',
+      },
+      coffeeThanksAlert: {
+        title: 'Dziękuję!',
+        message: 'Twoja kawa jest w drodze do dewelopera. Dziękuję za wsparcie.',
+      },
+      coffeeUnavailableAlert: {
+        title: 'Postaw mi kawę',
+        message: 'Postawienie kawy jest teraz niedostępne. Spróbuj ponownie później.',
       },
     },
     decks: {

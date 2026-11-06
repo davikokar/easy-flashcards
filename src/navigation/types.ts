@@ -27,3 +27,8 @@ export type RootTabParamList = {
   CategoriesTab: NavigatorScreenParams<CategoriesStackParamList>;
   StatsTab: NavigatorScreenParams<StatsStackParamList>;
 };
+
+export type RootStackParamList = {
+  Tabs: NavigatorScreenParams<RootTabParamList>;
+  Settings: undefined;
+};

@@ -1,4 +1,14 @@
-import { LANGUAGES, PSEUDO, ENGLISH, englishT, translatorForTag } from '../src/locales';
+import {
+  LANGUAGES,
+  LANGUAGE_NAMES,
+  PSEUDO,
+  ENGLISH,
+  SELECTABLE_LANGUAGES,
+  englishT,
+  isSelectableLanguageCode,
+  translatorForChoice,
+  translatorForTag,
+} from '../src/locales';
 import { pseudoLocalize, type Language } from '../src/utils/i18n';
 import {
   CATEGORY_ICONS,
@@ -294,5 +304,41 @@ describe('ENGLISH', () => {
     expect(englishT('common.counts.cards', { count: 1 })).toBe('1 card');
     expect(englishT('common.counts.sessions', { count: 2 })).toBe('2 sessions');
     expect(englishT('common.counts.reviews', { count: 0 })).toBe('0 reviews');
+  });
+});
+
+describe('language choice', () => {
+  it('names every selectable language and no other', () => {
+    expect(Object.keys(LANGUAGE_NAMES).sort()).toEqual(
+      SELECTABLE_LANGUAGES.map(language => language.code).sort(),
+    );
+  });
+
+  it('leaves the pseudo-language out of the choices', () => {
+    expect(isSelectableLanguageCode('en-XA')).toBe(false);
+    expect(isSelectableLanguageCode('en')).toBe(true);
+    expect(isSelectableLanguageCode('zh-CN')).toBe(true);
+  });
+
+  it('rejects a code that is not a registered language', () => {
+    expect(isSelectableLanguageCode('xx')).toBe(false);
+    expect(isSelectableLanguageCode(null)).toBe(false);
+    expect(isSelectableLanguageCode(7)).toBe(false);
+  });
+});
+
+describe('translatorForChoice', () => {
+  it('uses the chosen language whatever the device language is', () => {
+    expect(translatorForChoice('de', 'fr-FR')('navigation.tabs.decks')).toBe('Stapel');
+    expect(translatorForChoice('en', 'de-DE')).toBe(englishT);
+  });
+
+  it('follows the device language for null', () => {
+    expect(translatorForChoice(null, 'de-DE')('navigation.tabs.decks')).toBe('Stapel');
+  });
+
+  it('follows the device language for a code no language registers', () => {
+    expect(translatorForChoice('xx', 'de-DE')('navigation.tabs.decks')).toBe('Stapel');
+    expect(translatorForChoice('en-XA', 'de-DE')('navigation.tabs.decks')).toBe('Stapel');
   });
 });

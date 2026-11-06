@@ -289,10 +289,6 @@ const messages: Catalogue = {
       exportSampleDeckItem: 'Експортувати приклад колоди',
       settingsItem: 'Налаштування',
     },
-    settingsAlert: {
-      title: 'Налаштування',
-      message: 'Налаштування поки що недоступні.',
-    },
     exportSampleDeckDialog: {
       title: 'Експорт прикладу колоди',
       body: 'Приклад колоди буде збережено у двох файлах: CSV і JSON. Для кожного з них вам запропонують вибрати місце збереження; будь-який файл можна пропустити, скасувавши вибір.\n\nCSV: рядки, що починаються з # (назва, опис, категорія), під час імпорту пропускаються; далі йде заголовок "question" / "answer" і по одній картці в рядку, тут розділених крапкою з комою (кома, табуляція чи інший одиночний символ теж підійдуть).\n\nJSON: також відновлює назву, опис і категорію.\n\nНа будь-якому боці картки можна використовувати простий HTML, як-от <b>, <i> і <br />.',
@@ -303,6 +299,48 @@ const messages: Catalogue = {
     searchBar: {
       inputA11yLabel: 'Текст пошуку',
       closeButtonA11yLabel: 'Закрити пошук',
+    },
+  },
+  settings: {
+    settingsScreen: {
+      title: 'Налаштування',
+      generalSection: 'Загальні',
+      appSection: 'Застосунок',
+      communitySection: 'Спільнота й підтримка',
+      legalSection: 'Правова інформація',
+      changeLanguageItem: 'Змінити мову',
+      shareAppItem: 'Поділитися застосунком',
+      shareMessage: 'Спробуйте Easy Flashcards — застосунок для вивчення колод карток: {url}',
+      rateAppItem: 'Оцінити застосунок',
+      customerSupportItem: 'Служба підтримки',
+      aboutItem: 'Про застосунок',
+      buyCoffeeItem: 'Пригости мене кавою',
+      privacyPolicyItem: 'Політика конфіденційності',
+      termsItem: 'Умови',
+    },
+    languageDialog: {
+      title: 'Змінити мову',
+      systemDefaultOption: 'Мова системи',
+    },
+    aboutAlert: {
+      title: 'Про застосунок',
+      message: '{name}, версія {version}',
+    },
+    linkFailedAlert: {
+      title: 'Не вдалося відкрити посилання',
+      message: 'Жоден застосунок на цьому пристрої не зміг його відкрити.',
+    },
+    emailFailedAlert: {
+      title: 'Немає поштового застосунку',
+      message: 'Щоб звернутися до служби підтримки, напишіть на {email}.',
+    },
+    coffeeThanksAlert: {
+      title: 'Дякую!',
+      message: 'Ваша кава вже їде до розробника. Дякую за підтримку.',
+    },
+    coffeeUnavailableAlert: {
+      title: 'Пригости мене кавою',
+      message: 'Пригостити кавою зараз неможливо. Спробуйте пізніше.',
     },
   },
   decks: {

@@ -95,6 +95,15 @@ them card by card, and track how well you know each card.
   decks with no category (the confirmation says how many). Categories cannot be edited, and you
   cannot yet filter by category or see totals per category in *Statistics*. The category icons are
   Android-only.
+- **Settings**: *Settings* in the app menu (the three-dot button at the top right of each tab)
+  opens a screen with four sections. *General* has *Change language*, which lists the languages
+  the app is translated into and applies the choice at once, remembering it; *System default*
+  follows the device. *App* has *Share app*, *Rate app*, *Customer support* (a mail to the support
+  address) and *About* (the app's name and version). *Community and support* has *Buy me a
+  coffee*, a one-off in-app purchase through Google Play. *Legal* opens the privacy policy and
+  the terms. The store link and the two legal links are placeholders until the real ones exist,
+  and the purchase only works once its product exists in the Play Console and the app is
+  installed from Google Play.
 - Everything is stored on-device with AsyncStorage. Each answer is saved the moment you give it,
   so leaving a session early loses nothing and you can resume it later from the *Learn* tab.
 
@@ -185,7 +194,8 @@ whitespace, and a deck exported with no cards cannot be imported. The full speci
 
 ## Languages
 
-The app shows its text in the device's language, and in English when that language has no
+The app shows its text in the language you choose in *Settings*, else the device's language, and
+in English when that language has no
 translation. English is the source of every message; which other languages exist is `LANGUAGES` in
 [src/locales/index.ts](src/locales/index.ts). The translations are machine-written and have not
 been reviewed by native speakers; Portuguese is Brazilian wording, and Chinese is Simplified only,
@@ -198,7 +208,8 @@ device the layout can still appear mirrored once; it is left-to-right from the n
 
 To add a language, create one file under [src/locales](src/locales) typed as the full catalogue,
 so that a missing message fails `npm run typecheck`, with its own plural rule, and add one entry
-for it to `LANGUAGES` in [src/locales/index.ts](src/locales/index.ts). The rules are in
+for it to `LANGUAGES` in [src/locales/index.ts](src/locales/index.ts), and its name in its own
+language to `LANGUAGE_NAMES` there. The rules are in
 [ADR-0020](docs/architecture/decisions/0020-ui-text-translated-through-typed-catalogue.md).
 
 ## Getting started
@@ -237,10 +248,10 @@ with `npm run android`; reloading the JavaScript in Metro is not enough. The fir
 | [src/components](src/components) | Flip card, HTML renderer, buttons, progress bars, the session history chart, dialogs, category tiles, squares and pickers, colour sliders |
 | [src/state](src/state) | Context store (`DecksContext.tsx`) over a pure reducer (`reducer.ts`), auto-persisting |
 | [src/storage](src/storage) | AsyncStorage read/write with defensive normalisation, one module per key |
-| [src/services](src/services) | Document picker + file read + CSV or JSON parsing; deck and sample deck export through the save dialog; reading the device language |
+| [src/services](src/services) | Document picker + file read + CSV or JSON parsing; deck and sample deck export through the save dialog; reading the device language; share, store, mail and link hand-offs; the in-app tip purchase |
 | [src/utils](src/utils) | Pure logic: CSV, JSON and HTML parsing, deck import and export formats, statistics, the session chart's geometry, search, categories, colour maths, the translation engine, and more |
 | [src/locales](src/locales) | The UI text catalogue: English, one file per area; one file per translation; and the registry of languages |
-| [src/i18n](src/i18n) | The provider and `useT()` hook that give screens and components the device language's text |
+| [src/i18n](src/i18n) | The provider with the `useT()` and `useLanguage()` hooks that give screens and components their text and the saved language choice |
 | [src/assets/category-icons](src/assets/category-icons) | Category icons: Material Symbols by Google (Apache License 2.0, see its `NOTICE`) as Android vector drawables |
 | [\_\_tests\_\_](__tests__) | Jest unit tests for the utils, the reducer and the storage loaders |
 
@@ -257,3 +268,8 @@ with `npm run android`; reloading the JavaScript in Metro is not enough. The fir
   ([ADR-0018](docs/architecture/decisions/0018-react-native-svg-draws-charts.md)). It is a native
   module, and npm does not check it against the React Native version, so a React Native upgrade
   needs its supported versions checked by hand.
+- `react-native-iap` (with its peer `react-native-nitro-modules`) is the Google Play Billing
+  wrapper behind *Buy me a coffee*; it is used in one file, only for that one-off tip
+  ([ADR-0021](docs/architecture/decisions/0021-settings-screen-language-choice-and-tip-purchase.md)).
+  It is native, so installing it needs a rebuild, and a purchase can only be tried from a build
+  installed through Google Play once the `tip_coffee` product exists in the Play Console.

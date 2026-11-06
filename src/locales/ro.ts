@@ -281,10 +281,6 @@ export const ro: Language = {
         exportSampleDeckItem: 'Exportă pachetul de exemplu',
         settingsItem: 'Setări',
       },
-      settingsAlert: {
-        title: 'Setări',
-        message: 'Setările nu sunt disponibile încă.',
-      },
       exportSampleDeckDialog: {
         title: 'Exportă pachetul de exemplu',
         body: 'Aceasta salvează același pachet de exemplu în două fișiere, CSV și JSON. Ți se cere unde să salvezi fiecare și poți anula oricare dintre ele pentru a-l omite.\n\nCSV: liniile care încep cu # (titlu, descriere, categorie) sunt ignorate la import, apoi urmează un antet "question" / "answer" și câte un card pe fiecare rând, cu coloanele separate aici prin punct și virgulă (merge și o virgulă, un tab sau un alt simbol).\n\nJSON: restabilește și titlul, descrierea și categoria.\n\nHTML de bază, cum ar fi <b>, <i> și <br />, este permis pe oricare dintre fețele unui card.',
@@ -295,6 +291,49 @@ export const ro: Language = {
       searchBar: {
         inputA11yLabel: 'Text de căutare',
         closeButtonA11yLabel: 'Închide căutarea',
+      },
+    },
+    settings: {
+      settingsScreen: {
+        title: 'Setări',
+        generalSection: 'General',
+        appSection: 'Aplicație',
+        communitySection: 'Comunitate și asistență',
+        legalSection: 'Informații legale',
+        changeLanguageItem: 'Schimbă limba',
+        shareAppItem: 'Distribuie aplicația',
+        shareMessage:
+          'Încearcă Easy Flashcards, o aplicație pentru studiul pachetelor de cartonașe: {url}',
+        rateAppItem: 'Evaluează aplicația',
+        customerSupportItem: 'Asistență clienți',
+        aboutItem: 'Despre',
+        buyCoffeeItem: 'Cumpără-mi o cafea',
+        privacyPolicyItem: 'Politica de confidențialitate',
+        termsItem: 'Termeni',
+      },
+      languageDialog: {
+        title: 'Schimbă limba',
+        systemDefaultOption: 'Limba sistemului',
+      },
+      aboutAlert: {
+        title: 'Despre',
+        message: '{name}, versiunea {version}',
+      },
+      linkFailedAlert: {
+        title: 'Linkul nu a putut fi deschis',
+        message: 'Nicio aplicație de pe acest dispozitiv nu l-a putut deschide.',
+      },
+      emailFailedAlert: {
+        title: 'Nicio aplicație de e-mail',
+        message: 'Pentru a contacta asistența clienți, scrie la {email}.',
+      },
+      coffeeThanksAlert: {
+        title: 'Mulțumesc!',
+        message: 'Cafeaua ta este pe drum către dezvoltator. Mulțumesc pentru sprijin.',
+      },
+      coffeeUnavailableAlert: {
+        title: 'Cumpără-mi o cafea',
+        message: 'Cumpărarea unei cafele nu este disponibilă acum. Încearcă din nou mai târziu.',
       },
     },
     decks: {

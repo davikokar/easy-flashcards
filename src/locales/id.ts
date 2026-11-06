@@ -259,10 +259,6 @@ const messages: Catalogue = {
       exportSampleDeckItem: 'Ekspor dek contoh',
       settingsItem: 'Pengaturan',
     },
-    settingsAlert: {
-      title: 'Pengaturan',
-      message: 'Pengaturan belum tersedia.',
-    },
     exportSampleDeckDialog: {
       title: 'Ekspor dek contoh',
       body: 'Ini menyimpan dek contoh yang sama sebagai dua file, CSV dan JSON. Kamu akan ditanya lokasi penyimpanan untuk masing-masing file dan dapat membatalkan salah satunya untuk melewatinya.\n\nCSV: baris yang diawali # (judul, deskripsi, kategori) dilewati saat impor, lalu baris header "question" / "answer" dan satu kartu per baris, di sini dipisahkan dengan titik koma (koma, tab, atau satu simbol lain juga bisa).\n\nJSON: juga memulihkan judul, deskripsi, dan kategori.\n\nHTML dasar seperti <b>, <i>, dan <br /> diperbolehkan di kedua sisi kartu.',
@@ -273,6 +269,48 @@ const messages: Catalogue = {
     searchBar: {
       inputA11yLabel: 'Teks pencarian',
       closeButtonA11yLabel: 'Tutup pencarian',
+    },
+  },
+  settings: {
+    settingsScreen: {
+      title: 'Pengaturan',
+      generalSection: 'Umum',
+      appSection: 'Aplikasi',
+      communitySection: 'Komunitas dan dukungan',
+      legalSection: 'Hukum',
+      changeLanguageItem: 'Ubah bahasa',
+      shareAppItem: 'Bagikan aplikasi',
+      shareMessage: 'Coba Easy Flashcards, aplikasi untuk belajar dengan dek kartu belajar: {url}',
+      rateAppItem: 'Beri nilai aplikasi',
+      customerSupportItem: 'Dukungan pelanggan',
+      aboutItem: 'Tentang',
+      buyCoffeeItem: 'Traktir saya kopi',
+      privacyPolicyItem: 'Kebijakan privasi',
+      termsItem: 'Ketentuan',
+    },
+    languageDialog: {
+      title: 'Ubah bahasa',
+      systemDefaultOption: 'Bawaan sistem',
+    },
+    aboutAlert: {
+      title: 'Tentang',
+      message: '{name}, versi {version}',
+    },
+    linkFailedAlert: {
+      title: 'Tautan tidak dapat dibuka',
+      message: 'Tidak ada aplikasi di perangkat ini yang dapat membukanya.',
+    },
+    emailFailedAlert: {
+      title: 'Tidak ada aplikasi email',
+      message: 'Untuk menghubungi dukungan pelanggan, kirim email ke {email}.',
+    },
+    coffeeThanksAlert: {
+      title: 'Terima kasih!',
+      message: 'Kopimu sedang dalam perjalanan ke pengembang. Terima kasih atas dukunganmu.',
+    },
+    coffeeUnavailableAlert: {
+      title: 'Traktir saya kopi',
+      message: 'Mentraktir kopi tidak tersedia saat ini. Silakan coba lagi nanti.',
     },
   },
   decks: {

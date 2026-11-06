@@ -68,6 +68,13 @@ stack. The two Categories screens are described in more detail under **Categorie
   categories as tiles. Root of the Categories tab.
 - **New category screen** (`NewCategoryScreen`, route `NewCategory`): The form that creates a
   custom category. Pushed onto the Categories stack. Aliases: **category editor**
+- **Settings screen** (`SettingsScreen`, route `Settings`, no params): four sections of **Settings
+  rows** — **General** (**Change language**), **App** (**Share app**, **Rate app**, **Customer
+  support**, **About**), **Community and support** (**Buy me a coffee**) and **Legal** (**Privacy
+  policy**, **Terms**). Not part of any tab: it is pushed onto a root stack above the tabs from the
+  **Settings** item of the **App menu**, so the tab bar is hidden there and Back returns to the
+  tab it came from ([ADR-0021](../../docs/architecture/decisions/0021-settings-screen-language-choice-and-tip-purchase.md)).
+  Aliases: **settings**, **the preferences screen** (avoid the second)
 - **Statistics screen** (`StatsScreen`, route `StatsOverview`): the **Timeframe chips**, the
   **Aggregated stats** across every deck, then the **Decks breakdown**, one **Deck stats card** per
   deck. Root of the Statistics tab. Aliases: **stats overview**
@@ -81,8 +88,8 @@ stack. The two Categories screens are described in more detail under **Categorie
 Use **screen** only for a route in a navigator. Use **tab** for the four above, **dialog** for
 modal content, **sheet** for the bottom sheet, and **area** for a region inside a screen.
 
-**There is no Settings screen.** The *Settings* menu item shows a "not available yet" alert. Do not
-refer to one as though it exists.
+**The Settings screen is neither a tab root nor a detail screen of a tab.** It sits on a root stack
+above the tabs; use **screen** for it as for the others.
 
 ## Screen structure
 
@@ -106,7 +113,7 @@ screen can add items without `AppMenu` gaining store knowledge: each root screen
 - **App menu** (`AppMenu`, labelled `App menu`): the three-dot control at the right of the header
   on every tab's root screen — inside the **Header toolbar** on the Decks, Learn and Statistics
   screens, and on its own on the Categories screen (boxed in both). Holds **Export sample deck**
-  and **Settings**; on the Learn screen it also holds **Clear completed sessions**,
+  and **Settings**, which opens the **Settings screen**; on the Learn screen it also holds **Clear completed sessions**,
   first. Detail screens do not show it. Aliases: **the
   header menu**, **the overflow menu**
 - **Kebab menu** (`KebabMenu`): the reusable three-dot control. Default label `More options`;
@@ -148,20 +155,31 @@ screen can add items without `AppMenu` gaining store knowledge: each root screen
   ([ADR-0016](../../docs/architecture/decisions/0016-deck-export-file-formats.md) Amendment 3). The
   dialog closes once at least one file was saved, and a final `Alert` reports the outcome. Its
   **Export** button is not the **Custom separator dialog**'s, which is a different button in a
-  different dialog. One of the five dialogs in the app that are not an `Alert`; the
-  others are the **Session setup dialog**, the **Category picker**, the **Custom colour dialog**
-  and the **Custom separator dialog**.
+  different dialog. One of the six dialogs in the app that are not an `Alert`; the
+  others are the **Session setup dialog**, the **Category picker**, the **Custom colour dialog**,
+  the **Custom separator dialog** and the **Language dialog**.
+- **Settings row** (`SettingsRow`): one full-width row of the **Settings screen** — a **Menu icon**
+  (`globe`, `share`, `star`, `mail`, `info`, `cup`, `lock` or `file`), a label, and an optional
+  muted value after the label (the current language on **Change language**, the version on
+  **About**). There is no chevron. **Buy me a coffee** shows a spinner at the end of the row while
+  the purchase runs.
+- **Language dialog** (`LanguageDialog`): the centred `Modal` that **Change language** opens — a
+  scrolling radio list with `System default` first and then each language written in itself, a
+  tick on the selected one, and **Cancel**. Picking a language closes it and applies the choice at
+  once. Not the **Category picker**, which is also a radio list.
 
-Everything else that interrupts the user is a native `Alert` — confirmations, failures, and the
-"not available yet" stubs.
+Everything else that interrupts the user is a native `Alert` — confirmations, failures and
+outcomes.
 
 - **Alerts**: named by their title in camelCase plus `Alert`, which is also their catalogue owner
   (see *Naming and the catalogue*). The titled confirmations and refusals are `emptyDeckAlert`
   (`Empty deck`), `deleteDeckAlert`, `titleNeededAlert` (`Title needed`), `cardIncompleteAlert`
   (`Card incomplete`), `removeCardsAlert` (`Remove cards?`), `discardChangesAlert` (the **Discard
   prompt**; the Edit deck and New category screens each have one), `deckUnavailableAlert`,
-  `clearCompletedSessionsAlert`, `discardSessionAlert`, `clearSessionAlert`, `deleteCategoryAlert`
-  and `settingsAlert` (the stub). The Deck statistics screen's `Reset statistics` alert is its
+  `clearCompletedSessionsAlert`, `discardSessionAlert`, `clearSessionAlert` and
+  `deleteCategoryAlert`. The Settings screen's alerts are `aboutAlert`, `linkFailedAlert`,
+  `emailFailedAlert`, `coffeeThanksAlert` and `coffeeUnavailableAlert`, in the `settings`
+  catalogue file. The Deck statistics screen's `Reset statistics` alert is its
   `resetAlert`, and the import and export outcome alerts are the `importAlert`, `exportAlert` and
   `sampleExport` groups of the `importExport` catalogue file, not screens' own.
 
@@ -1076,8 +1094,8 @@ These are constraints, not suggestions. Each one is load-bearing somewhere.
   `RichText`, the FAB's spinner colour and the foreground on a filled `Button` (`FOREGROUND_ON_FILL`),
   all of which need contrast against a fixed background,
   and the **modal backdrop scrim** (`#000000aa`) behind the Menu sheet, the Export sample deck
-  dialog, the Session setup dialog, the Category picker, the Custom colour dialog and the Custom
-  separator dialog — a translucent
+  dialog, the Session setup dialog, the Category picker, the Custom colour dialog, the Custom
+  separator dialog and the Language dialog — a translucent
   black has to dim whatever is underneath, so
   it cannot be one of the opaque theme colours. Reuse that value for any new modal; do not pick a
   second one.

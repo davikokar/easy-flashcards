@@ -261,10 +261,6 @@ const messages: Catalogue = {
       exportSampleDeckItem: 'Örnek desteyi dışa aktar',
       settingsItem: 'Ayarlar',
     },
-    settingsAlert: {
-      title: 'Ayarlar',
-      message: 'Ayarlar henüz kullanılamıyor.',
-    },
     exportSampleDeckDialog: {
       title: 'Örnek desteyi dışa aktar',
       body: 'Bu işlem aynı örnek desteyi CSV ve JSON olmak üzere iki dosya olarak kaydeder. Her birinin nereye kaydedileceği sorulur; birini atlamak için iptal edebilirsiniz.\n\nCSV: # ile başlayan satırlar (başlık, açıklama, kategori) içe aktarırken atlanır; ardından bir "question" / "answer" başlık satırı ve her satırda bir kart gelir; burada noktalı virgülle ayrılmıştır (virgül, sekme veya başka bir tek simge de olur).\n\nJSON: başlığı, açıklamayı ve kategoriyi de geri getirir.\n\n<b>, <i> ve <br /> gibi temel HTML, kartın her iki yüzünde de kullanılabilir.',
@@ -275,6 +271,49 @@ const messages: Catalogue = {
     searchBar: {
       inputA11yLabel: 'Arama metni',
       closeButtonA11yLabel: 'Aramayı kapat',
+    },
+  },
+  settings: {
+    settingsScreen: {
+      title: 'Ayarlar',
+      generalSection: 'Genel',
+      appSection: 'Uygulama',
+      communitySection: 'Topluluk ve destek',
+      legalSection: 'Yasal',
+      changeLanguageItem: 'Dili değiştir',
+      shareAppItem: 'Uygulamayı paylaş',
+      shareMessage:
+        'Easy Flashcards uygulamasını dene, bilgi kartı destelerini çalışmanın basit yolu: {url}',
+      rateAppItem: 'Uygulamayı değerlendir',
+      customerSupportItem: 'Müşteri desteği',
+      aboutItem: 'Hakkında',
+      buyCoffeeItem: 'Bana bir kahve ısmarla',
+      privacyPolicyItem: 'Gizlilik politikası',
+      termsItem: 'Şartlar',
+    },
+    languageDialog: {
+      title: 'Dili değiştir',
+      systemDefaultOption: 'Sistem varsayılanı',
+    },
+    aboutAlert: {
+      title: 'Hakkında',
+      message: '{name}, sürüm {version}',
+    },
+    linkFailedAlert: {
+      title: 'Bağlantı açılamadı',
+      message: 'Bu cihazdaki hiçbir uygulama bağlantıyı açamadı.',
+    },
+    emailFailedAlert: {
+      title: 'E-posta uygulaması yok',
+      message: 'Müşteri desteğine ulaşmak için {email} adresine yaz.',
+    },
+    coffeeThanksAlert: {
+      title: 'Teşekkürler!',
+      message: 'Kahven geliştiriciye doğru yolda. Desteğin için teşekkürler.',
+    },
+    coffeeUnavailableAlert: {
+      title: 'Bana bir kahve ısmarla',
+      message: 'Kahve ısmarlamak şu anda mümkün değil. Lütfen daha sonra tekrar dene.',
     },
   },
   decks: {

@@ -259,10 +259,6 @@ const messages: Catalogue = {
       exportSampleDeckItem: 'サンプルデッキをエクスポート',
       settingsItem: '設定',
     },
-    settingsAlert: {
-      title: '設定',
-      message: '設定はまだ利用できません。',
-    },
     exportSampleDeckDialog: {
       title: 'サンプルデッキをエクスポート',
       body: 'サンプルデッキを CSV と JSON の2つのファイルとして保存します。それぞれの保存先を尋ねられます。どちらかをキャンセルすると、そのファイルは保存されません。\n\nCSV：# で始まる行（タイトル、説明、カテゴリ）はインポート時に読み飛ばされ、続いて "question" / "answer" のヘッダー行と、1行につき1枚のカードが並びます。ここではセミコロンで区切っています（カンマ、タブ、その他の1文字の記号も使えます）。\n\nJSON：タイトル、説明、カテゴリも復元されます。\n\nカードの表と裏のどちらにも、<b>、<i>、<br /> などの基本的な HTML を使えます。',
@@ -273,6 +269,48 @@ const messages: Catalogue = {
     searchBar: {
       inputA11yLabel: '検索テキスト',
       closeButtonA11yLabel: '検索を閉じる',
+    },
+  },
+  settings: {
+    settingsScreen: {
+      title: '設定',
+      generalSection: '一般',
+      appSection: 'アプリ',
+      communitySection: 'コミュニティとサポート',
+      legalSection: '法的情報',
+      changeLanguageItem: '言語を変更',
+      shareAppItem: 'アプリを共有',
+      shareMessage: 'Easy Flashcards を使ってみてください。デッキで学べるフラッシュカードアプリです: {url}',
+      rateAppItem: 'アプリを評価',
+      customerSupportItem: 'カスタマーサポート',
+      aboutItem: 'このアプリについて',
+      buyCoffeeItem: 'コーヒーをおごる',
+      privacyPolicyItem: 'プライバシーポリシー',
+      termsItem: '利用規約',
+    },
+    languageDialog: {
+      title: '言語を変更',
+      systemDefaultOption: 'システムのデフォルト',
+    },
+    aboutAlert: {
+      title: 'このアプリについて',
+      message: '{name} バージョン {version}',
+    },
+    linkFailedAlert: {
+      title: 'リンクを開けませんでした',
+      message: 'このデバイスには、リンクを開けるアプリがありません。',
+    },
+    emailFailedAlert: {
+      title: 'メールアプリがありません',
+      message: 'カスタマーサポートへのご連絡は {email} 宛にお願いします。',
+    },
+    coffeeThanksAlert: {
+      title: 'ありがとうございます!',
+      message: 'コーヒーは開発者に届きます。応援ありがとうございます。',
+    },
+    coffeeUnavailableAlert: {
+      title: 'コーヒーをおごる',
+      message: '現在コーヒーをおごることはできません。しばらくしてからもう一度お試しください。',
     },
   },
   decks: {

@@ -56,6 +56,10 @@ explain non-obvious decisions in short commit messages.
   (ADR-0019 Amendment 1).
 - **File access:** `@react-native-documents/picker` to choose and save files, and
   `@dr.pogodin/react-native-fs` to read the picked `content://` URI. See *Dependency traps* below.
+- **In-app purchase:** `react-native-iap` and its peer `react-native-nitro-modules`, both native,
+  imported only by [src/services/tipJar.ts](src/services/tipJar.ts) for the Settings screen's
+  one-off tip ([ADR-0021](docs/architecture/decisions/0021-settings-screen-language-choice-and-tip-purchase.md)).
+  Share, rate, mail and links use React Native's `Share` and `Linking`, no dependency.
 - **HTML:** parsed and rendered in-repo — [src/utils/html.ts](src/utils/html.ts) and
   [src/components/RichText.tsx](src/components/RichText.tsx)
   ([ADR-0001](docs/architecture/decisions/0001-own-the-html-renderer.md)).
@@ -63,8 +67,9 @@ explain non-obvious decisions in short commit messages.
   ([ADR-0020](docs/architecture/decisions/0020-ui-text-translated-through-typed-catalogue.md)).**
   Every user-facing text the app has today lives in `src/locales/` (English, the source of the
   keys, in `src/locales/en/`, one file per area), looked up with `useT()` from
-  `src/i18n/I18nProvider.tsx` or a `Translator` passed to pure code, in the device's language
-  with English as the fallback. The engine is [src/utils/i18n.ts](src/utils/i18n.ts); the
+  `src/i18n/I18nProvider.tsx` or a `Translator` passed to pure code, in the language the user
+  chose on the Settings screen, else the device's, with English as the fallback. The engine is
+  [src/utils/i18n.ts](src/utils/i18n.ts); the
   registry of languages is [src/locales/index.ts](src/locales/index.ts). No i18n dependency.
   ADR-0020's *contract for implementers* and its amendment are binding for text you add or change.
 - **Build:** Gradle for Android (`android/`), CocoaPods for iOS (`ios/`). SDK levels are in
@@ -84,7 +89,7 @@ src/
   types.ts              # Deck, Card, Session, Answer, Category, and the derived stats types
   theme.ts              # colour / spacing / radius tokens and the category palette — the whole design system
   assets/               # category-icons/: Android vector drawables + their licence NOTICE (ADR-0013)
-  i18n/                 # I18nProvider + useT(): the read-only language context (ADR-0020)
+  i18n/                 # I18nProvider + useT() / useLanguage(): the language context (ADR-0020, ADR-0021)
   locales/              # the UI text catalogue: en/ (one file per area), index.ts registers each language
   state/                # DecksContext (provider) + reducer.ts (pure): the single store
   storage/              # AsyncStorage read/write + normalisation, one file per key
@@ -189,9 +194,11 @@ the owning document instead, so that adding an ADR or a screen does not touch an
   `error`, and
   it exposes one function per operation. There is no second store and no global singleton; do
   not add one ([ADR-0003](docs/architecture/decisions/0003-single-context-reducer-store.md)). The
-  one other provider is ADR-0020's `I18nProvider`: read-only, never persisted, and
-  holding only the UI language's translator. It is configuration, not a store, and must not gain
-  app data or a saved setting (ADR-0003 Amendment 8).
+  one other provider is ADR-0020's `I18nProvider`: never a store, no reducer, and
+  holding only the UI language's translator and the one persisted language choice
+  (`@easy-flashcards/settings/v1`, loaded and saved by the provider, not by `DecksContext`). It is
+  configuration, not a store, and must not gain app data or any other saved setting
+  (ADR-0003 Amendments 8 and 9, ADR-0021).
 - **A new operation is a new reducer action** in [src/state/reducer.ts](src/state/reducer.ts), not
   a mutation written by a screen, and it gets a test in `__tests__/reducer.test.ts`. Screens call
   `useDecks()` and invoke an exposed function; they never reach into state and write it back.
@@ -333,6 +340,7 @@ writing, and normalising it.
 | `@easy-flashcards/decks/v2` | every `Deck`, each with its `description`, its `categoryId` ([ADR-0014](docs/architecture/decisions/0014-deck-belongs-to-one-category.md)), its `Card[]` and their counters | [src/storage/decksStorage.ts](src/storage/decksStorage.ts) |
 | `@easy-flashcards/sessions/v2` | every `Session` — active, completed, and cleared — with the cards fixed in its error review (`fixedCardIds`), its direction (`inverted`), and each result's `answeredAt` ([ADR-0015](docs/architecture/decisions/0015-answers-carry-a-timestamp-under-v2-keys.md)) | [src/storage/sessionsStorage.ts](src/storage/sessionsStorage.ts) |
 | `@easy-flashcards/categories/v1` | every custom `Category`; never the built-in ones ([ADR-0012](docs/architecture/decisions/0012-custom-categories-third-storage-key.md)) | [src/storage/categoriesStorage.ts](src/storage/categoriesStorage.ts) |
+| `@easy-flashcards/settings/v1` | the language the user chose, `{ language: string \| null }` — a registered language code, or `null` for the device's ([ADR-0021](docs/architecture/decisions/0021-settings-screen-language-choice-and-tip-purchase.md)); loaded and saved by `I18nProvider`, not by `DecksContext` | [src/storage/settingsStorage.ts](src/storage/settingsStorage.ts) |
 
 - **Decks and sessions are on `/v2`; categories stayed on `/v1`.** The `/v1` decks and sessions
   keys are orphaned: nothing reads, converts or deletes them, so upgrading showed an empty library
@@ -474,6 +482,12 @@ These are not preferences. Each one cost a session.
   - **npm will not warn about it on a React Native upgrade.** Its peer ranges are `*`; check its
     supported React Native versions by hand. It is native: installing or upgrading it needs a
     native rebuild, not a Metro reload.
+- **`react-native-iap` is native and cannot be tried from a sideloaded build.** Installing or
+  upgrading it (and `react-native-nitro-modules`) needs a native rebuild, not a Metro reload. A
+  purchase works only once the `tip_coffee` product exists in the Play Console and the app is
+  installed from Play (an internal test track will do); until then `buyCoffee()` resolves
+  `'unavailable'`. Only `src/services/tipJar.ts` imports it, so Jest never loads it
+  ([ADR-0021](docs/architecture/decisions/0021-settings-screen-language-choice-and-tip-purchase.md)).
 - **Translation has three platform traps**
   ([ADR-0020](docs/architecture/decisions/0020-ui-text-translated-through-typed-catalogue.md)
   and its Amendments 1 and 3):
@@ -506,8 +520,11 @@ Recorded here so they are not rediscovered as surprises. The full list, with rea
   loaders, and nothing renders. A screen, a component, or the wiring in `DecksContext.tsx` can
   therefore break without any test failing. Adding a component-test setup is a dependency change —
   ask first.
-- **Some menu entries are placeholders** that alert rather than act: *Settings* is one. It is an
-  intentional stub, not a bug — do not "fix" it into existence without being asked. *Add deck
+- **Some menu entries were placeholders.** *Settings* was one and now opens the Settings screen
+  ([ADR-0021](docs/architecture/decisions/0021-settings-screen-language-choice-and-tip-purchase.md));
+  its privacy policy and terms links are placeholders in
+  [src/utils/appLinks.ts](src/utils/appLinks.ts), and *Buy me a coffee* is unavailable until the
+  `tip_coffee` product exists in the Play Console and the app is installed from Play. *Add deck
   manually* was one and now opens the New deck screen
   ([ADR-0011](docs/architecture/decisions/0011-deck-editing-is-one-action.md) Amendment 4). The
   Header toolbar's **Filter button**, a stub on the Decks and Learn screens, was removed rather
@@ -553,10 +570,10 @@ Recorded here so they are not rediscovered as surprises. The full list, with rea
   launch on a right-to-left device can still be laid out right-to-left once**, because React
   Native reads those settings when it creates the root view. Only `android:supportsRtl="false"` in
   the manifest would close that, and it has not been approved. The hand-drawn icons and the Study
-  screen's swipe direction assume left-to-right. There is **no in-app language picker**: the
-  language is the device's, read
-  once when `I18nProvider` mounts, so whether a change made while the app runs is followed is
-  unconfirmed — assume it takes a restart. **The migrated UI has not been seen on a device in any
+  screen's swipe direction assume left-to-right. The language is chosen on the Settings screen,
+  stored, and applied at once (ADR-0020 Amendment 4); the device's language is the default,
+  read once when `I18nProvider` mounts, so a device-language change made while the app runs is
+  followed only after a restart. **The migrated UI has not been seen on a device in any
   language yet**, English, the pseudo-language and every translation included. Still English in
   every language: the error detail native code supplies (storage, the picker, the file system),
   the *Export failed* alert's message when the export error carries one, the sample deck, and the
@@ -572,12 +589,13 @@ Recorded here so they are not rediscovered as surprises. The full list, with rea
   permissions it merges in. Check the merged manifest when a native dependency lands.
 - Introducing a new architectural pattern not described above, or contradicting an active ADR —
   adding a second store, a navigation library, a styling system, or an i18n framework all qualify.
-  For translation that means a language library, a stored language setting or in-app language
-  picker, and mirroring the layout for right-to-left text all need asking, as do another
+  For translation that means a language library and mirroring the layout for right-to-left text,
+  which need asking, as do another
   right-to-left language, such as Hebrew or Persian, and setting `android:supportsRtl="false"` in
-  the manifest (ADR-0020 Amendment 3). **Adding a left-to-right language does not**: it is one
+  the manifest (ADR-0020 Amendment 3). A stored language choice and the in-app picker were
+  approved and are ADR-0021's. **Adding a left-to-right language does not**: it is one
   module under `src/locales/`, typed as the full catalogue with its own plural rule, plus its entry
-  in `src/locales/index.ts` (ADR-0020).
+  in `src/locales/index.ts` and its name in `LANGUAGE_NAMES` there (ADR-0020).
 - Changing a storage key, its shape, or what `/v1` means. This is the one class of mistake here
   that the user cannot recover from: it loses their decks and their history rather than failing a
   build.

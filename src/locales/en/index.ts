@@ -9,6 +9,7 @@ import { editDeck } from './editDeck';
 import { importExport } from './importExport';
 import { learn } from './learn';
 import { navigation } from './navigation';
+import { settings } from './settings';
 import { shell } from './shell';
 import { stats } from './stats';
 import { study } from './study';
@@ -20,6 +21,7 @@ export const en = {
   importExport,
   categoryNames,
   shell,
+  settings,
   decks,
   editDeck,
   learn,

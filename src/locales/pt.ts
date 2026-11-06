@@ -269,10 +269,6 @@ export const pt: Language = {
         exportSampleDeckItem: 'Exportar baralho de exemplo',
         settingsItem: 'Configurações',
       },
-      settingsAlert: {
-        title: 'Configurações',
-        message: 'As configurações ainda não estão disponíveis.',
-      },
       exportSampleDeckDialog: {
         title: 'Exportar baralho de exemplo',
         body: 'Isto salva o mesmo baralho de exemplo em dois arquivos, CSV e JSON. Você escolhe onde salvar cada um e pode cancelar qualquer um deles para pulá-lo.\n\nCSV: as linhas que começam com # (título, descrição, categoria) são ignoradas na importação; depois vêm um cabeçalho "question" / "answer" e um cartão por linha, separados aqui por ponto e vírgula (vírgula, tabulação ou outro símbolo único também funciona).\n\nJSON: também restaura o título, a descrição e a categoria.\n\nHTML básico como <b>, <i> e <br /> é permitido nos dois lados de um cartão.',
@@ -283,6 +279,49 @@ export const pt: Language = {
       searchBar: {
         inputA11yLabel: 'Texto da busca',
         closeButtonA11yLabel: 'Fechar busca',
+      },
+    },
+    settings: {
+      settingsScreen: {
+        title: 'Configurações',
+        generalSection: 'Geral',
+        appSection: 'Aplicativo',
+        communitySection: 'Comunidade e suporte',
+        legalSection: 'Legal',
+        changeLanguageItem: 'Alterar idioma',
+        shareAppItem: 'Compartilhar o aplicativo',
+        shareMessage:
+          'Experimente o Easy Flashcards, um aplicativo para estudar baralhos de flashcards: {url}',
+        rateAppItem: 'Avaliar o aplicativo',
+        customerSupportItem: 'Suporte ao cliente',
+        aboutItem: 'Sobre',
+        buyCoffeeItem: 'Me pague um café',
+        privacyPolicyItem: 'Política de privacidade',
+        termsItem: 'Termos',
+      },
+      languageDialog: {
+        title: 'Alterar idioma',
+        systemDefaultOption: 'Padrão do sistema',
+      },
+      aboutAlert: {
+        title: 'Sobre',
+        message: '{name}, versão {version}',
+      },
+      linkFailedAlert: {
+        title: 'Não foi possível abrir o link',
+        message: 'Nenhum aplicativo neste dispositivo conseguiu abri-lo.',
+      },
+      emailFailedAlert: {
+        title: 'Nenhum aplicativo de e-mail',
+        message: 'Para falar com o suporte ao cliente, escreva para {email}.',
+      },
+      coffeeThanksAlert: {
+        title: 'Obrigado!',
+        message: 'Seu café está a caminho do desenvolvedor. Obrigado pelo apoio.',
+      },
+      coffeeUnavailableAlert: {
+        title: 'Me pague um café',
+        message: 'Pagar um café não está disponível agora. Tente novamente mais tarde.',
       },
     },
     decks: {

@@ -12,9 +12,10 @@ type Props = {
   variant?: 'plain' | 'boxed';
   /** Screen-specific items, shown before the common ones. */
   extraItems?: MenuItem[];
+  onOpenSettings: () => void;
 };
 
-export default function AppMenu({ variant, extraItems = [] }: Props) {
+export default function AppMenu({ variant, extraItems = [], onOpenSettings }: Props) {
   const t = useT();
   const [isExportVisible, setIsExportVisible] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -58,8 +59,7 @@ export default function AppMenu({ variant, extraItems = [] }: Props) {
           {
             label: t('shell.appMenu.settingsItem'),
             icon: 'settings',
-            onPress: () =>
-              Alert.alert(t('shell.settingsAlert.title'), t('shell.settingsAlert.message')),
+            onPress: onOpenSettings,
           },
         ]}
       />

@@ -55,6 +55,36 @@ export const LANGUAGES: readonly Language[] = [
 
 export const englishT: Translator = createTranslator(ENGLISH, ENGLISH);
 
+// Every language that can be chosen, each written in itself so the picker reads in any language.
+export const LANGUAGE_NAMES: Readonly<Record<string, string>> = {
+  en: 'English',
+  de: 'Deutsch',
+  fr: 'Français',
+  it: 'Italiano',
+  es: 'Español',
+  pt: 'Português (Brasil)',
+  pl: 'Polski',
+  ro: 'Română',
+  tr: 'Türkçe',
+  uk: 'Українська',
+  ar: 'العربية',
+  id: 'Bahasa Indonesia',
+  vi: 'Tiếng Việt',
+  th: 'ไทย',
+  ja: '日本語',
+  'zh-CN': '简体中文',
+  ko: '한국어',
+};
+
+/** The languages offered to the user; the pseudo-language is a developer aid and is left out. */
+export const SELECTABLE_LANGUAGES: readonly Language[] = LANGUAGES.filter(
+  language => language !== PSEUDO,
+);
+
+export function isSelectableLanguageCode(code: unknown): code is string {
+  return SELECTABLE_LANGUAGES.some(language => language.code === code);
+}
+
 export function translatorForTag(tag: string | null | undefined): Translator {
   const code = resolveLanguage(
     tag,
@@ -63,4 +93,12 @@ export function translatorForTag(tag: string | null | undefined): Translator {
   );
   const language = LANGUAGES.find(candidate => candidate.code === code) ?? ENGLISH;
   return language === ENGLISH ? englishT : createTranslator(language, ENGLISH);
+}
+
+/** A registered language code wins; null, or a code no language registers, follows the device tag. */
+export function translatorForChoice(
+  choice: string | null | undefined,
+  deviceTag: string | null | undefined,
+): Translator {
+  return translatorForTag(isSelectableLanguageCode(choice) ? choice : deviceTag);
 }

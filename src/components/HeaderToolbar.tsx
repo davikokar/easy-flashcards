@@ -12,6 +12,7 @@ type Props = {
   searchActive?: boolean;
   /** Passed to the App menu as its extra items. */
   menuItems?: MenuItem[];
+  onOpenSettings: () => void;
 };
 
 export default function HeaderToolbar({
@@ -19,6 +20,7 @@ export default function HeaderToolbar({
   searchLabel,
   searchActive = false,
   menuItems,
+  onOpenSettings,
 }: Props) {
   return (
     <View style={styles.row}>
@@ -35,7 +37,7 @@ export default function HeaderToolbar({
         ]}>
         <MenuIcon name="search" color={searchActive ? colors.primary : colors.textMuted} />
       </Pressable>
-      <AppMenu variant="boxed" extraItems={menuItems} />
+      <AppMenu variant="boxed" extraItems={menuItems} onOpenSettings={onOpenSettings} />
     </View>
   );
 }

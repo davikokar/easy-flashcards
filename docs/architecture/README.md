@@ -110,6 +110,11 @@ for the required format and status rules.
 > approval: right-to-left text is shown but the layout is never mirrored, though the first launch
 > on a right-to-left device can still be mirrored once, and the `android:supportsRtl="false"`
 > manifest change that would close that is not approved. Chinese is Simplified only (`zh-CN`).
+> ADR-0021 was recorded ahead of its work, together with Amendment 9 to ADR-0003 and Amendment 4
+> to ADR-0020: a Settings screen above the tabs lets the user choose the UI language, stored under
+> a new `@easy-flashcards/settings/v1` key that the i18n provider loads and saves (not the store),
+> and buy a one-off tip through `react-native-iap`. ARCHITECTURE.md links to it now that the work
+> has landed.
 
 ### Index
 
@@ -135,3 +140,4 @@ for the required format and status rules.
 | [ADR-0018](decisions/0018-react-native-svg-draws-charts.md) | react-native-svg draws charts | Active | 2026-11-04 |
 | [ADR-0019](decisions/0019-deck-file-format-version-2.md) | Deck files move to format version 2 — CSV and JSON carry the same metadata, and the category as one language-neutral reference | Active | 2026-11-05 |
 | [ADR-0020](decisions/0020-ui-text-translated-through-typed-catalogue.md) | UI text is translated through an in-repo typed catalogue, and the language follows the device | Active | 2026-11-05 |
+| [ADR-0021](decisions/0021-settings-screen-language-choice-and-tip-purchase.md) | A Settings screen holds a stored language choice, the app's links, and a one-off tip purchase | Active | 2026-11-06 |

@@ -8,6 +8,7 @@ import DecksScreen from '../screens/DecksScreen';
 import EditDeckScreen from '../screens/EditDeckScreen';
 import LearnScreen from '../screens/LearnScreen';
 import NewCategoryScreen from '../screens/NewCategoryScreen';
+import SettingsScreen from '../screens/SettingsScreen';
 import StudyScreen from '../screens/StudyScreen';
 import StatsScreen from '../screens/StatsScreen';
 import DeckStatsScreen from '../screens/DeckStatsScreen';
@@ -18,6 +19,7 @@ import {
   CategoriesStackParamList,
   DecksStackParamList,
   LearnStackParamList,
+  RootStackParamList,
   RootTabParamList,
   StatsStackParamList,
 } from './types';
@@ -42,6 +44,7 @@ const DecksStack = createNativeStackNavigator<DecksStackParamList>();
 const LearnStack = createNativeStackNavigator<LearnStackParamList>();
 const CategoriesStack = createNativeStackNavigator<CategoriesStackParamList>();
 const StatsStack = createNativeStackNavigator<StatsStackParamList>();
+const RootStack = createNativeStackNavigator<RootStackParamList>();
 const Tabs = createBottomTabNavigator<RootTabParamList>();
 
 const screenOptions = {
@@ -133,8 +136,58 @@ const renderLearnIcon = ({ color }: { color: string }) => <LearnIcon color={colo
 const renderCategoriesIcon = ({ color }: { color: string }) => <CategoriesIcon color={color} />;
 const renderStatsIcon = ({ color }: { color: string }) => <StatsIcon color={color} />;
 
+function TabsNavigator() {
+  const { sessions } = useDecks();
+  const t = useT();
+  const hasActiveSession = sessions.some(isSessionActive);
+
+  return (
+    <Tabs.Navigator
+      initialRouteName={hasActiveSession ? 'LearnTab' : 'DecksTab'}
+      screenOptions={{
+        headerShown: false,
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textDim,
+        tabBarStyle: { backgroundColor: colors.surface, borderTopColor: colors.border },
+      }}>
+      <Tabs.Screen
+        name="DecksTab"
+        component={DecksNavigator}
+        options={{
+          title: t('navigation.tabs.decks'),
+          tabBarIcon: renderDecksIcon,
+        }}
+      />
+      <Tabs.Screen
+        name="LearnTab"
+        component={LearnNavigator}
+        options={{
+          title: t('navigation.tabs.learn'),
+          tabBarIcon: renderLearnIcon,
+        }}
+      />
+      <Tabs.Screen
+        name="CategoriesTab"
+        component={CategoriesNavigator}
+        options={{
+          title: t('navigation.tabs.categories'),
+          tabBarIcon: renderCategoriesIcon,
+        }}
+      />
+      <Tabs.Screen
+        name="StatsTab"
+        component={StatsNavigator}
+        options={{
+          title: t('navigation.tabs.statistics'),
+          tabBarIcon: renderStatsIcon,
+        }}
+      />
+    </Tabs.Navigator>
+  );
+}
+
 export default function RootNavigator() {
-  const { sessions, isLoading } = useDecks();
+  const { isLoading } = useDecks();
   const t = useT();
 
   // The landing tab depends on persisted sessions, so wait for them before mounting the tabs.
@@ -146,52 +199,17 @@ export default function RootNavigator() {
     );
   }
 
-  const hasActiveSession = sessions.some(isSessionActive);
-
   return (
     // The layout is never mirrored; text direction is handled per paragraph.
     <NavigationContainer theme={navigationTheme} direction="ltr">
-      <Tabs.Navigator
-        initialRouteName={hasActiveSession ? 'LearnTab' : 'DecksTab'}
-        screenOptions={{
-          headerShown: false,
-          tabBarActiveTintColor: colors.primary,
-          tabBarInactiveTintColor: colors.textDim,
-          tabBarStyle: { backgroundColor: colors.surface, borderTopColor: colors.border },
-        }}>
-        <Tabs.Screen
-          name="DecksTab"
-          component={DecksNavigator}
-          options={{
-            title: t('navigation.tabs.decks'),
-            tabBarIcon: renderDecksIcon,
-          }}
+      <RootStack.Navigator screenOptions={screenOptions}>
+        <RootStack.Screen name="Tabs" component={TabsNavigator} options={{ headerShown: false }} />
+        <RootStack.Screen
+          name="Settings"
+          component={SettingsScreen}
+          options={{ title: t('settings.settingsScreen.title') }}
         />
-        <Tabs.Screen
-          name="LearnTab"
-          component={LearnNavigator}
-          options={{
-            title: t('navigation.tabs.learn'),
-            tabBarIcon: renderLearnIcon,
-          }}
-        />
-        <Tabs.Screen
-          name="CategoriesTab"
-          component={CategoriesNavigator}
-          options={{
-            title: t('navigation.tabs.categories'),
-            tabBarIcon: renderCategoriesIcon,
-          }}
-        />
-        <Tabs.Screen
-          name="StatsTab"
-          component={StatsNavigator}
-          options={{
-            title: t('navigation.tabs.statistics'),
-            tabBarIcon: renderStatsIcon,
-          }}
-        />
-      </Tabs.Navigator>
+      </RootStack.Navigator>
     </NavigationContainer>
   );
 }

@@ -264,10 +264,6 @@ const messages: Catalogue = {
       exportSampleDeckItem: 'Beispielstapel exportieren',
       settingsItem: 'Einstellungen',
     },
-    settingsAlert: {
-      title: 'Einstellungen',
-      message: 'Die Einstellungen sind noch nicht verfügbar.',
-    },
     exportSampleDeckDialog: {
       title: 'Beispielstapel exportieren',
       body: 'Dies speichert denselben Beispielstapel als zwei Dateien, CSV und JSON. Für jede Datei wird nach dem Speicherort gefragt; jede lässt sich abbrechen, um sie zu überspringen.\n\nCSV: Zeilen, die mit # beginnen (title, description, category), werden beim Import übersprungen, danach folgen eine Kopfzeile mit "question" / "answer" und eine Karte pro Zeile, hier durch Semikolons getrennt (ein Komma, ein Tabulator oder ein anderes einzelnes Symbol funktioniert ebenfalls).\n\nJSON: stellt zusätzlich Titel, Beschreibung und Kategorie wieder her.\n\nEinfaches HTML wie <b>, <i> und <br /> ist auf beiden Seiten einer Karte erlaubt.',
@@ -278,6 +274,50 @@ const messages: Catalogue = {
     searchBar: {
       inputA11yLabel: 'Suchtext',
       closeButtonA11yLabel: 'Suche schließen',
+    },
+  },
+  settings: {
+    settingsScreen: {
+      title: 'Einstellungen',
+      generalSection: 'Allgemein',
+      appSection: 'App',
+      communitySection: 'Community und Support',
+      legalSection: 'Rechtliches',
+      changeLanguageItem: 'Sprache ändern',
+      shareAppItem: 'App teilen',
+      shareMessage:
+        'Probier Easy Flashcards aus, eine App zum Lernen mit Karteikarten-Stapeln: {url}',
+      rateAppItem: 'App bewerten',
+      customerSupportItem: 'Kundensupport',
+      aboutItem: 'Über',
+      buyCoffeeItem: 'Spendiere mir einen Kaffee',
+      privacyPolicyItem: 'Datenschutzerklärung',
+      termsItem: 'Nutzungsbedingungen',
+    },
+    languageDialog: {
+      title: 'Sprache ändern',
+      systemDefaultOption: 'Systemstandard',
+    },
+    aboutAlert: {
+      title: 'Über',
+      message: '{name}, Version {version}',
+    },
+    linkFailedAlert: {
+      title: 'Link konnte nicht geöffnet werden',
+      message: 'Keine App auf diesem Gerät konnte ihn öffnen.',
+    },
+    emailFailedAlert: {
+      title: 'Keine E-Mail-App',
+      message: 'Um den Kundensupport zu erreichen, schreibe an {email}.',
+    },
+    coffeeThanksAlert: {
+      title: 'Danke!',
+      message: 'Dein Kaffee ist auf dem Weg zum Entwickler. Danke für deine Unterstützung.',
+    },
+    coffeeUnavailableAlert: {
+      title: 'Spendiere mir einen Kaffee',
+      message:
+        'Einen Kaffee zu spendieren ist gerade nicht möglich. Bitte versuche es später erneut.',
     },
   },
   decks: {

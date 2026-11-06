@@ -8,6 +8,7 @@ import MenuSheet from '../components/MenuSheet';
 import { useT } from '../i18n/I18nProvider';
 import { useDecks } from '../state/DecksContext';
 import { CategoriesStackParamList } from '../navigation/types';
+import { useOpenSettings } from '../navigation/useOpenSettings';
 import { Category } from '../types';
 import {
   DEFAULT_CATEGORIES,
@@ -22,12 +23,13 @@ type Props = NativeStackScreenProps<CategoriesStackParamList, 'CategoriesList'>;
 export default function CategoriesScreen({ navigation }: Props) {
   const { decks, categories, deleteCategory } = useDecks();
   const t = useT();
+  const openSettings = useOpenSettings();
   const customs = useMemo(() => sortCategoriesByName(categories, t), [categories, t]);
   // The sheet keeps its category while it fades out, so `menuVisible` is separate from it.
   const [menuCategory, setMenuCategory] = useState<Category | null>(null);
   const [menuVisible, setMenuVisible] = useState(false);
 
-  const menu = useMemo(() => <AppMenu variant="boxed" />, []);
+  const menu = useMemo(() => <AppMenu variant="boxed" onOpenSettings={openSettings} />, [openSettings]);
 
   useLayoutEffect(() => {
     navigation.setOptions({

@@ -10,6 +10,7 @@ import SessionCard from '../components/SessionCard';
 import { useT } from '../i18n/I18nProvider';
 import { useDecks } from '../state/DecksContext';
 import { LearnStackParamList, RootTabParamList } from '../navigation/types';
+import { useOpenSettings } from '../navigation/useOpenSettings';
 import { Category, Session } from '../types';
 import {
   clearableSessionCount,
@@ -42,6 +43,7 @@ export default function LearnScreen({ navigation }: Props) {
     clearCompletedSessions,
   } = useDecks();
   const t = useT();
+  const openSettings = useOpenSettings();
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState('');
   const ordered = useMemo(() => sortSessions(listedSessions(sessions)), [sessions]);
@@ -115,9 +117,10 @@ export default function LearnScreen({ navigation }: Props) {
             onPress: confirmClearCompleted,
           },
         ]}
+        onOpenSettings={openSettings}
       />
     ),
-    [toggleSearch, searchOpen, confirmClearCompleted, t],
+    [toggleSearch, searchOpen, confirmClearCompleted, t, openSettings],
   );
 
   useLayoutEffect(() => {

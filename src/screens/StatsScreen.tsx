@@ -12,6 +12,7 @@ import { useT } from '../i18n/I18nProvider';
 import { DecksIcon } from '../navigation/TabIcons';
 import { useDecks } from '../state/DecksContext';
 import { StatsStackParamList } from '../navigation/types';
+import { useOpenSettings } from '../navigation/useOpenSettings';
 import {
   EMPTY_SESSION_SUMMARY,
   answerShares,
@@ -30,6 +31,7 @@ type Props = NativeStackScreenProps<StatsStackParamList, 'StatsOverview'>;
 
 export default function StatsScreen({ navigation }: Props) {
   const t = useT();
+  const openSettings = useOpenSettings();
   const { decks, sessions, categories } = useDecks();
   const [timeframe, setTimeframe] = useState<Timeframe>('all');
   // The window is cut from the clock when these are derived, so it is recomputed with the data.
@@ -90,9 +92,10 @@ export default function StatsScreen({ navigation }: Props) {
         onSearch={toggleSearch}
         searchActive={searchOpen}
         searchLabel={t('stats.statsScreen.searchA11yLabel')}
+        onOpenSettings={openSettings}
       />
     ),
-    [toggleSearch, searchOpen, t],
+    [toggleSearch, searchOpen, t, openSettings],
   );
 
   useLayoutEffect(() => {

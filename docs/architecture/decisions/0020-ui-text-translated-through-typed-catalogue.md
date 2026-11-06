@@ -576,6 +576,31 @@ owner reversed.
   device read through `I18nManager.getConstants().localeIdentifier` selects Indonesian. Hebrew and
   Yiddish have no catalogue; for them the mapping only makes the tag correct.
 
+## Amendment 4 — 2026-11-06
+
+Recorded ahead of the work it governs, under
+[ADR-0021](0021-settings-screen-language-choice-and-tip-purchase.md), with the owner's approval.
+The catalogue, the translators and the fallback to English stand. What changes is *how the
+language is chosen*:
+
+- **The device language is the default, not the only source.** `I18nProvider` reads the stored
+  choice (`@easy-flashcards/settings/v1`) before it renders: `null` means follow the device,
+  exactly as before; a registered language code means that language. A stored code that no
+  language registers is treated as `null`.
+- **A change takes effect at once.** The provider holds the translator in state and replaces it
+  when the user picks a language on the Settings screen, so *there is no in-app language picker*
+  and *assume it takes a restart* no longer hold. The device language is still read once, when the
+  provider mounts; a device-language change made while the app runs is still followed only on the
+  next start.
+- **The pseudo-language is not selectable.** It stays reachable only through the device-language
+  route its own note describes.
+- **Language names are not catalogue messages.** The picker shows each language in itself
+  (`LANGUAGE_NAMES` in `src/locales/index.ts`); a language written in its own name is readable
+  whatever the app currently shows. Only the *System default* row and the screen's labels are
+  translated.
+- **New messages need every registered translation**, like every message; they are machine-written.
+- Dates and numbers still follow the device's regional format, whatever language is chosen.
+
 ## References
 
 - [ADR-0003](0003-single-context-reducer-store.md) — one store; the read-only i18n context is not

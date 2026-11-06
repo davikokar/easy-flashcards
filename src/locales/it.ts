@@ -267,10 +267,6 @@ export const it: Language = {
         exportSampleDeckItem: 'Esporta mazzo di esempio',
         settingsItem: 'Impostazioni',
       },
-      settingsAlert: {
-        title: 'Impostazioni',
-        message: 'Le impostazioni non sono ancora disponibili.',
-      },
       exportSampleDeckDialog: {
         title: 'Esporta mazzo di esempio',
         body: 'Questo salva lo stesso mazzo di esempio come due file, CSV e JSON. Ti viene chiesto dove salvare ciascuno e puoi annullare uno dei due per saltarlo.\n\nCSV: le righe che iniziano con # (title, description, category) vengono ignorate quando si importa, poi una riga di intestazione "question" / "answer" e una carta per riga, separate qui da punti e virgola (funzionano anche una virgola, una tabulazione o un altro simbolo singolo).\n\nJSON: ripristina anche titolo, descrizione e categoria.\n\nSu entrambi i lati di una carta è consentito HTML di base, come <b>, <i> e <br />.',
@@ -281,6 +277,48 @@ export const it: Language = {
       searchBar: {
         inputA11yLabel: 'Testo di ricerca',
         closeButtonA11yLabel: 'Chiudi ricerca',
+      },
+    },
+    settings: {
+      settingsScreen: {
+        title: 'Impostazioni',
+        generalSection: 'Generali',
+        appSection: 'App',
+        communitySection: 'Community e supporto',
+        legalSection: 'Note legali',
+        changeLanguageItem: 'Cambia lingua',
+        shareAppItem: "Condividi l'app",
+        shareMessage: "Prova Easy Flashcards, un'app per studiare mazzi di flashcard: {url}",
+        rateAppItem: "Valuta l'app",
+        customerSupportItem: 'Assistenza clienti',
+        aboutItem: 'Informazioni',
+        buyCoffeeItem: 'Offrimi un caffè',
+        privacyPolicyItem: 'Informativa sulla privacy',
+        termsItem: 'Termini di servizio',
+      },
+      languageDialog: {
+        title: 'Cambia lingua',
+        systemDefaultOption: 'Predefinita del sistema',
+      },
+      aboutAlert: {
+        title: 'Informazioni',
+        message: '{name}, versione {version}',
+      },
+      linkFailedAlert: {
+        title: 'Impossibile aprire il link',
+        message: 'Nessuna app su questo dispositivo ha potuto aprirlo.',
+      },
+      emailFailedAlert: {
+        title: 'Nessuna app di posta',
+        message: "Per contattare l'assistenza clienti, scrivi a {email}.",
+      },
+      coffeeThanksAlert: {
+        title: 'Grazie!',
+        message: 'Il tuo caffè sta arrivando allo sviluppatore. Grazie per il tuo supporto.',
+      },
+      coffeeUnavailableAlert: {
+        title: 'Offrimi un caffè',
+        message: 'Offrire un caffè non è possibile al momento. Riprova più tardi.',
       },
     },
     decks: {

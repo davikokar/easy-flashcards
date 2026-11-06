@@ -259,10 +259,6 @@ const messages: Catalogue = {
       exportSampleDeckItem: '샘플 덱 내보내기',
       settingsItem: '설정',
     },
-    settingsAlert: {
-      title: '설정',
-      message: '설정은 아직 사용할 수 없어요.',
-    },
     exportSampleDeckDialog: {
       title: '샘플 덱 내보내기',
       body: '같은 샘플 덱을 CSV와 JSON, 두 개의 파일로 저장해요. 파일마다 저장할 위치를 묻는데, 취소하면 해당 파일은 건너뛰어요.\n\nCSV: # 기호로 시작하는 줄(제목, 설명, 카테고리)은 가져올 때 건너뛰고, 그다음 "question" / "answer" 헤더와 카드당 한 행이 이어져요. 여기서는 세미콜론으로 구분하지만 쉼표, 탭, 다른 기호 한 개도 사용할 수 있어요.\n\nJSON: 제목, 설명, 카테고리도 함께 복원해요.\n\n카드의 양면에는 <b>, <i>, <br /> 같은 기본 HTML을 사용할 수 있어요.',
@@ -273,6 +269,48 @@ const messages: Catalogue = {
     searchBar: {
       inputA11yLabel: '검색어',
       closeButtonA11yLabel: '검색 닫기',
+    },
+  },
+  settings: {
+    settingsScreen: {
+      title: '설정',
+      generalSection: '일반',
+      appSection: '앱',
+      communitySection: '커뮤니티 및 지원',
+      legalSection: '법적 고지',
+      changeLanguageItem: '언어 변경',
+      shareAppItem: '앱 공유',
+      shareMessage: 'Easy Flashcards를 사용해 보세요. 덱으로 공부하는 플래시카드 앱이에요: {url}',
+      rateAppItem: '앱 평가하기',
+      customerSupportItem: '고객 지원',
+      aboutItem: '정보',
+      buyCoffeeItem: '커피 한 잔 사주기',
+      privacyPolicyItem: '개인정보 처리방침',
+      termsItem: '이용약관',
+    },
+    languageDialog: {
+      title: '언어 변경',
+      systemDefaultOption: '시스템 기본값',
+    },
+    aboutAlert: {
+      title: '정보',
+      message: '{name}, 버전 {version}',
+    },
+    linkFailedAlert: {
+      title: '링크를 열 수 없어요',
+      message: '이 기기에서 링크를 열 수 있는 앱이 없어요.',
+    },
+    emailFailedAlert: {
+      title: '이메일 앱 없음',
+      message: '고객 지원에 문의하려면 {email}(으)로 메일을 보내 주세요.',
+    },
+    coffeeThanksAlert: {
+      title: '감사합니다!',
+      message: '커피가 개발자에게 가고 있어요. 응원해 주셔서 감사합니다.',
+    },
+    coffeeUnavailableAlert: {
+      title: '커피 한 잔 사주기',
+      message: '지금은 커피를 사줄 수 없어요. 나중에 다시 시도해 주세요.',
     },
   },
   decks: {

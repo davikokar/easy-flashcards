@@ -271,10 +271,6 @@ export const fr: Language = {
         exportSampleDeckItem: "Exporter le paquet d'exemple",
         settingsItem: 'Paramètres',
       },
-      settingsAlert: {
-        title: 'Paramètres',
-        message: 'Les paramètres ne sont pas encore disponibles.',
-      },
       exportSampleDeckDialog: {
         title: "Exporter le paquet d'exemple",
         body: "Cette action enregistre le même paquet d'exemple en deux fichiers, CSV et JSON. Vous choisissez où enregistrer chacun et pouvez annuler l'un des deux pour l'ignorer.\n\nCSV\u00a0: les lignes commençant par # (titre, description, catégorie) sont ignorées à l'importation, puis viennent un en-tête \"question\" / \"answer\" et une carte par ligne, avec ici des points-virgules comme séparateurs (une virgule, une tabulation ou un autre symbole unique fonctionne aussi).\n\nJSON\u00a0: restitue aussi le titre, la description et la catégorie.\n\nLe HTML de base, comme <b>, <i> et <br />, est autorisé des deux côtés d'une carte.",
@@ -285,6 +281,49 @@ export const fr: Language = {
       searchBar: {
         inputA11yLabel: 'Texte de recherche',
         closeButtonA11yLabel: 'Fermer la recherche',
+      },
+    },
+    settings: {
+      settingsScreen: {
+        title: 'Paramètres',
+        generalSection: 'Général',
+        appSection: 'Application',
+        communitySection: 'Communauté et assistance',
+        legalSection: 'Mentions légales',
+        changeLanguageItem: 'Changer de langue',
+        shareAppItem: "Partager l'application",
+        shareMessage:
+          "Essayez Easy Flashcards, une application pour réviser des paquets de cartes mémoire : {url}",
+        rateAppItem: "Noter l'application",
+        customerSupportItem: 'Assistance client',
+        aboutItem: 'À propos',
+        buyCoffeeItem: 'Offrez-moi un café',
+        privacyPolicyItem: 'Politique de confidentialité',
+        termsItem: "Conditions d'utilisation",
+      },
+      languageDialog: {
+        title: 'Changer de langue',
+        systemDefaultOption: 'Langue du système',
+      },
+      aboutAlert: {
+        title: 'À propos',
+        message: '{name}, version {version}',
+      },
+      linkFailedAlert: {
+        title: "Impossible d'ouvrir le lien",
+        message: "Aucune application de cet appareil n'a pu l'ouvrir.",
+      },
+      emailFailedAlert: {
+        title: 'Aucune application de messagerie',
+        message: "Pour joindre l'assistance client, écrivez à {email}.",
+      },
+      coffeeThanksAlert: {
+        title: 'Merci !',
+        message: 'Votre café est en route vers le développeur. Merci de votre soutien.',
+      },
+      coffeeUnavailableAlert: {
+        title: 'Offrez-moi un café',
+        message: "Offrir un café n'est pas possible pour le moment. Réessayez plus tard.",
       },
     },
     decks: {

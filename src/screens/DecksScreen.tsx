@@ -13,6 +13,7 @@ import SessionSetupDialog from '../components/SessionSetupDialog';
 import { useT } from '../i18n/I18nProvider';
 import { useDecks } from '../state/DecksContext';
 import { DecksStackParamList, RootTabParamList } from '../navigation/types';
+import { useOpenSettings } from '../navigation/useOpenSettings';
 import { Deck } from '../types';
 import {
   EMPTY_SESSION_SUMMARY,
@@ -46,6 +47,7 @@ const START_DEBOUNCE_MS = 1000;
 export default function DecksScreen({ navigation }: Props) {
   const { decks, sessions, categories, error, addDeck, deleteDeck, startSession } = useDecks();
   const t = useT();
+  const openSettings = useOpenSettings();
   const [isImporting, setIsImporting] = useState(false);
   const lastStartAt = useRef(0);
   const [openMenu, setOpenMenu] = useState<'add' | null>(null);
@@ -84,9 +86,10 @@ export default function DecksScreen({ navigation }: Props) {
         onSearch={toggleSearch}
         searchActive={searchOpen}
         searchLabel={t('decks.decksScreen.searchA11yLabel')}
+        onOpenSettings={openSettings}
       />
     ),
-    [toggleSearch, searchOpen, t],
+    [toggleSearch, searchOpen, t, openSettings],
   );
 
   useLayoutEffect(() => {

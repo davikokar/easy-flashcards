@@ -258,10 +258,6 @@ const messages: Catalogue = {
       exportSampleDeckItem: '导出示例卡组',
       settingsItem: '设置',
     },
-    settingsAlert: {
-      title: '设置',
-      message: '设置功能暂不可用。',
-    },
     exportSampleDeckDialog: {
       title: '导出示例卡组',
       body: '这会将同一个示例卡组保存为两个文件：CSV 和 JSON。每个文件都会询问保存位置，你可以取消其中任何一个以跳过它。\n\nCSV：以 # 开头的行（title、description、category）在导入时会被跳过，接着是包含 "question" / "answer" 的标题行，之后每行一张卡片，此处用分号分隔（逗号、制表符或其他单个符号也可以）。\n\nJSON：还可以恢复标题、描述和分类。\n\n卡片的两面都可以使用基本的 HTML，例如 <b>、<i> 和 <br />。',
@@ -272,6 +268,48 @@ const messages: Catalogue = {
     searchBar: {
       inputA11yLabel: '搜索文字',
       closeButtonA11yLabel: '关闭搜索',
+    },
+  },
+  settings: {
+    settingsScreen: {
+      title: '设置',
+      generalSection: '通用',
+      appSection: '应用',
+      communitySection: '社区与支持',
+      legalSection: '法律信息',
+      changeLanguageItem: '更改语言',
+      shareAppItem: '分享应用',
+      shareMessage: '试试 Easy Flashcards，一款用卡组学习闪卡的应用：{url}',
+      rateAppItem: '给应用评分',
+      customerSupportItem: '客户支持',
+      aboutItem: '关于',
+      buyCoffeeItem: '请我喝杯咖啡',
+      privacyPolicyItem: '隐私政策',
+      termsItem: '服务条款',
+    },
+    languageDialog: {
+      title: '更改语言',
+      systemDefaultOption: '系统默认',
+    },
+    aboutAlert: {
+      title: '关于',
+      message: '{name}，版本 {version}',
+    },
+    linkFailedAlert: {
+      title: '无法打开链接',
+      message: '此设备上没有可以打开它的应用。',
+    },
+    emailFailedAlert: {
+      title: '没有邮件应用',
+      message: '如需联系客户支持，请发送邮件至 {email}。',
+    },
+    coffeeThanksAlert: {
+      title: '谢谢！',
+      message: '你的咖啡正送往开发者。感谢你的支持。',
+    },
+    coffeeUnavailableAlert: {
+      title: '请我喝杯咖啡',
+      message: '目前无法请喝咖啡，请稍后再试。',
     },
   },
   decks: {

@@ -264,10 +264,6 @@ const messages: Catalogue = {
       exportSampleDeckItem: 'Exportar mazo de ejemplo',
       settingsItem: 'Ajustes',
     },
-    settingsAlert: {
-      title: 'Ajustes',
-      message: 'Los ajustes aún no están disponibles.',
-    },
     exportSampleDeckDialog: {
       title: 'Exportar mazo de ejemplo',
       body: 'Esto guarda el mismo mazo de ejemplo en dos archivos, CSV y JSON. Se te pregunta dónde guardar cada uno y puedes cancelar cualquiera de los dos para omitirlo.\n\nCSV: las líneas que empiezan por # (título, descripción, categoría) se omiten al importar; después van un encabezado "question" / "answer" y una tarjeta por fila, separadas aquí por punto y coma (también sirven una coma, un tabulador u otro símbolo único).\n\nJSON: también recupera el título, la descripción y la categoría.\n\nSe admite HTML básico como <b>, <i> y <br /> en cualquiera de los dos lados de una tarjeta.',
@@ -278,6 +274,48 @@ const messages: Catalogue = {
     searchBar: {
       inputA11yLabel: 'Texto de búsqueda',
       closeButtonA11yLabel: 'Cerrar búsqueda',
+    },
+  },
+  settings: {
+    settingsScreen: {
+      title: 'Ajustes',
+      generalSection: 'General',
+      appSection: 'Aplicación',
+      communitySection: 'Comunidad y soporte',
+      legalSection: 'Legal',
+      changeLanguageItem: 'Cambiar idioma',
+      shareAppItem: 'Compartir la aplicación',
+      shareMessage: 'Prueba Easy Flashcards, una aplicación para estudiar mazos de tarjetas: {url}',
+      rateAppItem: 'Valorar la aplicación',
+      customerSupportItem: 'Atención al cliente',
+      aboutItem: 'Acerca de',
+      buyCoffeeItem: 'Invítame a un café',
+      privacyPolicyItem: 'Política de privacidad',
+      termsItem: 'Términos',
+    },
+    languageDialog: {
+      title: 'Cambiar idioma',
+      systemDefaultOption: 'Predeterminado del sistema',
+    },
+    aboutAlert: {
+      title: 'Acerca de',
+      message: '{name}, versión {version}',
+    },
+    linkFailedAlert: {
+      title: 'No se pudo abrir el enlace',
+      message: 'Ninguna aplicación de este dispositivo pudo abrirlo.',
+    },
+    emailFailedAlert: {
+      title: 'Sin aplicación de correo',
+      message: 'Para contactar con atención al cliente, escribe a {email}.',
+    },
+    coffeeThanksAlert: {
+      title: '¡Gracias!',
+      message: 'Tu café va de camino al desarrollador. Gracias por tu apoyo.',
+    },
+    coffeeUnavailableAlert: {
+      title: 'Invítame a un café',
+      message: 'Invitar a un café no está disponible ahora mismo. Inténtalo de nuevo más tarde.',
     },
   },
   decks: {

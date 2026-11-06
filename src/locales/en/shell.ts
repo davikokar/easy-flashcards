@@ -4,10 +4,6 @@ export const shell = {
     exportSampleDeckItem: 'Export sample deck',
     settingsItem: 'Settings',
   },
-  settingsAlert: {
-    title: 'Settings',
-    message: 'Settings are not available yet.',
-  },
   exportSampleDeckDialog: {
     title: 'Export sample deck',
     // Four paragraphs, separated by blank lines.

@@ -257,10 +257,6 @@ const messages: Catalogue = {
       exportSampleDeckItem: 'Xuất bộ thẻ mẫu',
       settingsItem: 'Cài đặt',
     },
-    settingsAlert: {
-      title: 'Cài đặt',
-      message: 'Cài đặt chưa khả dụng.',
-    },
     exportSampleDeckDialog: {
       title: 'Xuất bộ thẻ mẫu',
       body: 'Thao tác này lưu cùng một bộ thẻ mẫu thành hai tệp, CSV và JSON. Ứng dụng sẽ hỏi nơi lưu từng tệp; có thể hủy một trong hai để bỏ qua tệp đó.\n\nCSV: các dòng bắt đầu bằng # (tiêu đề, mô tả, danh mục) được bỏ qua khi nhập, tiếp đến là dòng tiêu đề "question" / "answer" và mỗi thẻ một dòng, ở đây phân tách bằng dấu chấm phẩy (dấu phẩy, tab hoặc một ký hiệu đơn khác cũng dùng được).\n\nJSON: còn khôi phục cả tiêu đề, mô tả và danh mục.\n\nCó thể dùng HTML cơ bản như <b>, <i> và <br /> ở cả hai mặt của thẻ.',
@@ -271,6 +267,48 @@ const messages: Catalogue = {
     searchBar: {
       inputA11yLabel: 'Văn bản tìm kiếm',
       closeButtonA11yLabel: 'Đóng tìm kiếm',
+    },
+  },
+  settings: {
+    settingsScreen: {
+      title: 'Cài đặt',
+      generalSection: 'Chung',
+      appSection: 'Ứng dụng',
+      communitySection: 'Cộng đồng và hỗ trợ',
+      legalSection: 'Pháp lý',
+      changeLanguageItem: 'Đổi ngôn ngữ',
+      shareAppItem: 'Chia sẻ ứng dụng',
+      shareMessage: 'Hãy thử Easy Flashcards, ứng dụng để học với các bộ thẻ ghi nhớ: {url}',
+      rateAppItem: 'Đánh giá ứng dụng',
+      customerSupportItem: 'Hỗ trợ khách hàng',
+      aboutItem: 'Giới thiệu',
+      buyCoffeeItem: 'Mời tôi một ly cà phê',
+      privacyPolicyItem: 'Chính sách quyền riêng tư',
+      termsItem: 'Điều khoản',
+    },
+    languageDialog: {
+      title: 'Đổi ngôn ngữ',
+      systemDefaultOption: 'Mặc định của hệ thống',
+    },
+    aboutAlert: {
+      title: 'Giới thiệu',
+      message: '{name}, phiên bản {version}',
+    },
+    linkFailedAlert: {
+      title: 'Không thể mở liên kết',
+      message: 'Không có ứng dụng nào trên thiết bị này mở được liên kết.',
+    },
+    emailFailedAlert: {
+      title: 'Không có ứng dụng email',
+      message: 'Để liên hệ hỗ trợ khách hàng, hãy gửi email đến {email}.',
+    },
+    coffeeThanksAlert: {
+      title: 'Cảm ơn bạn!',
+      message: 'Ly cà phê của bạn đang trên đường đến với nhà phát triển. Cảm ơn bạn đã ủng hộ.',
+    },
+    coffeeUnavailableAlert: {
+      title: 'Mời tôi một ly cà phê',
+      message: 'Hiện không thể mời cà phê. Vui lòng thử lại sau.',
     },
   },
   decks: {

@@ -5,7 +5,9 @@ deck from a local CSV or JSON file, studies it card by card, and the app records
 is known. It has no account, no network calls, and no backend. Everything it stores is in
 AsyncStorage on the device, one key per module in `src/storage/` (§5); the only times it leaves the
 app are to pick a file to import, and to save a deck out through the system save dialog — the
-sample deck as two files, one CSV and one JSON, in two dialogs. An exported deck carries its
+sample deck as two files, one CSV and one JSON, in two dialogs. The Settings screen also hands off
+to other apps — the share sheet, the store listing, the mail app and a browser for the legal pages
+— and to Google Play for the one-off tip; none of it sends app data. An exported deck carries its
 content, never its progress, and every file the app exports imports again
 ([ADR-0016](decisions/0016-deck-export-file-formats.md) and its Amendment 3,
 [ADR-0017](decisions/0017-deck-import-reads-exported-formats.md)); both files are format version 2
@@ -52,13 +54,15 @@ canonical; the full vocabulary is in
 | Categories | **New category screen** | A preview **Category tile**, the **Name field**, the **Colour picker** and the **Icon picker**. The Colour picker offers the palette and then the **Custom colour swatch**, which opens the **Custom colour dialog** — hue, saturation and brightness sliders and a preview — where **Use colour** stays disabled while the colour's contrast with `colors.background`, the colour the icon is drawn in, is below 4.5:1 ([ADR-0012](decisions/0012-custom-categories-third-storage-key.md) Amendment 3). **Save** stays disabled until the name passes `validateCategoryName`, then adds the category and goes back; leaving with unsaved changes asks first. There is no screen for editing a category. | `NewCategoryScreen`, route `NewCategory` |
 | Statistics | **Statistics screen** | The **Timeframe chips** — `All time`, `This month` and `Last 7 days`, a fixed row above the list, hidden when there are no decks — then the **Aggregated stats** card — the **Mastery ring** (each answer's share of every review, with the Ok-only success rate in its centre — [ADR-0007](decisions/0007-okeish-third-answer.md)) above four **Stat tiles**: `Decks`, `Total cards`, `Total reviews` and `Sessions` — then the **Decks breakdown**, one **Deck stats card** per deck, each showing the deck's **Category square** when it has a category ([ADR-0014](decisions/0014-deck-belongs-to-one-category.md) Amendment 2), a **Mastery bar**, and its card, session and review counts and last session date. The selected timeframe changes the Mastery ring, the `Total reviews` and `Sessions` tiles, and each Deck stats card's Mastery bar, `Reviews` and `Sessions`; `Decks`, `Total cards`, a card's `Cards` and `Last` stay all time, and the selection is local to the screen and never stored ([ADR-0015](decisions/0015-answers-carry-a-timestamp-under-v2-keys.md)). A search narrows the Deck stats cards and leaves the Aggregated stats. | `StatsScreen`, route `StatsOverview` |
 | Statistics | **Deck statistics screen** | One deck, as one scrolling list: the **Deck identity row** — a **Card count pill** and, when the deck's category resolves through `findCategory`, a **Category pill** with its **Category square** and name, with no pill and no gap otherwise ([ADR-0014](decisions/0014-deck-belongs-to-one-category.md) Amendment 6); the **Overall mastery card** — the Ok-only **Success rate headline**, the **Mastery change chip**, a **Mastery track**, three **Answer tiles** and the **Figures ribbon** (`Reviews`, `Sessions`, `Last session`); the **Session history card**, whose **Session history chart** is a smooth stacked area chart of the latest five sessions, oldest on the left, each session's Ok / Okeish / Not ok / unanswered shares of its own cards stacked to 100% and a **Session label** under each, or a single stacked bar for one session, drawn with `react-native-svg` ([ADR-0015](decisions/0015-answers-carry-a-timestamp-under-v2-keys.md) Amendment 3, [ADR-0018](decisions/0018-react-native-svg-draws-charts.md)); and the **Card performance section** — the **Card search field**, the **Card status chips** and a **Card stats row** per card, ordered by the **Sort button**'s **Card sort menu** (Hardest first, Deck order, Recently reviewed). Always all time; the Statistics screen's timeframe does not reach it. The headline, the Answer tiles, the `Reviews` figure, the card statuses and each row's figures read the card counters; the session history, each row's last-reviewed date, the Recently reviewed order and the Mastery change chip read the answer log ([ADR-0015](decisions/0015-answers-carry-a-timestamp-under-v2-keys.md) Amendment 2). **Reset statistics** is in the **Deck statistics menu** in the header. | `DeckStatsScreen`, route `DeckStats` (param `deckId`) |
+| (above the tabs) | **Settings screen** | Four sections of **Settings rows**, each a label with a chevron: **General** — **Change language**, whose row shows the current language and opens the **Language dialog**, a scrolling radio list of `System default` and each language written in itself; **App** — **Share app** (the system share sheet with a store link), **Rate app** (the store listing), **Customer support** (a mail to the support address with a fixed subject) and **About** (an alert with the app's name and version); **Community and support** — **Buy me a coffee**, a one-off in-app purchase; **Legal** — **Privacy policy** and **Terms**, which open a URL. The store and legal links are placeholders ([ADR-0021](decisions/0021-settings-screen-language-choice-and-tip-purchase.md)). | `SettingsScreen`, route `Settings` (root stack, no params) |
 
 The detail screens are reached by pushing onto their tab's stack: **Edit deck** from the Decks
 screen's Deck options menu, **New deck** from the Decks screen's Add deck menu, **Study** from the
 Learn screen (Resume, Replay, Review errors, Start a new session) or from starting a deck, **New
 category** from the Categories screen's New category button, and **Deck statistics** from the
 Statistics screen. The other screens are the roots of their tabs and are reached only by switching
-tab.
+tab. The **Settings screen** is neither: it is pushed onto a root stack that sits above the tab
+navigator, from the **Settings** item of the App menu on any tab's root screen (§4).
 
 There are no modal screens. Transient UI is an `Alert`, the **Menu sheet** (`MenuSheet`), a
 bottom sheet rendered in a `Modal` and opened from a **Kebab menu** (`KebabMenu`), or a centred
@@ -125,14 +129,19 @@ object, React re-renders, and a `useEffect` watching `state.decks`, `state.sessi
 about React.
 
 **The UI language flows beside the store, not through it.** `I18nProvider`, above `DecksProvider`
-(§3 *App entry points*), reads the device tag once when it mounts, through
-`services/deviceLocale.ts`, and keeps the `Translator` that `translatorForTag` in `src/locales/`
-resolves for it. Screens, components and the navigator read it with `useT()`; pure code in
+(§3 *App entry points*), loads the one saved setting — the language choice, from
+`@easy-flashcards/settings/v1` (§5) — and renders nothing until it is read. It reads the device tag
+once when it mounts, through `services/deviceLocale.ts`, and keeps the `Translator` that
+`translatorForChoice` in `src/locales/` resolves for the choice and the tag: a registered language
+code wins, and `null`, or a code nothing registers, follows the device. The Settings screen changes
+the choice through `useLanguage()`; the provider swaps the translator at once and writes the key.
+Screens, components and the navigator read the translator with `useT()`; pure code in
 `src/utils/` that builds text takes it as a `t` parameter, and code that only fails returns a code
-the screen maps to a message. The reducer never reads it and no text is stored or persisted, so
-the language can change between runs without touching data —
-[ADR-0020](decisions/0020-ui-text-translated-through-typed-catalogue.md),
-[ADR-0003](decisions/0003-single-context-reducer-store.md) Amendment 8.
+the screen maps to a message. The reducer never reads it, `DecksContext` neither holds nor saves
+the setting, and no text is stored, so a language change touches no deck data —
+[ADR-0020](decisions/0020-ui-text-translated-through-typed-catalogue.md) Amendment 4,
+[ADR-0003](decisions/0003-single-context-reducer-store.md) Amendments 8 and 9,
+[ADR-0021](decisions/0021-settings-screen-language-choice-and-tip-purchase.md).
 
 **Exporting a deck reads the store and writes nothing to it.** The Decks screen takes the deck from
 `useDecks()`, resolves its category with `findCategory`, and hands both to `exportDeck` in
@@ -318,7 +327,9 @@ tested). A file here may import `src/theme.ts`, which is plain constants.
 | [`search.ts`](../../src/utils/search.ts) | The title search behind the Search bar. `splitSearchWords` lower-cases a query, splits it on whitespace, `-`, `_` and `.`, and drops empty and repeated words; `titleMatchesWords` is true when every word occurs in the title as a literal substring, in any order; `filterByTitle(items, query, getTitle)` combines the two, and returns `items` itself — not a copy — for a query with no words, so a memoised list keeps its identity. `cardSearchText(card)` is the "title" the Deck statistics screen's Card search field matches: `htmlToPlainText` of the question and of the answer, joined by a space, so a query never matches a tag name or an entity's source form. |
 | [`shuffle.ts`](../../src/utils/shuffle.ts) | `shuffle(items, random = Math.random)` — Fisher-Yates over a copy; the input is never mutated. `random` is injectable so tests are deterministic. The Decks screen uses it to order the `cardIds` it passes to `startSession` from the **Start session button**, and from the Session setup dialog unless **Shuffle** is unticked ([ADR-0010](decisions/0010-inverted-sessions.md) Amendment 1). Shuffling is not stored; the order is the `cardIds` themselves. |
 | [`cardFaces.ts`](../../src/utils/cardFaces.ts) | `cardFaces(card, inverted)` — the session's direction applied to a card: `{ front, back }`, the `question` then the `answer`, swapped when `inverted`. The single place a direction is applied; the card itself is never rewritten. Also `readInverted(value)`, the sessions loader's rule for the stored flag: `true` only for an exact `true` ([ADR-0010](decisions/0010-inverted-sessions.md)). |
-| [`storedArray.ts`](../../src/utils/storedArray.ts) | `parseStoredArray(raw)` — the rows of a stored JSON array; `[]` for a missing, unparseable or non-array value. Every loader reads through it, so a corrupt key never throws. |
+| [`storedArray.ts`](../../src/utils/storedArray.ts) | `parseStoredArray(raw)` — the rows of a stored JSON array; `[]` for a missing, unparseable or non-array value. Every array loader reads through it, so a corrupt key never throws. |
+| [`appLinks.ts`](../../src/utils/appLinks.ts) | The constants and one builder behind the Settings screen's links ([ADR-0021](decisions/0021-settings-screen-language-choice-and-tip-purchase.md)): `APP_NAME`, `ANDROID_PACKAGE`, the support address and subject, `supportMailtoUrl()` (the `mailto:` link with the subject percent-encoded), the store listing URLs built from the package id, and `PRIVACY_POLICY_URL` and `TERMS_URL`, which are placeholders marked as such in the file until the real GitHub-hosted files exist. |
+| [`appInfo.ts`](../../src/utils/appInfo.ts) | `APP_VERSION` — `version` from `package.json`, the field `android/app/build.gradle` also reads for `versionName`, so the About alert and the installed build agree. |
 | [`sampleDeck.ts`](../../src/utils/sampleDeck.ts) | The sample deck that the App menu's **Export sample deck** saves ([ADR-0016](decisions/0016-deck-export-file-formats.md) Amendment 3). `SAMPLE_DECK` is a `Deck` — the title `Sample deck`, a description, the built-in category `default_geography` and five cards — whose ids, timestamps and counters exist only to satisfy the type, since an export writes none of them; `SAMPLE_DECK_CATEGORY` is that category resolved by `findCategory` with no custom categories. `SAMPLE_DECK_EXPORTS` lists the files to save, in order: CSV with the Semicolon preset, then JSON. `SampleDeckExportOutcome` is one file's result — `saved` with the name the save dialog returned (or `null`), `cancelled`, or `failed` with a message — and `describeSampleDeckExport(outcomes, t)` builds the one alert from catalogue messages under `importExport.sampleExport`, a failure's own (native, English) message inside a translated sentence: `Sample deck exported` when at least one file was saved and none failed, `Sample deck partly exported` when one was saved and another failed, `Export failed` when none was saved and one failed, and `null` — no alert — when every file was cancelled. Its message names each saved file (`Saved as … and ….`, by the suggested name when the dialog returned none), then each failure with its message, then each cancelled file as not saved; with nothing saved it lists only the failures. Raw assets are not bundled, so `samples/sample-deck.csv` and `samples/sample-deck.json` are copies of what the export writes; a test checks that each equals `serializeDeck`'s output, line endings aside, and imports as the deck. |
 | [`deckExport.ts`](../../src/utils/deckExport.ts) | The pure side of exporting a deck: the two file formats of [ADR-0016](decisions/0016-deck-export-file-formats.md), at format version 2 ([ADR-0019](decisions/0019-deck-file-format-version-2.md)). `DECK_FILE_FORMAT` (`easy-flashcards-deck`) and `DECK_FILE_VERSION` (`2`) are defined here once and read by both importers. It takes a deck and its already-resolved `Category \| null`, and never resolves one itself; the category is written as `categoryReference(category)` — a built-in id, a custom name, or none. `serializeDeckJson` writes one two-space-indented object — `format`, `version`, `title`, `description`, `category` (that string, or `null`) and `cards` as `{ question, answer }`. `serializeDeckCsv(deck, category, separator)` writes five comment lines, always and in this order — `# format:`, `# version:`, `# title:`, `# description:`, `# category:` (nothing after the colon for no category) — a value kept on one line by writing `\` as `\\` and a line feed as `\n` and dropping a carriage return, never quoted — then a `question` / `answer` header and one row per card through `Papa.unparse`, with `newline: '\n'` and a `quotes` function that also quotes every field starting with `#`; it adds the final line feed Papa leaves off, and throws on a separator that is neither a preset nor valid, because Papa would silently fall back to a comma. Card text is written exactly as stored. `SEPARATOR_PRESETS` are Comma, Semicolon and Tab as a `key` and a `value`, their labels catalogue messages under `importExport.separators`; `EXPORT_FORMAT_NAMES` are the menu labels `JSON` and `CSV`, kept in code because a file-format name is never translated ([ADR-0020](decisions/0020-ui-text-translated-through-typed-catalogue.md) Amendment 1); `validateCustomSeparator` is the custom rule — one code point, untrimmed, not `"`, `#`, a carriage return, a line feed or the BOM (checked before whitespace, because `\s` matches the BOM too), not whitespace, and not a letter or digit in any script by the `\p{L}` / `\p{N}` Unicode property escapes, which Hermes runs (seen on a device) — returning the separator or a reason (`empty`, `tooLong`, `reserved`, `whitespace`, `alphanumeric`). `exportFileName` is the suggested file name: the title with `/ \ : * ? " < > \|` and control characters replaced by `_`, trimmed, `deck` when nothing is left, plus `.json` or `.csv`. `EXPORT_MIME_TYPES` maps each format to `application/json` or `text/csv`, and `serializeDeck` picks the serialiser from a `DeckExportOptions`. The tests round-trip the CSV through PapaParse with `comments: '#'`, and `csv.test.ts` and `deckImport.test.ts` round-trip both formats through the importers. |
 | [`deckEdit.ts`](../../src/utils/deckEdit.ts) | The pure side of editing a deck, and of creating one by hand on the same form ([ADR-0011](decisions/0011-deck-editing-is-one-action.md)). `CardDraft` / `DeckEdit` are the editor's shapes — a `DeckEdit` carries the `categoryId` beside the title, description and cards; `draftsOf`, `isDeckEditChanged` (what the Save button and the discard prompt rest on; a different `categoryId` counts as a change), `removedCardIds` and `firstIncompleteCard` serve the Edit deck screen. The New deck screen uses `firstIncompleteCard` too, with `isNewDeckDraftBlank` — true while the draft still equals the blank form, no title or description once trimmed, no category and no card; its negation is what the Save button and the discard prompt rest on — and `newDeckInputOf`, the `addDeck` input for the draft: the trimmed title and description, the `categoryId`, `sourceFileName: null`, and the cards in order with their draft ids dropped and their text untrimmed ([ADR-0011](decisions/0011-deck-editing-is-one-action.md) Amendment 4). `applyDeckEdit(deck, name, description, categoryId, cards)` is the transform behind `updateDeck` — it writes the category id it is given, which the reducer has already resolved; existing cards keep their counters, new ones start at zero, the list's order becomes the deck's — and `reconcileSession` applies the edit to a session: the new `deckName`, and for an active session the removed cards dropped from its unanswered part, which can complete it or, left with no cards and no answers, delete it (`null`). |
@@ -401,7 +412,8 @@ the shape of every category, but only a custom one is persisted; `CategoryIcon` 
 ### `src/storage/` — the AsyncStorage boundary
 
 One module per key, each owning `load*`, `save*`, and the normalisation that read applies.
-See §5.
+`settingsStorage.ts` is the odd one out: its key holds one object, the language choice, and it is
+loaded and saved by `I18nProvider`, not by `DecksContext`. See §5.
 
 ### `src/state/` — the store
 
@@ -438,6 +450,8 @@ holds custom categories only.
 | [`exportSampleDeck.ts`](../../src/services/exportSampleDeck.ts) | `exportSampleDeck()` — saves `SAMPLE_DECK` with `SAMPLE_DECK_CATEGORY` once per entry of `SAMPLE_DECK_EXPORTS`, each through `exportDeck`, awaiting one save dialog before opening the next: on Android `saveDocuments` saves one file per call and refuses a second call while one is open. A cancel (`ExportCancelledError`) or an error on one file is caught and recorded, and does not stop the next. Never throws for either; returns one `SampleDeckExportOutcome` per file, in order, carrying the format and the suggested name from `exportFileName` ([ADR-0016](decisions/0016-deck-export-file-formats.md) Amendment 3). |
 | [`exportDeck.ts`](../../src/services/exportDeck.ts) | `exportDeck(deck, category, options)` — writes `serializeDeck`'s text to the cache under the fixed name `easy-flashcards-export.json` or `.csv`, never the deck's title, so user text never reaches a path; opens the system save dialog through `saveDocuments` with the format's MIME type and `exportFileName` as the suggested name; and returns the name the file was saved as. Defines `ExportCancelledError` and throws it on cancel, throws an `Error` when the provider reports one, and deletes the cache file afterwards either way ([ADR-0016](decisions/0016-deck-export-file-formats.md)). Called by the Decks screen's Export to file and, once per file, by `exportSampleDeck`. |
 | [`deviceLocale.ts`](../../src/services/deviceLocale.ts) | `getDeviceLocaleTag()` — the device's language as a normalised BCP 47 tag, read from `Intl.DateTimeFormat().resolvedOptions().locale`, else from `I18nManager.getConstants().localeIdentifier`, else `null`; each read is wrapped so it never throws. The only file that reads a device API for the language ([ADR-0020](decisions/0020-ui-text-translated-through-typed-catalogue.md) and its Amendment 1). Called once, by `I18nProvider`. `keepLayoutLeftToRight()` — calls `I18nManager.allowRTL(false)` and `forceRTL(false)` so a right-to-left device language does not mirror the layout; Android applies it from the next launch, not the current one (ADR-0020 Amendment 3, §8). Called once, by `index.js`. |
+| [`appActions.ts`](../../src/services/appActions.ts) | The Settings screen's calls into the system, through React Native's `Linking` and `Share` and no dependency of their own. `openUrl(url)` resolves `false` when nothing can open it; `shareText(message)` opens the share sheet and swallows a dismissal; `openStoreListing()` tries the `market://` link and then the web listing; `openSupportEmail()` opens the `mailto:` link from `appLinks.ts`. |
+| [`tipJar.ts`](../../src/services/tipJar.ts) | `buyCoffee()` — the Settings screen's one-off tip ([ADR-0021](decisions/0021-settings-screen-language-choice-and-tip-purchase.md)), through `react-native-iap`, which only this file imports. It connects to the store, asks for the consumable product `COFFEE_PRODUCT_ID` (`tip_coffee`), finishes any earlier unfinished tip, starts the purchase and finishes the new one as consumable so the same person can tip again. Resolves `'thanks'`, `'cancelled'` or `'unavailable'` and never throws; stores nothing and verifies nothing, because a tip grants nothing. Unavailable until the product exists in the Play Console and the app is installed from Play. |
 
 A cancelled picker or save dialog is a normal outcome, not an error, which is why the import has
 `ImportCancelledError` and the export `ExportCancelledError`, defined in `exportDeck.ts`. The Decks
@@ -457,7 +471,11 @@ built-in category names and icon labels; the rest are one per screen area. [`ind
 is the registry: `ENGLISH`, `PSEUDO` (`en-XA`, built from English by `pseudoLocalizeCatalogue`),
 `LANGUAGES`, `englishT` (the English translator tests and fallbacks use) and
 `translatorForTag(tag)`, which resolves a device tag against `LANGUAGES` and falls back to
-English. A language is one module typed as the full `Catalogue`, with its own plural rule, plus
+English. `SELECTABLE_LANGUAGES` is `LANGUAGES` without the pseudo-language, `LANGUAGE_NAMES` writes
+each of them in itself for the Language dialog, `isSelectableLanguageCode` tests a stored code, and
+`translatorForChoice(choice, deviceTag)` is what `I18nProvider` uses: a selectable code wins and
+anything else follows the device tag ([ADR-0020](decisions/0020-ui-text-translated-through-typed-catalogue.md)
+Amendment 4). A language is one module typed as the full `Catalogue`, with its own plural rule, plus
 its entry in `LANGUAGES`. Each translation is one such file beside `en/`, named by its language
 code, holding its catalogue and its hand-written plural rule; which exist, and in what order, is
 `LANGUAGES`. The one exception to the naming is Simplified Chinese, registered as `zh-CN` in
@@ -467,12 +485,16 @@ English.
 
 ### `src/i18n/` — the language context
 
-[`I18nProvider.tsx`](../../src/i18n/I18nProvider.tsx) holds `I18nProvider`, which reads the
-device tag once, on mount, through `getDeviceLocaleTag` and keeps the `Translator` from
-`translatorForTag`, and `useT()`, which returns it — or `englishT` when no provider is mounted. It
-is read-only configuration, not a store: no reducer, no actions, nothing persisted
-([ADR-0003](decisions/0003-single-context-reducer-store.md) Amendment 8). Screens and components
-call `useT()`; pure code takes the `Translator` as a parameter and never imports one.
+[`I18nProvider.tsx`](../../src/i18n/I18nProvider.tsx) holds `I18nProvider`, which loads the saved
+language choice through `settingsStorage`, reads the device tag once through `getDeviceLocaleTag`,
+renders nothing until the choice is read, and keeps the `Translator` from `translatorForChoice`.
+`useT()` returns it — or `englishT` when no provider is mounted — and `useLanguage()` returns the
+`choice` (a language code or `null` for the device) and `setChoice`, which swaps the translator at
+once and writes the key; a failed write is swallowed. It is configuration, not a store: no reducer,
+no actions, and the one thing it persists is that choice
+([ADR-0003](decisions/0003-single-context-reducer-store.md) Amendments 8 and 9,
+[ADR-0021](decisions/0021-settings-screen-language-choice-and-tip-purchase.md)). Screens and
+components call `useT()`; pure code takes the `Translator` as a parameter and never imports one.
 
 ### `src/screens/` — the stateful half
 
@@ -562,7 +584,13 @@ draft differs from that starting state and is unsaved. It passes the Colour pick
 `categoryPalette`; the Custom colour swatch opens the dialog at the draft colour, **Use colour**
 sets the draft colour and closes it, and Cancel only closes it. Because `FormField` takes no `maxLength`, error or `onBlur`, the screen cuts the typed
 name to `CATEGORY_NAME_MAX_LENGTH` itself and renders its own helper line — the error, once the
-name has been typed in, and a character count.
+name has been typed in, and a character count. `SettingsScreen` is the one screen that does not call
+`useDecks()`: it reads `useLanguage()` for the choice and holds whether the Language dialog is open
+and whether a tip purchase is in flight, which a ref also guards against a second tap. It builds
+the dialog's options from `SELECTABLE_LANGUAGES` and `LANGUAGE_NAMES`, calls `appActions.ts` and
+`tipJar.ts` for the other rows, and turns their results into `Alert`s. `useOpenSettings()` in
+`src/navigation/` is how a tab root opens it; each of the four passes the callback to the App menu
+(§3, §4).
 
 ### `src/components/` — the stateless half
 
@@ -584,7 +612,7 @@ name has been typed in, and a character count.
 | [`CardSearchField.tsx`](../../src/components/CardSearchField.tsx) | The **Card search field**: an always-shown field with the `search` glyph, a `TextInput` labelled `Search cards` (not auto-focused, auto-correct and auto-capitalise off) and, while the value is non-empty, a clear button labelled `Clear card search`. Controlled — `value`, `onChangeText`, `onClear`. Not the `SearchBar`, which a Search button opens and closes. |
 | [`CardStatusChips.tsx`](../../src/components/CardStatusChips.tsx) | The **Card status chips**: a wrapping radio group labelled `Card status` — `All`, `Needs review`, `Learning`, `Mastered`, `New`, each with its count in brackets, in the Timeframe chips' pattern. Controlled; takes the per-status `counts` and the `total`. Exports `CardStatusFilter` (`'all'` or a `CardStatus`); the status labels are the catalogue's `answers.cardStatus.*`, which `CardStatsRow` and the screen's empty states read too. |
 | [`CardStatsRow.tsx`](../../src/components/CardStatsRow.tsx) | One **Card stats row**: the question and the answer as `RichText` clamped to two lines, the **Card status badge** (a tinted pill with a status glyph — tick, question mark or cross — or none for `New`, hidden from accessibility), an 8-point `MasteryTrack`, and a footer of each answer's share with `{n} reviews · Reviewed {short date}` or `Never reviewed`. Takes the `Card` and its `lastAnsweredAt` from the screen, and derives the rest from the card's counters itself — `successRate`, `answerShares`, `cardStatus` — plus `htmlToPlainText` of both sides, memoised, for its one accessibility label. `React.memo`'d. |
-| [`HeaderToolbar.tsx`](../../src/components/HeaderToolbar.tsx) | The `headerRight` of the Decks, Learn and Statistics screens: the **Search button**, then the `AppMenu` in its `boxed` variant. `searchActive` tints the Search button and marks it expanded while the Search bar is open. Takes optional `menuItems` that it passes to `AppMenu` as `extraItems`. The Search button only calls the callback it is given. It was `DecksToolbar` until the Learn screen used it. |
+| [`HeaderToolbar.tsx`](../../src/components/HeaderToolbar.tsx) | The `headerRight` of the Decks, Learn and Statistics screens: the **Search button**, then the `AppMenu` in its `boxed` variant. `searchActive` tints the Search button and marks it expanded while the Search bar is open. Takes optional `menuItems` that it passes to `AppMenu` as `extraItems`, and the `onOpenSettings` callback it passes on. The Search button only calls the callback it is given. It was `DecksToolbar` until the Learn screen used it. |
 | [`SearchBar.tsx`](../../src/components/SearchBar.tsx) | The **Search bar**: a search glyph, an auto-focused `TextInput`, and the **Close search button**. Controlled — the screen owns the query and whether the bar is shown, and passes `value`, `onChangeText`, `onClose` and the placeholder. |
 | [`SessionCard.tsx`](../../src/components/SessionCard.tsx) | One session on the Learn screen: a header with the **Category square** when given a `category` (no square and no gap otherwise), the deck name, the **Session status pill**, the neutral **Inverted pill** when `inverted` is set, and the **Session options menu** (a `KebabMenu`), a `SessionResultsBar`, and a footer with the start date and the icon-only **Resume**, **Review errors** and **Replay** buttons. Resume shows only on an active session and only when `onResume` is given; on a completed one, the Review errors button shows only when a `review` prop (`{ count, done, onPress }`) is given and the Replay button only when `onReplay` is. The Review errors button is a `ReviewErrorsButton`, given the `review` prop's count and `done`, with an accessibility label built here that states the count or that every card is fixed. The pills wrap, so the Inverted pill drops below the status pill on a narrow card. Takes display-ready values and callbacks; derives nothing. |
 | [`ReviewErrorsButton.tsx`](../../src/components/ReviewErrorsButton.tsx) | The **Review errors button**: an icon-only `warning` `Button` with the `replay` glyph, and the **Review badge** on its top-right corner — a sibling of the button rather than its child, so a disabled button's dimming does not fade it, and hidden from accessibility — showing `count` (capped at `99+`), or a tick `AnswerIcon` with the button disabled when `done`. Takes `count`, optional `done`, `accessibilityLabel` and `onPress`; the caller writes the label. Used in the Session card's footer and as the review **Summary button** of the Study screen's Session summary and Review summary, which never pass `done`. |
@@ -599,7 +627,7 @@ name has been typed in, and a character count.
 | [`MenuSheet.tsx`](../../src/components/MenuSheet.tsx) | The bottom sheet, in a `Modal`. Defines the shared `MenuItem` type. An optional `title` heads the sheet above a separator; with an optional `category` as well, a 28-point `CategorySquare` sits before the title on the same row (no square and no gap without one; a category without a title shows nothing). Only the Deck card's and Session card's `KebabMenu`s pass a category. A `MenuItem` may set `selected` for a menu that marks a choice: the row's label fills the line, a selected one is in `colors.primary` with a trailing tick `AnswerIcon`, and the state is in `accessibilityState`; an item that leaves it unset is drawn as before. Only the Card sort menu sets it. |
 | [`MenuIcons.tsx`](../../src/components/MenuIcons.tsx) | `MenuIcon` — every menu icon, drawn from nested `View`s on a 20-point grid. Also carries glyphs used outside menus: `search` in the Header toolbar, `search` and `close` in the Search bar, `close` on the Category picker's No category choice, `clock` in the Deck card and Session card footers, `replay` on the Review errors button (`ReviewErrorsButton`), the Session card's Replay button and the Session summary's Study the whole deck again Summary button, `back`, a left-pointing arrow, on the Session summary's and Review summary's Back to sessions Summary button, `play` and `resume` on the Start session and Resume buttons, `delete` on the Edit deck screen's Remove card button, and `file`, `tally` and `clock` on the Statistics screen's Stat tiles — `tally`, four strokes struck through, exists only for the `Total reviews` tile — and on the Deck statistics screen `search` and `close` in the Card search field and `sort`, an up arrow beside a down arrow, on the Sort button. An optional `size` scales the grid about its centre. |
 | [`AnswerIcons.tsx`](../../src/components/AnswerIcons.tsx) | `AnswerIcon` — the tick, cross and question-mark glyphs for Ok, Not Ok and Okeish, drawn from rotated `View`s. Used on the Study screen's answer buttons, in the `MasteryBar`, `MasteryRing` and `SessionResultsBar` legends, as the tick in a completed session's status pill, as the Review badge's done tick, as the Review summary's all-fixed tick, as the tick in a ticked Session setup dialog checkbox, and as the tick on a selected Colour picker swatch (on a light disc on the Custom colour swatch) and a selected Category picker tile. Hidden from accessibility; the containing button or panel carries the name. |
-| [`AppMenu.tsx`](../../src/components/AppMenu.tsx) | The header kebab menu. The one component that calls a service. Passes an optional `variant` through to its `KebabMenu`, and takes optional `extraItems` — screen-specific `MenuItem`s shown before Export sample deck and Settings — so a screen can add an item without `AppMenu` reading the store. **Export sample deck** opens the **Export sample deck dialog**, which says the sample is saved as two files, CSV and JSON, with a save dialog for each that can be cancelled to skip it, and describes both formats. Its **Export** button shows a spinner while `exportSampleDeck` runs and then the alert `describeSampleDeckExport` builds; the dialog closes when at least one file was saved, stays open after a failure with nothing saved, and stays open with no alert when both were cancelled. |
+| [`AppMenu.tsx`](../../src/components/AppMenu.tsx) | The header kebab menu. The one component that calls a service. Passes an optional `variant` through to its `KebabMenu`, and takes optional `extraItems` — screen-specific `MenuItem`s shown before Export sample deck and Settings — so a screen can add an item without `AppMenu` reading the store. **Settings** only calls the required `onOpenSettings` it is given; the screen supplies it from `useOpenSettings()`. **Export sample deck** opens the **Export sample deck dialog**, which says the sample is saved as two files, CSV and JSON, with a save dialog for each that can be cancelled to skip it, and describes both formats. Its **Export** button shows a spinner while `exportSampleDeck` runs and then the alert `describeSampleDeckExport` builds; the dialog closes when at least one file was saved, stays open after a failure with nothing saved, and stays open with no alert when both were cancelled. |
 | [`CategoryIcon.tsx`](../../src/components/CategoryIcon.tsx) | A **Category icon**: an `Image` of the Android vector drawable for an icon key, tinted with `tintColor`, at an explicit `size` (default 24) because a drawable has no intrinsic size. Holds the one `require` map from icon key to `.xml` file — the defaults' icons and the extras alike — typed as a `Record` over `CategoryIcon`, so a key with no drawable entry fails `npm run typecheck`; typecheck does not see the `require` path, so a path naming a missing file fails only when Metro bundles ([ADR-0013](decisions/0013-category-icons-are-android-vector-drawables.md) Amendment 2). Hidden from accessibility. The only icon not drawn from `View`s — [ADR-0013](decisions/0013-category-icons-are-android-vector-drawables.md). |
 | [`CategoryTile.tsx`](../../src/components/CategoryTile.tsx) | A **Category tile**: a square filled with the category's colour, its `CategoryIcon` tinted `colors.background` on top ([ADR-0013](decisions/0013-category-icons-are-android-vector-drawables.md) Amendment 1), and the name beneath in two lines at most. Fills the width its parent gives it. Pressable only when `onPress` is given; `nameDimmed` greys the name for the New category screen's placeholder. `selected` makes a pressable tile a radio, ringed and ticked when true, as the Category picker uses it; `none` draws the **No category choice** instead — a dashed square with a `close` `MenuIcon` and no category colour or icon. |
 | [`CategorySquare.tsx`](../../src/components/CategorySquare.tsx) | A **Category square**: a small rounded square (32 points by default, or the optional `size`) in the category's colour with its `CategoryIcon` tinted `colors.background`. Shown on the Deck card, the Session card, the Deck stats card and in the Category field, at 28 points before the title of the Deck options menu and Session options menu sheets, and at 24 points in the Deck statistics screen's Category pill; an image for accessibility, labelled with the category's name, with no press behaviour. |
@@ -609,13 +637,17 @@ name has been typed in, and a character count.
 | [`CustomColorDialog.tsx`](../../src/components/CustomColorDialog.tsx) | The **Custom colour dialog**: a centred `Modal` titled `Custom colour`, with a **Hue**, a **Saturation** and a **Brightness** `ColorSlider` and the **Colour preview** in a scroll view, then **Use colour** and **Cancel**. Holds the draft as an `Hsv`, reset from the `color` prop each time it opens, and derives the hex with `hsvToHex`, the saturation and brightness tracks with `saturationStops` and `brightnessStops`, and readability with `meetsCategoryContrast` against `colors.background`. While the draft is not readable, **Use colour** is disabled and a message replaces the hex beside the preview; otherwise it calls `onUse` with the lowercase `#rrggbb`. Cancel, the backdrop and Back call `onCancel`; the caller closes the dialog either way. The scroll view stops scrolling while a slider is held ([ADR-0012](decisions/0012-custom-categories-third-storage-key.md) Amendment 3). |
 | [`ColorSlider.tsx`](../../src/components/ColorSlider.tsx) | One slider of the Custom colour dialog: a label and value line above a track painted with the `stops` it is given, and a thumb. It is one `adjustable` element carrying the name and value; a drag moves it through the responder system and refuses to hand the gesture to the scroll view, reporting `onSlidingChange` from touch down until release, and TalkBack's increment and decrement move it by `step`. Controlled. Also exports `linearGradient`, which builds the CSS gradient string that the track and the Custom colour swatch pass to the `backgroundImage` style. |
 | [`CategoryIconPicker.tsx`](../../src/components/CategoryIconPicker.tsx) | The **Icon picker**: a radio group of every `CATEGORY_ICONS` key as a `CategoryIcon`, in `CATEGORY_ICONS` order, in a plain wrapping grid six to a row — not virtualised and not scrolling on its own, so it grows the New category screen's scroll view. Each option's accessibility label is `getCategoryIconLabel`. Controlled. |
+| [`SettingsRow.tsx`](../../src/components/SettingsRow.tsx) | A **Settings row**: a label, an optional muted `value` before the chevron, and the chevron — the `back` `MenuIcon` turned half way round. A button that only calls `onPress`; `loading` swaps the chevron for a spinner and ignores presses. |
+| [`LanguageDialog.tsx`](../../src/components/LanguageDialog.tsx) | The **Language dialog**: a centred `Modal` with a scrolling radio list of the `LanguageOption`s it is given — a code or `null` for the device, and a label — a trailing tick on the selected one, and a Cancel button. Picking calls `onSelect`; the backdrop, Back and Cancel call `onClose`. Controlled; the screen closes it and applies the choice. |
 
 `AppMenu` is the exception to "components take plain props": it calls `exportSampleDeck` directly
 because it has no screen to belong to — the Decks, Learn and Statistics screens mount it inside
 `HeaderToolbar`, and the Categories screen mounts it directly (see §4).
 `HeaderToolbar` therefore reaches a service too, but only through `AppMenu`. The Learn screen passes **Clear
 completed sessions** to `HeaderToolbar` as a `menuItems` entry, which reaches `AppMenu` as
-`extraItems`; the callback is the screen's, so neither component knows anything of the store.
+`extraItems`; the callback is the screen's, so neither component knows anything of the store. The
+same holds for **Settings**: neither component reads the navigator, the screen's `onOpenSettings`
+does.
 
 ### `src/assets/category-icons/` — the category drawables
 
@@ -645,25 +677,32 @@ under `src/assets/`.
 
 ## 4. Navigation
 
-One bottom tab navigator, one native stack inside each tab. There is no drawer, no modal stack, and
+One bottom tab navigator, one native stack inside each tab, and one native stack above the tabs
+that holds the tab navigator and the Settings screen. There is no drawer, no modal stack, and
 no deep linking.
 
 ```
 RootNavigator  (NavigationContainer, dark theme built from src/theme.ts, direction="ltr")
-└── Tab.Navigator          initialRouteName = active session ? 'LearnTab' : 'DecksTab'
-    ├── DecksTab   → DecksNavigator  → DecksList     (DecksScreen)
-    │                                → EditDeck      (EditDeckScreen)   param: deckId
-    │                                → NewDeck       (EditDeckScreen)   no params
-    ├── LearnTab   → LearnNavigator  → LearnList     (LearnScreen)
-    │                                → Study         (StudyScreen)      params: sessionId, mode?: 'review'
-    ├── CategoriesTab → CategoriesNavigator → CategoriesList (CategoriesScreen)
-    │                                      → NewCategory    (NewCategoryScreen)
-    └── StatsTab   → StatsNavigator  → StatsOverview (StatsScreen)
-                                     → DeckStats     (DeckStatsScreen)  param: deckId
+└── RootStack
+    ├── Tabs       → Tab.Navigator    initialRouteName = active session ? 'LearnTab' : 'DecksTab'
+    │   ├── DecksTab   → DecksNavigator  → DecksList     (DecksScreen)
+    │   │                                → EditDeck      (EditDeckScreen)   param: deckId
+    │   │                                → NewDeck       (EditDeckScreen)   no params
+    │   ├── LearnTab   → LearnNavigator  → LearnList     (LearnScreen)
+    │   │                                → Study         (StudyScreen)      params: sessionId, mode?: 'review'
+    │   ├── CategoriesTab → CategoriesNavigator → CategoriesList (CategoriesScreen)
+    │   │                                      → NewCategory    (NewCategoryScreen)
+    │   └── StatsTab   → StatsNavigator  → StatsOverview (StatsScreen)
+    │                                    → DeckStats     (DeckStatsScreen)  param: deckId
+    └── Settings   (SettingsScreen)   no params — pushed from the App menu on any tab root
 ```
 
 Param lists live in [`src/navigation/types.ts`](../../src/navigation/types.ts), one per stack plus
-`RootTabParamList`. Tab icons are in
+`RootTabParamList` and `RootStackParamList`. `Tabs` is the root stack's first route, so it is what
+shows at launch, and `Settings` is a normal push over it: the tab bar is not shown there, and Back
+returns to the tab it was opened from. `useOpenSettings()`
+([`src/navigation/useOpenSettings.ts`](../../src/navigation/useOpenSettings.ts)) is the one hook
+that navigates to it. Tab icons are in
 [`src/navigation/TabIcons.tsx`](../../src/navigation/TabIcons.tsx), drawn from `View`s —
 `CategoriesIcon` is a two-by-two grid of outlined squares. `DecksIcon` is also the icon of the
 Statistics screen's `Decks` Stat tile, the one use of a tab icon outside the navigator. The
@@ -715,6 +754,7 @@ One AsyncStorage key per module in `src/storage/`. Nothing else writes storage.
 | `@easy-flashcards/decks/v2` | `Deck[]`, each with its `description` ([ADR-0011](decisions/0011-deck-editing-is-one-action.md)), its `categoryId` ([ADR-0014](decisions/0014-deck-belongs-to-one-category.md)), and its `Card[]` and their counters; the shape is the one `/v1` held ([ADR-0015](decisions/0015-answers-carry-a-timestamp-under-v2-keys.md)) | [`decksStorage.ts`](../../src/storage/decksStorage.ts) |
 | `@easy-flashcards/sessions/v2` | `Session[]` — active, completed, and cleared ([ADR-0008](decisions/0008-clear-completed-sessions.md)), each with its `fixedCardIds` ([ADR-0009](decisions/0009-error-review-marks-cards-fixed.md)), its direction, `inverted` ([ADR-0010](decisions/0010-inverted-sessions.md)), and every result's `answeredAt` ([ADR-0015](decisions/0015-answers-carry-a-timestamp-under-v2-keys.md)) | [`sessionsStorage.ts`](../../src/storage/sessionsStorage.ts) |
 | `@easy-flashcards/categories/v1` | `Category[]` — the user's own categories only; the built-in ones are code ([ADR-0012](decisions/0012-custom-categories-third-storage-key.md)). A `color` is a palette colour or a custom `#rrggbb`, in the same shape (ADR-0012 Amendment 3) | [`categoriesStorage.ts`](../../src/storage/categoriesStorage.ts) |
+| `@easy-flashcards/settings/v1` | One object, `{ language: string \| null }` — the language the user chose on the Settings screen: a registered language code, or `null` to follow the device. Read defensively: anything missing, corrupt or wrongly shaped reads as `null`, and a code that no language registers is ignored at use. Loaded and saved by `I18nProvider`, not by `DecksContext`, and written only when the user picks a language ([ADR-0021](decisions/0021-settings-screen-language-choice-and-tip-purchase.md), [ADR-0003](decisions/0003-single-context-reducer-store.md) Amendment 9) | [`settingsStorage.ts`](../../src/storage/settingsStorage.ts) |
 
 **The `/v1` decks and sessions keys are orphaned.** Decks and sessions moved to `/v2` because each
 result gained a required `answeredAt` that no older record has a true value for, and the deck
@@ -853,9 +893,10 @@ Unsupported tags are not an error — an unknown tag renders its children with n
 | CSV | PapaParse — reading wrapped by `src/utils/csv.ts`, writing (`Papa.unparse`) by `src/utils/deckExport.ts` |
 | JSON deck files | the built-in `JSON` object, no library — read by `src/utils/deckImport.ts`, written by `src/utils/deckExport.ts` |
 | File picking and saving | `@react-native-documents/picker` |
+| In-app purchase | `react-native-iap`, with its peer `react-native-nitro-modules` — both native. Imported only by `src/services/tipJar.ts` for the Settings screen's one-off tip; merging it adds the `com.android.vending.BILLING` permission to the packaged manifest ([ADR-0021](decisions/0021-settings-screen-language-choice-and-tip-purchase.md)) |
 | File reading, and writing to the cache | `@dr.pogodin/react-native-fs` |
 | HTML | owned in-repo — `src/utils/html.ts` + `src/components/RichText.tsx` |
-| UI text and languages | owned in-repo, no library — the typed catalogue in `src/locales/`, the engine in `src/utils/i18n.ts`, a read-only `I18nProvider` with `useT()` in `src/i18n/`, the device language read by `src/services/deviceLocale.ts`, which also keeps the layout left-to-right for a right-to-left language (ADR-0020 Amendment 3); plurals by per-language rule functions, because Hermes has no `Intl.PluralRules`; an ESLint `no-restricted-syntax` override in `.eslintrc.js` flags new literals in screens, components and navigation ([ADR-0020](decisions/0020-ui-text-translated-through-typed-catalogue.md) and its Amendment 1) |
+| UI text and languages | owned in-repo, no library — the typed catalogue in `src/locales/`, the engine in `src/utils/i18n.ts`, an `I18nProvider` with `useT()` and `useLanguage()` in `src/i18n/`, which also loads and saves the language the user chose on the Settings screen, the device language read by `src/services/deviceLocale.ts`, which also keeps the layout left-to-right for a right-to-left language (ADR-0020 Amendment 3); plurals by per-language rule functions, because Hermes has no `Intl.PluralRules`; an ESLint `no-restricted-syntax` override in `.eslintrc.js` flags new literals in screens, components and navigation ([ADR-0020](decisions/0020-ui-text-translated-through-typed-catalogue.md) and its Amendment 1) |
 | Animation | the React Native `Animated` API, with `PanResponder` for the Study screen's swipe |
 | Tests | Jest with `@react-native/jest-preset` — pure logic, the catalogue, the reducer, and the storage loaders with AsyncStorage mocked by `jest.mock`; nothing renders |
 | Lint / format | ESLint extending `@react-native`, which carries Prettier |
@@ -1246,9 +1287,9 @@ were checked unchanged when it landed — and every upgrade of it needs that che
 - **`FormField` has no error, `maxLength` or `onBlur` prop.** The New category screen cuts its name
   input to the length limit by hand and renders its own helper line beneath the field; the next
   form that needs either will have to do the same or extend `FormField`.
-- **Some menu entries are placeholders.** *Settings* shows a "not available yet" alert. It is a
-  deliberate stub, not a bug. *Add deck manually* was one and now opens the New deck screen
-  ([ADR-0011](decisions/0011-deck-editing-is-one-action.md) Amendment 4). The Header toolbar's
+- **Some menu entries are placeholders.** *Add deck manually* was one and now opens the New deck screen
+  ([ADR-0011](decisions/0011-deck-editing-is-one-action.md) Amendment 4), and *Settings* was one
+  and now opens the Settings screen ([ADR-0021](decisions/0021-settings-screen-language-choice-and-tip-purchase.md)). The Header toolbar's
   **Filter button**, a stub on the Decks and Learn screens, was removed rather than built
   ([ADR-0014](decisions/0014-deck-belongs-to-one-category.md) Amendment 7).
   The Import format menu, which once listed XML and JSONL placeholders beside CSV and JSON, is gone:
@@ -1299,10 +1340,18 @@ were checked unchanged when it landed — and every upgrade of it needs that che
   by concatenation, by a helper function, or passed as a plain function argument. A literal in
   pure code or a service, or one the guard misses, shows in English in every language and no test
   fails (ADR-0020 Amendment 1).
-- **The language is read once per run.** `I18nProvider` reads the device tag when it mounts;
-  whether a language change made while the app runs is followed is unknown, so assume it needs a
-  restart. There is no in-app language picker — it would be a stored setting
-  ([ADR-0020](decisions/0020-ui-text-translated-through-typed-catalogue.md)).
+- **The device language is read once per run, and the chosen language is applied at once.**
+  `I18nProvider` reads the device tag when it mounts, so a device-language change made while the
+  app runs is followed only after a restart. A language chosen on the Settings screen replaces the
+  translator immediately and is stored under `@easy-flashcards/settings/v1`
+  ([ADR-0020](decisions/0020-ui-text-translated-through-typed-catalogue.md) Amendment 4,
+  [ADR-0021](decisions/0021-settings-screen-language-choice-and-tip-purchase.md)). Until the saved
+  choice is read the provider renders nothing, for a few milliseconds at launch.
+- **The Settings screen's links and tip are not yet real.** The privacy policy and terms URLs are
+  placeholders in `src/utils/appLinks.ts`, the store listing is right only once the app is
+  published under its package id, and *Buy me a coffee* reports unavailable until the `tip_coffee`
+  product exists in the Play Console and the app is installed from Play. Nothing has been bought
+  end to end, and the settings screen has not been seen on a device.
 - **Right-to-left text is shown in a left-to-right layout.** A right-to-left translation's text
   runs right to left within each line, but nothing is mirrored: the hand-drawn icons, the Study
   screen's swipe direction and every row keep their left-to-right design, and by React Native's

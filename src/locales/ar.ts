@@ -306,10 +306,6 @@ const messages: Catalogue = {
       exportSampleDeckItem: 'تصدير مجموعة نموذجية',
       settingsItem: 'الإعدادات',
     },
-    settingsAlert: {
-      title: 'الإعدادات',
-      message: 'الإعدادات غير متاحة بعد.',
-    },
     exportSampleDeckDialog: {
       title: 'تصدير مجموعة نموذجية',
       body: 'يحفظ هذا الإجراء المجموعة النموذجية نفسها في ملفين: CSV وJSON. سيُطلب منك اختيار مكان حفظ كل ملف، ويمكنك إلغاء أيٍّ منهما لتخطيه.\n\nCSV: تُتجاهل عند الاستيراد الأسطر التي تبدأ بالرمز # (العنوان والوصف والفئة)، ثم يأتي صف رأس يحتوي على "question" و"answer" وبعده بطاقة واحدة في كل صف، مع الفصل هنا بفاصلة منقوطة (ويمكن أيضًا استخدام فاصلة أو علامة جدولة أو رمز واحد آخر).\n\nJSON: يستعيد أيضًا العنوان والوصف والفئة.\n\nيمكن استخدام HTML بسيط مثل <b> و<i> و<br /> في أي من وجهي البطاقة.',
@@ -320,6 +316,48 @@ const messages: Catalogue = {
     searchBar: {
       inputA11yLabel: 'نص البحث',
       closeButtonA11yLabel: 'إغلاق البحث',
+    },
+  },
+  settings: {
+    settingsScreen: {
+      title: 'الإعدادات',
+      generalSection: 'عام',
+      appSection: 'التطبيق',
+      communitySection: 'المجتمع والدعم',
+      legalSection: 'قانوني',
+      changeLanguageItem: 'تغيير اللغة',
+      shareAppItem: 'مشاركة التطبيق',
+      shareMessage: 'جرّب Easy Flashcards، تطبيق لدراسة مجموعات البطاقات التعليمية: {url}',
+      rateAppItem: 'تقييم التطبيق',
+      customerSupportItem: 'دعم العملاء',
+      aboutItem: 'حول',
+      buyCoffeeItem: 'اشترِ لي قهوة',
+      privacyPolicyItem: 'سياسة الخصوصية',
+      termsItem: 'الشروط',
+    },
+    languageDialog: {
+      title: 'تغيير اللغة',
+      systemDefaultOption: 'الافتراضية للنظام',
+    },
+    aboutAlert: {
+      title: 'حول',
+      message: '{name}، الإصدار {version}',
+    },
+    linkFailedAlert: {
+      title: 'تعذّر فتح الرابط',
+      message: 'لم يتمكن أي تطبيق على هذا الجهاز من فتحه.',
+    },
+    emailFailedAlert: {
+      title: 'لا يوجد تطبيق بريد إلكتروني',
+      message: 'للتواصل مع دعم العملاء، راسل {email}.',
+    },
+    coffeeThanksAlert: {
+      title: 'شكرًا لك!',
+      message: 'قهوتك في طريقها إلى المطوّر. شكرًا على دعمك.',
+    },
+    coffeeUnavailableAlert: {
+      title: 'اشترِ لي قهوة',
+      message: 'شراء القهوة غير متاح حاليًا. يُرجى المحاولة لاحقًا.',
     },
   },
   decks: {

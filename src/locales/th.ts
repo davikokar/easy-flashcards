@@ -257,10 +257,6 @@ const messages: Catalogue = {
       exportSampleDeckItem: 'ส่งออกชุดการ์ดตัวอย่าง',
       settingsItem: 'การตั้งค่า',
     },
-    settingsAlert: {
-      title: 'การตั้งค่า',
-      message: 'ยังไม่มีการตั้งค่าให้ใช้งาน',
-    },
     exportSampleDeckDialog: {
       title: 'ส่งออกชุดการ์ดตัวอย่าง',
       body: 'ระบบจะบันทึกชุดการ์ดตัวอย่างชุดเดียวกันเป็นสองไฟล์ คือ CSV และ JSON โดยจะถามตำแหน่งที่จะบันทึกแต่ละไฟล์ และคุณยกเลิกไฟล์ใดไฟล์หนึ่งเพื่อข้ามได้\n\nCSV: บรรทัดที่ขึ้นต้นด้วย # (ชื่อ คำอธิบาย หมวดหมู่) จะถูกข้ามเมื่อนำเข้า ตามด้วยแถวหัวตาราง "question" / "answer" และการ์ดหนึ่งใบต่อหนึ่งแถว ในที่นี้คั่นด้วยเซมิโคลอน (ใช้คอมมา แท็บ หรือสัญลักษณ์อื่นหนึ่งตัวก็ได้)\n\nJSON: จะนำชื่อ คำอธิบาย และหมวดหมู่กลับมาด้วย\n\nใช้ HTML พื้นฐาน เช่น <b>, <i> และ <br /> ได้ทั้งสองด้านของการ์ด',
@@ -271,6 +267,48 @@ const messages: Catalogue = {
     searchBar: {
       inputA11yLabel: 'ข้อความค้นหา',
       closeButtonA11yLabel: 'ปิดการค้นหา',
+    },
+  },
+  settings: {
+    settingsScreen: {
+      title: 'การตั้งค่า',
+      generalSection: 'ทั่วไป',
+      appSection: 'แอป',
+      communitySection: 'ชุมชนและการสนับสนุน',
+      legalSection: 'กฎหมาย',
+      changeLanguageItem: 'เปลี่ยนภาษา',
+      shareAppItem: 'แชร์แอป',
+      shareMessage: 'ลองใช้ Easy Flashcards แอปสำหรับเรียนด้วยชุดแฟลชการ์ด: {url}',
+      rateAppItem: 'ให้คะแนนแอป',
+      customerSupportItem: 'ฝ่ายสนับสนุนลูกค้า',
+      aboutItem: 'เกี่ยวกับ',
+      buyCoffeeItem: 'เลี้ยงกาแฟฉันหน่อย',
+      privacyPolicyItem: 'นโยบายความเป็นส่วนตัว',
+      termsItem: 'ข้อกำหนด',
+    },
+    languageDialog: {
+      title: 'เปลี่ยนภาษา',
+      systemDefaultOption: 'ค่าเริ่มต้นของระบบ',
+    },
+    aboutAlert: {
+      title: 'เกี่ยวกับ',
+      message: '{name} เวอร์ชัน {version}',
+    },
+    linkFailedAlert: {
+      title: 'เปิดลิงก์ไม่ได้',
+      message: 'ไม่มีแอปในอุปกรณ์นี้ที่เปิดลิงก์ได้',
+    },
+    emailFailedAlert: {
+      title: 'ไม่มีแอปอีเมล',
+      message: 'หากต้องการติดต่อฝ่ายสนับสนุนลูกค้า โปรดส่งอีเมลถึง {email}',
+    },
+    coffeeThanksAlert: {
+      title: 'ขอบคุณ!',
+      message: 'กาแฟของคุณกำลังเดินทางไปหาผู้พัฒนา ขอบคุณสำหรับการสนับสนุน',
+    },
+    coffeeUnavailableAlert: {
+      title: 'เลี้ยงกาแฟฉันหน่อย',
+      message: 'ขณะนี้ไม่สามารถเลี้ยงกาแฟได้ โปรดลองอีกครั้งในภายหลัง',
     },
   },
   decks: {
