@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import RichText from './RichText';
+import { useT } from '../i18n/I18nProvider';
 import { colors, radius, spacing } from '../theme';
 
 type Props = {
@@ -13,6 +14,7 @@ type Props = {
 };
 
 export default function FlipCard({ front, back, flipped, onFlip }: Props) {
+  const t = useT();
   const progress = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -44,23 +46,27 @@ export default function FlipCard({ front, back, flipped, onFlip }: Props) {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={flipped ? 'Show question' : 'Show answer'}
+      accessibilityLabel={
+        flipped
+          ? t('study.flipCard.showQuestionA11yLabel')
+          : t('study.flipCard.showAnswerA11yLabel')
+      }
       onPress={onFlip}
       style={styles.pressable}>
       <Animated.View style={[styles.card, styles.absoluteFill, frontStyle]}>
-        <Text style={styles.sideLabel}>QUESTION</Text>
+        <Text style={styles.sideLabel}>{t('study.flipCard.questionLabel')}</Text>
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <RichText html={front} style={styles.cardText} />
         </ScrollView>
-        <Text style={styles.hint}>Tap to reveal the answer</Text>
+        <Text style={styles.hint}>{t('study.flipCard.revealHint')}</Text>
       </Animated.View>
 
       <Animated.View style={[styles.card, styles.absoluteFill, styles.cardBack, backStyle]}>
-        <Text style={styles.sideLabel}>ANSWER</Text>
+        <Text style={styles.sideLabel}>{t('study.flipCard.answerLabel')}</Text>
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <RichText html={back} style={styles.cardText} />
         </ScrollView>
-        <Text style={styles.hint}>Tap to see the question again</Text>
+        <Text style={styles.hint}>{t('study.flipCard.backHint')}</Text>
       </Animated.View>
 
       {/* Keeps the pressable sized while both faces are absolutely positioned. */}

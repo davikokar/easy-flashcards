@@ -1,6 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import MenuIcon from './MenuIcons';
+import { useT } from '../i18n/I18nProvider';
 import { colors, radius, spacing } from '../theme';
 
 type Props = {
@@ -11,17 +12,18 @@ type Props = {
 };
 
 export default function CardSearchField({ value, onChangeText, onClear }: Props) {
+  const t = useT();
   return (
     <View style={styles.field}>
       <MenuIcon name="search" color={colors.textMuted} />
       <TextInput
-        accessibilityLabel="Search cards"
+        accessibilityLabel={t('deckStats.cardSearchField.searchA11yLabel')}
         autoCapitalize="none"
         autoCorrect={false}
         returnKeyType="search"
         value={value}
         onChangeText={onChangeText}
-        placeholder="Search questions and answers"
+        placeholder={t('deckStats.cardSearchField.searchPlaceholder')}
         placeholderTextColor={colors.textDim}
         selectionColor={colors.primary}
         style={styles.input}
@@ -29,7 +31,7 @@ export default function CardSearchField({ value, onChangeText, onClear }: Props)
       {value.length > 0 ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Clear card search"
+          accessibilityLabel={t('deckStats.cardSearchField.clearA11yLabel')}
           hitSlop={4}
           onPress={onClear}
           style={({ pressed }) => [styles.clear, pressed && styles.pressed]}>

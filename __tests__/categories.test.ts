@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { englishT, translatorForTag } from '../src/locales';
 import { categoryPalette } from '../src/theme';
 import { Category } from '../src/types';
 import {
@@ -10,6 +11,7 @@ import {
   EXTRA_CATEGORY_ICONS,
   FALLBACK_CATEGORY_ICON,
   categoryReference,
+  categoryDisplayName,
   countDecksInCategory,
   findCategory,
   getAllCategories,
@@ -33,7 +35,7 @@ describe('DEFAULT_CATEGORIES', () => {
   });
 
   it('is in alphabetical order by name', () => {
-    expect(sortCategoriesByName(DEFAULT_CATEGORIES)).toEqual(DEFAULT_CATEGORIES);
+    expect(sortCategoriesByName(DEFAULT_CATEGORIES, englishT)).toEqual(DEFAULT_CATEGORIES);
   });
 
   it('has unique ids, names and icons', () => {
@@ -68,7 +70,7 @@ describe('EXTRA_CATEGORY_ICONS and CATEGORY_ICONS', () => {
   });
 
   it('is sorted by label, ignoring case', () => {
-    const labels = EXTRA_CATEGORY_ICONS.map(icon => getCategoryIconLabel(icon).toLowerCase());
+    const labels = EXTRA_CATEGORY_ICONS.map(icon => getCategoryIconLabel(icon, englishT).toLowerCase());
 
     expect(labels).toEqual([...labels].sort());
   });
@@ -87,7 +89,7 @@ describe('EXTRA_CATEGORY_ICONS and CATEGORY_ICONS', () => {
 });
 
 describe('getCategoryIconLabel', () => {
-  const labels = CATEGORY_ICONS.map(getCategoryIconLabel);
+  const labels = CATEGORY_ICONS.map(icon => getCategoryIconLabel(icon, englishT));
 
   it('is non-empty for every icon', () => {
     expect(labels.every(label => label.trim() !== '')).toBe(true);
@@ -98,13 +100,13 @@ describe('getCategoryIconLabel', () => {
   });
 
   it('is the category name for a default icon', () => {
-    expect(DEFAULT_CATEGORIES.every(c => getCategoryIconLabel(c.icon) === c.name)).toBe(true);
+    expect(DEFAULT_CATEGORIES.every(c => getCategoryIconLabel(c.icon, englishT) === c.name)).toBe(true);
   });
 
   it('never gives an extra icon the name of a default category', () => {
     const defaultNames = DEFAULT_CATEGORIES.map(c => c.name.toLowerCase());
 
-    expect(EXTRA_CATEGORY_ICONS.map(icon => getCategoryIconLabel(icon).toLowerCase()).filter(label => defaultNames.includes(label))).toEqual([]);
+    expect(EXTRA_CATEGORY_ICONS.map(icon => getCategoryIconLabel(icon, englishT).toLowerCase()).filter(label => defaultNames.includes(label))).toEqual([]);
   });
 });
 
@@ -160,36 +162,59 @@ describe('isCategoryIcon and isDefaultCategoryId', () => {
 
 describe('validateCategoryName', () => {
   it('accepts a name and returns it trimmed', () => {
-    expect(validateCategoryName('  Chess  ', [])).toEqual({ ok: true, name: 'Chess' });
+    expect(validateCategoryName('  Chess  ', [], englishT)).toEqual({ ok: true, name: 'Chess' });
   });
 
   it('rejects an empty or blank name', () => {
-    expect(validateCategoryName('', [])).toEqual({ ok: false, reason: 'empty' });
-    expect(validateCategoryName('   ', [])).toEqual({ ok: false, reason: 'empty' });
+    expect(validateCategoryName('', [], englishT)).toEqual({ ok: false, reason: 'empty' });
+    expect(validateCategoryName('   ', [], englishT)).toEqual({ ok: false, reason: 'empty' });
   });
 
   it('accepts exactly the maximum length and rejects one more', () => {
     const longest = 'a'.repeat(CATEGORY_NAME_MAX_LENGTH);
 
-    expect(validateCategoryName(longest, [])).toEqual({ ok: true, name: longest });
-    expect(validateCategoryName(`${longest}a`, [])).toEqual({ ok: false, reason: 'tooLong' });
+    expect(validateCategoryName(longest, [], englishT)).toEqual({ ok: true, name: longest });
+    expect(validateCategoryName(`${longest}a`, [], englishT)).toEqual({ ok: false, reason: 'tooLong' });
   });
 
   it('measures the length after trimming', () => {
     const padded = ` ${'a'.repeat(CATEGORY_NAME_MAX_LENGTH)} `;
 
-    expect(validateCategoryName(padded, []).ok).toBe(true);
+    expect(validateCategoryName(padded, [], englishT).ok).toBe(true);
   });
 
   it('rejects a default name, ignoring case', () => {
-    expect(validateCategoryName('astronomy', [])).toEqual({ ok: false, reason: 'duplicate' });
-    expect(validateCategoryName('COMPUTER SCIENCE', [])).toEqual({ ok: false, reason: 'duplicate' });
+    expect(validateCategoryName('astronomy', [], englishT)).toEqual({ ok: false, reason: 'duplicate' });
+    expect(validateCategoryName('COMPUTER SCIENCE', [], englishT)).toEqual({ ok: false, reason: 'duplicate' });
   });
 
   it('rejects a custom name, ignoring case and surrounding spaces', () => {
     const customs = [custom('category_a', 'Chess')];
 
-    expect(validateCategoryName(' cHESS ', customs)).toEqual({ ok: false, reason: 'duplicate' });
+    expect(validateCategoryName(' cHESS ', customs, englishT)).toEqual({ ok: false, reason: 'duplicate' });
+  });
+
+  it('rejects a default name in the current language and in English', () => {
+    const pseudoT = translatorForTag('en-XA');
+    const astronomy = DEFAULT_CATEGORIES[0];
+    const shown = categoryDisplayName(astronomy, pseudoT);
+
+    expect(shown).not.toBe(astronomy.name);
+    expect(validateCategoryName(shown, [], pseudoT)).toEqual({ ok: false, reason: 'duplicate' });
+    expect(validateCategoryName(astronomy.name, [], pseudoT)).toEqual({ ok: false, reason: 'duplicate' });
+  });
+});
+
+describe('categoryDisplayName', () => {
+  it('is the English name of a default category in English', () => {
+    expect(DEFAULT_CATEGORIES.every(c => categoryDisplayName(c, englishT) === c.name)).toBe(true);
+  });
+
+  it('is the stored name of a custom category in any language', () => {
+    const chess = custom('category_a', 'Chess');
+
+    expect(categoryDisplayName(chess, englishT)).toBe('Chess');
+    expect(categoryDisplayName(chess, translatorForTag('en-XA'))).toBe('Chess');
   });
 });
 
@@ -197,14 +222,14 @@ describe('sortCategoriesByName and getAllCategories', () => {
   it('sorts by name ignoring case without changing the input', () => {
     const input = [custom('1', 'banana'), custom('2', 'Apple'), custom('3', 'cherry')];
 
-    const sorted = sortCategoriesByName(input);
+    const sorted = sortCategoriesByName(input, englishT);
 
     expect(sorted.map(c => c.name)).toEqual(['Apple', 'banana', 'cherry']);
     expect(input.map(c => c.name)).toEqual(['banana', 'Apple', 'cherry']);
   });
 
   it('merges defaults and customs in name order', () => {
-    const all = getAllCategories([custom('category_a', 'Chess'), custom('category_b', 'Zen')]);
+    const all = getAllCategories([custom('category_a', 'Chess'), custom('category_b', 'Zen')], englishT);
 
     expect(all).toHaveLength(23);
     expect(all.map(c => c.name).indexOf('Chess')).toBe(all.map(c => c.name).indexOf('Chemistry') + 1);

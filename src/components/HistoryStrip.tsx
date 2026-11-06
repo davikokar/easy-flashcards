@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import type { ScrollViewInstance } from 'react-native';
 import { SessionResult } from '../types';
+import { useT } from '../i18n/I18nProvider';
 import { colors, spacing } from '../theme';
 
 type Props = {
@@ -13,6 +14,7 @@ const TILE_WIDTH = 12;
 const TILE_GAP = 4;
 
 export default function HistoryStrip({ results, currentIndex }: Props) {
+  const t = useT();
   const scrollRef = useRef<ScrollViewInstance>(null);
 
   useEffect(() => {
@@ -21,7 +23,7 @@ export default function HistoryStrip({ results, currentIndex }: Props) {
   }, [currentIndex, results.length]);
 
   return (
-    <View style={styles.container} accessibilityLabel="Answers so far">
+    <View style={styles.container} accessibilityLabel={t('study.historyStrip.a11yLabel')}>
       <ScrollView
         ref={scrollRef}
         horizontal

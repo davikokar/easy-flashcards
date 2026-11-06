@@ -306,6 +306,23 @@ describe('parseDeckJson', () => {
       expect(() => parseDeckJson(fileOf({ cards: [] }))).toThrow(message);
       expect(() => parseDeckJson(fileOf({ cards: [{ question: 'Q' }, 'x'] }))).toThrow(message);
     });
+
+    it('gives every rejection a code, whatever its English message says', () => {
+      const codeOf = (raw: string): string | null => {
+        try {
+          parseDeckJson(raw);
+        } catch (error) {
+          return error instanceof DeckImportError ? error.code : null;
+        }
+        return null;
+      };
+
+      expect(codeOf('')).toBe('emptyFile');
+      expect(codeOf('Question;Answer\nQ;A')).toBe('notADeck');
+      expect(codeOf(fileOf({ format: 'other-deck' }))).toBe('notADeck');
+      expect(codeOf(fileOf({ version: 3 }))).toBe('newerVersion');
+      expect(codeOf(fileOf({ cards: [] }))).toBe('noCards');
+    });
   });
 });
 
@@ -362,7 +379,7 @@ describe('detectDeckFormat', () => {
       expect(detectDeckFormat(' \r\n\t ')).toBe('csv');
     });
 
-    it.each(SEPARATOR_PRESETS.map(preset => [preset.label, preset.value]))(
+    it.each(SEPARATOR_PRESETS.map(preset => [preset.key, preset.value]))(
       'reads what serializeDeckCsv writes with a %s separator as CSV',
       (_label, separator) => {
         const text = serializeDeckCsv(deckOf('Verbs', 'Irregular ones', cards), CUSTOM, separator);

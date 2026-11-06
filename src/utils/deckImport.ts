@@ -15,10 +15,23 @@ export type ParsedDeckJson = {
   skippedCards: number;
 };
 
+export type DeckImportErrorCode =
+  | 'emptyFile'
+  | 'notADeck'
+  | 'newerVersion'
+  | 'noCards'
+  | 'noHeader'
+  | 'noUsableRows'
+  | 'unreadable';
+
+/** `message` is English, for diagnostics; the user is shown a catalogue message chosen by `code`. */
 export class DeckImportError extends Error {
-  constructor(message: string) {
+  readonly code: DeckImportErrorCode;
+
+  constructor(code: DeckImportErrorCode, message: string) {
     super(message);
     this.name = 'DeckImportError';
+    this.code = code;
   }
 }
 
@@ -68,28 +81,28 @@ function categoryRefOf(category: unknown): string | null {
 export function parseDeckJson(raw: string): ParsedDeckJson {
   const text = stripBom(raw);
   if (text.trim().length === 0) {
-    throw new DeckImportError(EMPTY_FILE_MESSAGE);
+    throw new DeckImportError('emptyFile', EMPTY_FILE_MESSAGE);
   }
 
   let data: unknown;
   try {
     data = JSON.parse(text);
   } catch {
-    throw new DeckImportError(NOT_A_DECK_MESSAGE);
+    throw new DeckImportError('notADeck', NOT_A_DECK_MESSAGE);
   }
 
   if (!isRecord(data) || data.format !== DECK_FILE_FORMAT || typeof data.version !== 'number') {
-    throw new DeckImportError(NOT_A_DECK_MESSAGE);
+    throw new DeckImportError('notADeck', NOT_A_DECK_MESSAGE);
   }
   if (data.version > DECK_FILE_VERSION) {
-    throw new DeckImportError(NEWER_VERSION_MESSAGE);
+    throw new DeckImportError('newerVersion', NEWER_VERSION_MESSAGE);
   }
   if (
     !Number.isInteger(data.version) ||
     data.version < OLDEST_VERSION ||
     !Array.isArray(data.cards)
   ) {
-    throw new DeckImportError(NOT_A_DECK_MESSAGE);
+    throw new DeckImportError('notADeck', NOT_A_DECK_MESSAGE);
   }
 
   const cards: ParsedCard[] = [];
@@ -109,7 +122,7 @@ export function parseDeckJson(raw: string): ParsedDeckJson {
   }
 
   if (cards.length === 0) {
-    throw new DeckImportError(NO_CARDS_MESSAGE);
+    throw new DeckImportError('noCards', NO_CARDS_MESSAGE);
   }
 
   const title = typeof data.title === 'string' ? data.title.trim() : '';

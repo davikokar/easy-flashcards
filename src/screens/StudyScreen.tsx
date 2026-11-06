@@ -10,6 +10,7 @@ import MenuIcon from '../components/MenuIcons';
 import ReviewErrorsButton from '../components/ReviewErrorsButton';
 import SessionResultsBar from '../components/SessionResultsBar';
 import SuccessBar from '../components/SuccessBar';
+import { useT } from '../i18n/I18nProvider';
 import { useDecks } from '../state/DecksContext';
 import { LearnStackParamList } from '../navigation/types';
 import { Answer, SessionResult } from '../types';
@@ -37,9 +38,6 @@ const renderTickIcon = (color: string) => <AnswerIcon name="tick" color={color} 
 const renderReplayIcon = (color: string) => <MenuIcon name="replay" color={color} />;
 const renderBackIcon = (color: string) => <MenuIcon name="back" color={color} />;
 
-const reviewActionLabel = (count: number) =>
-  `Review the ${count} missed or unsure card${count === 1 ? '' : 's'}`;
-
 // One summary action: the label takes the flexible width and wraps, the button keeps its size.
 function SummaryAction({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -58,6 +56,7 @@ function SummaryAction({ label, children }: { label: string; children: React.Rea
 
 export default function StudyScreen({ route, navigation }: Props) {
   const { sessionId, mode } = route.params;
+  const t = useT();
   const { getSession, getDeck, startSession, recordAnswer, recordReviewAnswer } = useDecks();
   const session = getSession(sessionId);
   const deck = session ? getDeck(session.deckId) : undefined;
@@ -127,8 +126,8 @@ export default function StudyScreen({ route, navigation }: Props) {
   }, [viewIndex, index]);
 
   useEffect(() => {
-    navigation.setOptions({ title: deck?.name ?? 'Session' });
-  }, [navigation, deck?.name]);
+    navigation.setOptions({ title: deck?.name ?? t('study.studyScreen.fallbackTitle') });
+  }, [navigation, deck?.name, t]);
 
   const answer = useCallback(
     (value: Answer) => {
@@ -242,9 +241,9 @@ export default function StudyScreen({ route, navigation }: Props) {
     return (
       <View style={styles.container}>
         <EmptyState
-          title="Nothing to study"
-          message="This session is no longer available."
-          actionLabel="Back to sessions"
+          title={t('study.studyScreen.unavailableTitle')}
+          message={t('study.studyScreen.unavailableMessage')}
+          actionLabel={t('study.studyScreen.unavailableAction')}
           onAction={() => navigation.goBack()}
         />
       </View>
@@ -259,35 +258,39 @@ export default function StudyScreen({ route, navigation }: Props) {
   if (isFinished && isReviewMode) {
     return (
       <View style={[styles.container, styles.summaryContainer]}>
-        <Text style={styles.summaryTitle}>Review complete</Text>
+        <Text style={styles.summaryTitle}>{t('study.reviewSummary.title')}</Text>
         <View style={styles.summaryCard}>
           {results.length > 0 ? (
             <SessionResultsBar shares={shares} tally={tally} cardCount={queue.length} />
           ) : null}
           {outstandingIds.length > 0 ? (
-            <Text style={styles.summaryMeta}>{outstandingIds.length} still to fix</Text>
+            <Text style={styles.summaryMeta}>
+              {t('study.reviewSummary.stillToFix', { count: outstandingIds.length })}
+            </Text>
           ) : (
             <View style={styles.fixedState}>
               <AnswerIcon name="tick" color={colors.success} size={44} />
-              <Text style={styles.summaryFixed}>All fixed</Text>
+              <Text style={styles.summaryFixed}>{t('study.reviewSummary.allFixed')}</Text>
             </View>
           )}
         </View>
 
         <View style={styles.summaryActions}>
           {outstandingIds.length > 0 ? (
-            <SummaryAction label="Review the missed or unsure cards">
+            <SummaryAction label={t('study.summaryAction.reviewLabel')}>
               <ReviewErrorsButton
                 count={outstandingIds.length}
-                accessibilityLabel={reviewActionLabel(outstandingIds.length)}
+                accessibilityLabel={t('study.summaryAction.reviewButtonA11yLabel', {
+                  count: outstandingIds.length,
+                })}
                 onPress={startNextPass}
               />
             </SummaryAction>
           ) : null}
-          <SummaryAction label="Back to sessions">
+          <SummaryAction label={t('study.summaryAction.backLabel')}>
             <Button
               variant="secondary"
-              accessibilityLabel="Back to sessions"
+              accessibilityLabel={t('study.summaryAction.backButtonA11yLabel')}
               icon={renderBackIcon}
               onPress={() => navigation.goBack()}
             />
@@ -302,39 +305,45 @@ export default function StudyScreen({ route, navigation }: Props) {
 
     return (
       <View style={[styles.container, styles.summaryContainer]}>
-        <Text style={styles.summaryTitle}>Session complete</Text>
+        <Text style={styles.summaryTitle}>{t('study.sessionSummary.title')}</Text>
         <View style={styles.summaryCard}>
           <Text
-            accessibilityLabel={`Success rate ${formatRate(rate)}`}
+            accessibilityLabel={t('study.sessionSummary.successRateA11yLabel', {
+              rate: formatRate(rate),
+            })}
             style={styles.summaryRate}>
             {formatRate(rate)}
           </Text>
           <SessionResultsBar shares={shares} tally={tally} cardCount={queue.length} />
-          <Text style={styles.summaryMeta}>Reviewed {results.length}</Text>
+          <Text style={styles.summaryMeta}>
+            {t('study.sessionSummary.reviewedCount', { count: results.length })}
+          </Text>
         </View>
 
         <View style={styles.summaryActions}>
           {outstandingIds.length > 0 ? (
-            <SummaryAction label="Review the missed or unsure cards">
+            <SummaryAction label={t('study.summaryAction.reviewLabel')}>
               <ReviewErrorsButton
                 count={outstandingIds.length}
-                accessibilityLabel={reviewActionLabel(outstandingIds.length)}
+                accessibilityLabel={t('study.summaryAction.reviewButtonA11yLabel', {
+                  count: outstandingIds.length,
+                })}
                 onPress={() => navigation.replace('Study', { sessionId, mode: 'review' })}
               />
             </SummaryAction>
           ) : null}
-          <SummaryAction label="Study the whole deck again">
+          <SummaryAction label={t('study.sessionSummary.studyAgainLabel')}>
             <Button
               variant="secondary"
-              accessibilityLabel="Study the whole deck again"
+              accessibilityLabel={t('study.sessionSummary.studyAgainButtonA11yLabel')}
               icon={renderReplayIcon}
               onPress={startAgain}
             />
           </SummaryAction>
-          <SummaryAction label="Back to sessions">
+          <SummaryAction label={t('study.summaryAction.backLabel')}>
             <Button
               variant="secondary"
-              accessibilityLabel="Back to sessions"
+              accessibilityLabel={t('study.summaryAction.backButtonA11yLabel')}
               icon={renderBackIcon}
               onPress={() => navigation.goBack()}
             />
@@ -348,17 +357,19 @@ export default function StudyScreen({ route, navigation }: Props) {
     <View style={styles.container}>
       <View style={styles.progressHeader}>
         <Text style={styles.progressText}>
-          Card {viewIndex + 1} of {queue.length}
+          {t('study.progressHeader.position', { current: viewIndex + 1, total: queue.length })}
         </Text>
         {session.inverted ? (
           <View
             accessible
-            accessibilityLabel="Inverted session: the front shows the answer"
+            accessibilityLabel={t('study.invertedPill.a11yLabel')}
             style={styles.invertedPill}>
-            <Text style={styles.invertedPillText}>Inverted</Text>
+            <Text style={styles.invertedPillText}>{t('study.invertedPill.text')}</Text>
           </View>
         ) : null}
-        <Text style={styles.progressText}>Ok {okCount}</Text>
+        <Text style={styles.progressText}>
+          {t('study.progressHeader.okCount', { count: okCount })}
+        </Text>
       </View>
       <SuccessBar rate={(index / queue.length) * 100} height={6} color={colors.text} />
 
@@ -383,14 +394,12 @@ export default function StudyScreen({ route, navigation }: Props) {
       </Animated.View>
 
       <Text style={styles.swipeHint}>
-        {isReviewing
-          ? 'Reviewing an answered card \u2014 swipe left to get back to where you were'
-          : ' '}
+        {isReviewing ? t('study.swipeHint.reviewing') : ' '}
       </Text>
 
       <View style={styles.feedback}>
         <Button
-          accessibilityLabel="Not ok"
+          accessibilityLabel={t('answers.answerLabels.notOk')}
           variant="danger"
           icon={renderCrossIcon}
           disabled={answersDisabled}
@@ -398,7 +407,7 @@ export default function StudyScreen({ route, navigation }: Props) {
           style={styles.feedbackButton}
         />
         <Button
-          accessibilityLabel="Okeish"
+          accessibilityLabel={t('answers.answerLabels.okeish')}
           variant="warning"
           icon={renderQuestionIcon}
           disabled={answersDisabled}
@@ -406,7 +415,7 @@ export default function StudyScreen({ route, navigation }: Props) {
           style={styles.feedbackButton}
         />
         <Button
-          accessibilityLabel="Ok"
+          accessibilityLabel={t('answers.answerLabels.ok')}
           variant="success"
           icon={renderTickIcon}
           disabled={answersDisabled}

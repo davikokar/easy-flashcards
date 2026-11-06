@@ -183,6 +183,24 @@ whitespace, and a deck exported with no cards cannot be imported. The full speci
 [ADR-0017](docs/architecture/decisions/0017-deck-import-reads-exported-formats.md), and version 2
 [ADR-0019](docs/architecture/decisions/0019-deck-file-format-version-2.md).
 
+## Languages
+
+The app shows its text in the device's language, and in English when that language has no
+translation. English is the source of every message; which other languages exist is `LANGUAGES` in
+[src/locales/index.ts](src/locales/index.ts). The translations are machine-written and have not
+been reviewed by native speakers; Portuguese is Brazilian wording, and Chinese is Simplified only,
+so a Traditional Chinese device shows English. The registry also holds a
+developer pseudo-language (`en-XA`), English with accented letters and longer text, used to spot
+text that was missed or does not fit. Card text, deck names and the keys
+of deck files are never translated. Right-to-left text, such as Arabic, is shown in the
+left-to-right layout: the screens are never mirrored. On the very first launch on a right-to-left
+device the layout can still appear mirrored once; it is left-to-right from the next start.
+
+To add a language, create one file under [src/locales](src/locales) typed as the full catalogue,
+so that a missing message fails `npm run typecheck`, with its own plural rule, and add one entry
+for it to `LANGUAGES` in [src/locales/index.ts](src/locales/index.ts). The rules are in
+[ADR-0020](docs/architecture/decisions/0020-ui-text-translated-through-typed-catalogue.md).
+
 ## Getting started
 
 ```bash
@@ -219,8 +237,10 @@ with `npm run android`; reloading the JavaScript in Metro is not enough. The fir
 | [src/components](src/components) | Flip card, HTML renderer, buttons, progress bars, the session history chart, dialogs, category tiles, squares and pickers, colour sliders |
 | [src/state](src/state) | Context store (`DecksContext.tsx`) over a pure reducer (`reducer.ts`), auto-persisting |
 | [src/storage](src/storage) | AsyncStorage read/write with defensive normalisation, one module per key |
-| [src/services](src/services) | Document picker + file read + CSV or JSON parsing; deck and sample deck export through the save dialog |
-| [src/utils](src/utils) | Pure logic: CSV, JSON and HTML parsing, deck import and export formats, statistics, the session chart's geometry, search, categories, colour maths, and more |
+| [src/services](src/services) | Document picker + file read + CSV or JSON parsing; deck and sample deck export through the save dialog; reading the device language |
+| [src/utils](src/utils) | Pure logic: CSV, JSON and HTML parsing, deck import and export formats, statistics, the session chart's geometry, search, categories, colour maths, the translation engine, and more |
+| [src/locales](src/locales) | The UI text catalogue: English, one file per area; one file per translation; and the registry of languages |
+| [src/i18n](src/i18n) | The provider and `useT()` hook that give screens and components the device language's text |
 | [src/assets/category-icons](src/assets/category-icons) | Category icons: Material Symbols by Google (Apache License 2.0, see its `NOTICE`) as Android vector drawables |
 | [\_\_tests\_\_](__tests__) | Jest unit tests for the utils, the reducer and the storage loaders |
 

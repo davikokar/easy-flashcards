@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { AnswerIcon } from './AnswerIcons';
 import MasteryTrack, { ANSWER_SEGMENTS } from './MasteryTrack';
+import { useT } from '../i18n/I18nProvider';
 import type { AnswerShares, AnswerTally } from '../types';
 import { formatRate, formatShortDate } from '../utils/stats';
 import { colors, radius, spacing } from '../theme';
@@ -23,7 +24,6 @@ type Props = {
 
 const TILE_ICON_SIZE = 20;
 const TALLY_KEYS = { ok: 'okCount', okeish: 'okeishCount', notOk: 'notOkCount' } as const;
-const ANSWER_WORDS = { ok: 'ok', okeish: 'okeish', notOk: 'not ok' } as const;
 
 export default function DeckMasteryCard({
   successRate,
@@ -34,6 +34,7 @@ export default function DeckMasteryCard({
   sessionCount,
   lastSessionAt,
 }: Props) {
+  const t = useT();
   const rate = formatRate(successRate);
 
   return (
@@ -42,14 +43,16 @@ export default function DeckMasteryCard({
         <View
           accessible
           accessibilityLabel={
-            successRate === null ? 'Success rate: no reviews yet' : `Success rate: ${rate}`
+            successRate === null
+              ? t('deckStats.deckMasteryCard.successRateNoReviewsA11yLabel')
+              : t('deckStats.deckMasteryCard.successRateA11yLabel', { rate })
           }
           style={styles.headline}>
           <Text maxFontSizeMultiplier={1.3} style={styles.rate}>
             {rate}
           </Text>
           <Text maxFontSizeMultiplier={1.3} style={styles.caption}>
-            Success rate
+            {t('deckStats.deckMasteryCard.successRateCaption')}
           </Text>
         </View>
         {rateChange === null ? null : <ChangeChip change={rateChange} />}
@@ -65,9 +68,11 @@ export default function DeckMasteryCard({
             <View
               key={segment.key}
               accessible
-              accessibilityLabel={`${count} ${ANSWER_WORDS[segment.key]}, ${
-                shares ? percent : 'no reviews yet'
-              }`}
+              accessibilityLabel={
+                shares
+                  ? t(`deckStats.deckMasteryCard.answerTile.${segment.key}`, { count, percent })
+                  : t(`deckStats.deckMasteryCard.answerTileNoReviews.${segment.key}`, { count })
+              }
               style={styles.tile}>
               <AnswerIcon
                 name={segment.icon}
@@ -86,25 +91,30 @@ export default function DeckMasteryCard({
       </View>
 
       <View style={styles.ribbon}>
-        <Figure label="Reviews" value={String(reviewCount)} />
-        <Figure label="Sessions" value={String(sessionCount)} />
-        <Figure label="Last session" value={formatShortDate(lastSessionAt)} wide />
+        <Figure label={t('deckStats.deckMasteryCard.reviewsFigure')} value={String(reviewCount)} />
+        <Figure label={t('deckStats.deckMasteryCard.sessionsFigure')} value={String(sessionCount)} />
+        <Figure
+          label={t('deckStats.deckMasteryCard.lastSessionFigure')}
+          value={formatShortDate(lastSessionAt, t)}
+          wide
+        />
       </View>
     </View>
   );
 }
 
 function ChangeChip({ change }: { change: number }) {
+  const t = useT();
   const points = Math.round(Math.abs(change));
   const direction = points === 0 ? 'none' : change > 0 ? 'up' : 'down';
   const text =
     direction === 'none'
-      ? 'No change since last session'
-      : `${direction === 'up' ? '+' : '-'}${points} pts since last session`;
+      ? t('deckStats.deckMasteryCard.changeChip.none')
+      : t(`deckStats.deckMasteryCard.changeChip.${direction}`, { points });
   const spoken =
     direction === 'none'
-      ? 'Success rate unchanged since the last session'
-      : `Success rate ${direction} ${points} ${points === 1 ? 'point' : 'points'} since the last session`;
+      ? t('deckStats.deckMasteryCard.changeChip.noneA11yLabel')
+      : t(`deckStats.deckMasteryCard.changeChip.${direction}A11yLabel`, { count: points });
   const tint = direction === 'up' ? colors.success : direction === 'down' ? colors.danger : null;
 
   return (
@@ -125,10 +135,11 @@ function ChangeChip({ change }: { change: number }) {
 }
 
 function Figure({ label, value, wide }: { label: string; value: string; wide?: boolean }) {
+  const t = useT();
   return (
     <View
       accessible
-      accessibilityLabel={`${label}: ${value}`}
+      accessibilityLabel={t('deckStats.deckMasteryCard.figureA11yLabel', { label, value })}
       style={[styles.figure, wide && styles.figureWide]}>
       <Text maxFontSizeMultiplier={1.3} style={styles.figureLabel}>
         {label}

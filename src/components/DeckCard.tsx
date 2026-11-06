@@ -6,6 +6,7 @@ import KebabMenu from './KebabMenu';
 import MasteryBar from './MasteryBar';
 import { MenuItem } from './MenuSheet';
 import MenuIcon from './MenuIcons';
+import { useT } from '../i18n/I18nProvider';
 import { AnswerShares, Category } from '../types';
 import { colors, radius, spacing } from '../theme';
 
@@ -35,6 +36,7 @@ export default function DeckCard({
   menuItems,
   onStart,
 }: Props) {
+  const t = useT();
   const hasActive = activeCount > 0;
 
   return (
@@ -46,13 +48,13 @@ export default function DeckCard({
             {name}
           </Text>
           <Text style={styles.count}>
-            {cardCount} card{cardCount === 1 ? '' : 's'}
+            {t('common.counts.cards', { count: cardCount })}
           </Text>
         </View>
         <KebabMenu
           title={name}
           category={category}
-          accessibilityLabel={`Options for ${name}`}
+          accessibilityLabel={t('decks.deckCard.optionsA11yLabel', { name })}
           items={menuItems}
         />
       </View>
@@ -65,23 +67,27 @@ export default function DeckCard({
             <View style={styles.sessions}>
               <MenuIcon name="clock" color={colors.textDim} size={14} />
               <Text style={styles.sessionText}>
-                {sessionCount} session{sessionCount === 1 ? '' : 's'}
+                {t('common.counts.sessions', { count: sessionCount })}
               </Text>
             </View>
             <View style={[styles.pill, hasActive && styles.pillActive]}>
               {hasActive ? <View style={styles.pillDot} /> : null}
               <Text style={[styles.pillText, hasActive && styles.pillTextActive]}>
-                {activeCount} active
+                {t('decks.deckCard.activeCount', { count: activeCount })}
               </Text>
             </View>
           </View>
           <Text style={styles.last} numberOfLines={1}>
-            Last: <Text style={styles.lastValue}>{lastSession}</Text>
+            {t.parts('decks.deckCard.lastSession', { date: lastSession }).map((part, index) => (
+              <Text key={index} style={part.placeholder === 'date' ? styles.lastValue : undefined}>
+                {part.text}
+              </Text>
+            ))}
           </Text>
         </View>
         <Button
           variant="primary"
-          accessibilityLabel={`Start session for ${name}`}
+          accessibilityLabel={t('decks.deckCard.startA11yLabel', { name })}
           icon={renderPlayIcon}
           onPress={onStart}
         />

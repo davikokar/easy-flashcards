@@ -1,6 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import MenuIcon from './MenuIcons';
+import { useT } from '../i18n/I18nProvider';
 import { colors, radius, spacing } from '../theme';
 
 type Props = {
@@ -18,13 +19,14 @@ export default function SearchBar({
   onChangeText,
   onClose,
   placeholder,
-  inputLabel = 'Search text',
+  inputLabel,
 }: Props) {
+  const t = useT();
   return (
     <View style={styles.bar}>
       <MenuIcon name="search" color={colors.textMuted} />
       <TextInput
-        accessibilityLabel={inputLabel}
+        accessibilityLabel={inputLabel ?? t('shell.searchBar.inputA11yLabel')}
         autoFocus
         autoCapitalize="none"
         autoCorrect={false}
@@ -38,7 +40,7 @@ export default function SearchBar({
       />
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Close search"
+        accessibilityLabel={t('shell.searchBar.closeButtonA11yLabel')}
         hitSlop={4}
         onPress={onClose}
         style={({ pressed }) => [styles.close, pressed && styles.pressed]}>

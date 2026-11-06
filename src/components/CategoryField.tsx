@@ -1,7 +1,9 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import CategorySquare from './CategorySquare';
+import { useT } from '../i18n/I18nProvider';
 import type { Category } from '../types';
+import { categoryDisplayName } from '../utils/categories';
 import { colors, radius, spacing } from '../theme';
 
 type Props = {
@@ -11,18 +13,24 @@ type Props = {
 };
 
 export default function CategoryField({ category, onPress }: Props) {
+  const t = useT();
+  const categoryName = category ? categoryDisplayName(category, t) : null;
   return (
     <View style={styles.field}>
-      <Text style={styles.label}>Category</Text>
+      <Text style={styles.label}>{t('editDeck.categoryField.label')}</Text>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`Category: ${category ? category.name : 'none'}`}
-        accessibilityHint="Opens the category picker"
+        accessibilityLabel={
+          categoryName !== null
+            ? t('editDeck.categoryField.a11yLabel', { name: categoryName })
+            : t('editDeck.categoryField.a11yLabelNone')
+        }
+        accessibilityHint={t('editDeck.categoryField.a11yHint')}
         onPress={onPress}
         style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
         {category ? <CategorySquare category={category} /> : null}
         <Text style={[styles.value, !category && styles.valueNone]} numberOfLines={1}>
-          {category ? category.name : 'No category'}
+          {categoryName ?? t('editDeck.categoryField.noneValue')}
         </Text>
         <View style={styles.chevron} />
       </Pressable>

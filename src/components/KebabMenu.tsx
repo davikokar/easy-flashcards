@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import MenuSheet, { MenuItem } from './MenuSheet';
+import { useT } from '../i18n/I18nProvider';
 import type { Category } from '../types';
 import { colors, radius } from '../theme';
 
@@ -18,16 +19,17 @@ export default function KebabMenu({
   items,
   title,
   category,
-  accessibilityLabel = 'More options',
+  accessibilityLabel,
   variant = 'plain',
 }: Props) {
+  const t = useT();
   const [isOpen, setIsOpen] = useState(false);
 
   return (
     <>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={accessibilityLabel}
+        accessibilityLabel={accessibilityLabel ?? t('shell.kebabMenu.triggerA11yLabel')}
         hitSlop={variant === 'boxed' ? 6 : 10}
         onPress={() => setIsOpen(true)}
         style={({ pressed }) => [

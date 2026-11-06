@@ -6,6 +6,7 @@ import CategoryIconPicker from '../components/CategoryIconPicker';
 import CategoryTile from '../components/CategoryTile';
 import CustomColorDialog from '../components/CustomColorDialog';
 import FormField from '../components/FormField';
+import { useT } from '../i18n/I18nProvider';
 import { useDecks } from '../state/DecksContext';
 import { CategoriesStackParamList } from '../navigation/types';
 import { CategoryIcon } from '../types';
@@ -20,14 +21,9 @@ type Props = NativeStackScreenProps<CategoriesStackParamList, 'NewCategory'>;
 
 const INITIAL_COLOR = categoryPalette[0];
 
-const NAME_ERRORS = {
-  empty: 'Enter a name.',
-  tooLong: `Use ${CATEGORY_NAME_MAX_LENGTH} characters or fewer.`,
-  duplicate: 'A category with this name already exists.',
-} as const;
-
 export default function NewCategoryScreen({ navigation }: Props) {
   const { categories, addCategory } = useDecks();
+  const t = useT();
   const [name, setName] = useState('');
   const [color, setColor] = useState(INITIAL_COLOR);
   const [icon, setIcon] = useState<CategoryIcon>(FALLBACK_CATEGORY_ICON);
@@ -37,7 +33,10 @@ export default function NewCategoryScreen({ navigation }: Props) {
   // Set once the category is saved, so leaving the screen afterwards is not treated as discarding it.
   const saved = useRef(false);
 
-  const validation = useMemo(() => validateCategoryName(name, categories), [name, categories]);
+  const validation = useMemo(
+    () => validateCategoryName(name, categories, t),
+    [name, categories, t],
+  );
   const isChanged = name.trim() !== '' || color !== INITIAL_COLOR || icon !== FALLBACK_CATEGORY_ICON;
   const canSave = validation.ok;
 
@@ -53,16 +52,18 @@ export default function NewCategoryScreen({ navigation }: Props) {
     return (
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Save category"
+        accessibilityLabel={t('categories.newCategoryScreen.saveButtonA11yLabel')}
         accessibilityState={{ disabled: !canSave }}
         disabled={!canSave}
         hitSlop={8}
         onPress={save}
         style={({ pressed }) => [pressed && styles.pressed]}>
-        <Text style={[styles.save, !canSave && styles.saveDisabled]}>Save</Text>
+        <Text style={[styles.save, !canSave && styles.saveDisabled]}>
+          {t('common.actions.save')}
+        </Text>
       </Pressable>
     );
-  }, [validation, canSave, color, icon, addCategory, navigation]);
+  }, [validation, canSave, color, icon, addCategory, navigation, t]);
 
   useLayoutEffect(() => {
     navigation.setOptions({ headerRight: () => saveButton });
@@ -75,20 +76,35 @@ export default function NewCategoryScreen({ navigation }: Props) {
           return;
         }
         event.preventDefault();
-        Alert.alert('Discard changes?', 'This category has not been saved.', [
-          { text: 'Keep editing', style: 'cancel' },
-          {
-            text: 'Discard',
-            style: 'destructive',
-            onPress: () => navigation.dispatch(event.data.action),
-          },
-        ]);
+        Alert.alert(
+          t('categories.discardChangesAlert.title'),
+          t('categories.discardChangesAlert.message'),
+          [
+            { text: t('common.actions.keepEditing'), style: 'cancel' },
+            {
+              text: t('common.actions.discard'),
+              style: 'destructive',
+              onPress: () => navigation.dispatch(event.data.action),
+            },
+          ],
+        );
       }),
-    [navigation, isChanged],
+    [navigation, isChanged, t],
   );
 
   const trimmedName = name.trim();
-  const nameError = nameTouched && !validation.ok ? NAME_ERRORS[validation.reason] : null;
+  let nameError: string | null = null;
+  if (nameTouched && !validation.ok) {
+    if (validation.reason === 'empty') {
+      nameError = t('categories.newCategoryScreen.nameErrors.empty');
+    } else if (validation.reason === 'tooLong') {
+      nameError = t('categories.newCategoryScreen.nameErrors.tooLong', {
+        count: CATEGORY_NAME_MAX_LENGTH,
+      });
+    } else {
+      nameError = t('categories.newCategoryScreen.nameErrors.duplicate');
+    }
+  }
 
   const changeName = (text: string) => {
     setNameTouched(true);
@@ -102,28 +118,41 @@ export default function NewCategoryScreen({ navigation }: Props) {
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
         <View style={styles.preview}>
           <CategoryTile
-            name={trimmedName === '' ? 'Category name' : trimmedName}
+            name={
+              trimmedName === '' ? t('categories.tilePreview.placeholder') : trimmedName
+            }
             nameDimmed={trimmedName === ''}
             color={color}
             icon={icon}
-            accessibilityLabel={`Preview: ${trimmedName === '' ? 'no name yet' : trimmedName}`}
+            accessibilityLabel={
+              trimmedName === ''
+                ? t('categories.tilePreview.noNameA11yLabel')
+                : t('categories.tilePreview.a11yLabel', { name: trimmedName })
+            }
           />
         </View>
 
         <View style={styles.group}>
-          <FormField label="Name" value={name} onChangeText={changeName} />
+          <FormField
+            label={t('categories.newCategoryScreen.nameField')}
+            value={name}
+            onChangeText={changeName}
+          />
           <View style={styles.helperRow} accessibilityLiveRegion="polite">
             <Text style={[styles.helper, nameError !== null && styles.helperError]}>
               {nameError ?? ' '}
             </Text>
             <Text style={styles.count}>
-              {name.length}/{CATEGORY_NAME_MAX_LENGTH}
+              {t('categories.newCategoryScreen.nameCounter', {
+                length: name.length,
+                max: CATEGORY_NAME_MAX_LENGTH,
+              })}
             </Text>
           </View>
         </View>
 
         <View style={styles.group}>
-          <Text style={styles.groupLabel}>Colour</Text>
+          <Text style={styles.groupLabel}>{t('categories.newCategoryScreen.colourLabel')}</Text>
           <CategoryColorPicker
             palette={categoryPalette}
             value={color}
@@ -133,7 +162,7 @@ export default function NewCategoryScreen({ navigation }: Props) {
         </View>
 
         <View style={styles.group}>
-          <Text style={styles.groupLabel}>Icon</Text>
+          <Text style={styles.groupLabel}>{t('categories.newCategoryScreen.iconLabel')}</Text>
           <CategoryIconPicker value={icon} onChange={setIcon} />
         </View>
       </ScrollView>

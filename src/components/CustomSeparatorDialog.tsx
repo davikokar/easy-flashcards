@@ -2,6 +2,7 @@ import React from 'react';
 import { KeyboardAvoidingView, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import Button from './Button';
 import FormField from './FormField';
+import { useT } from '../i18n/I18nProvider';
 import { colors, radius, spacing } from '../theme';
 import type { SeparatorError } from '../utils/deckExport';
 
@@ -19,14 +20,6 @@ type Props = {
   onCancel: () => void;
 };
 
-const MESSAGES: Record<SeparatorError, string> = {
-  empty: 'Enter one character.',
-  tooLong: 'Use a single character.',
-  reserved: 'Quotes, # and line breaks cannot be used.',
-  whitespace: 'Spaces are not allowed. Use the Tab option for a tab.',
-  alphanumeric: 'Letters and digits are not allowed.',
-};
-
 export default function CustomSeparatorDialog({
   visible,
   deckName,
@@ -37,6 +30,7 @@ export default function CustomSeparatorDialog({
   onExport,
   onCancel,
 }: Props) {
+  const t = useT();
   return (
     <Modal transparent visible={visible} animationType="fade" onRequestClose={onCancel}>
       {/* The keyboard overlays the window rather than resizing it, so padding lifts the dialog clear. */}
@@ -45,17 +39,17 @@ export default function CustomSeparatorDialog({
           {/* A Pressable of its own, so a press inside the dialog does not reach the backdrop. */}
           <Pressable style={styles.dialog} accessibilityViewIsModal>
             <View style={styles.header}>
-              <Text style={styles.title}>Custom separator</Text>
+              <Text style={styles.title}>{t('decks.customSeparatorDialog.title')}</Text>
               <Text style={styles.subtitle} numberOfLines={1}>
                 {deckName}
               </Text>
             </View>
             <View style={styles.fieldGroup}>
               <FormField
-                label="Separator"
+                label={t('decks.customSeparatorDialog.separatorLabel')}
                 value={value}
                 onChangeText={onChangeText}
-                placeholder="For example |"
+                placeholder={t('decks.customSeparatorDialog.separatorPlaceholder')}
                 autoFocus
               />
               {/* Always rendered, so the buttons do not jump when the message appears. An empty field
@@ -63,16 +57,16 @@ export default function CustomSeparatorDialog({
               <Text
                 accessibilityLiveRegion="polite"
                 style={[styles.message, error !== null && error !== 'empty' && styles.messageError]}>
-                {error === null ? ' ' : MESSAGES[error]}
+                {error === null ? ' ' : t(`decks.customSeparatorDialog.errors.${error}`)}
               </Text>
             </View>
             <Button
-              label="Export"
+              label={t('common.actions.export')}
               onPress={onExport}
               disabled={error !== null}
               loading={exporting}
             />
-            <Button label="Cancel" variant="secondary" onPress={onCancel} />
+            <Button label={t('common.actions.cancel')} variant="secondary" onPress={onCancel} />
           </Pressable>
         </Pressable>
       </KeyboardAvoidingView>

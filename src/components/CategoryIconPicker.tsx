@@ -1,6 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import CategoryIcon from './CategoryIcon';
+import { useT } from '../i18n/I18nProvider';
 import type { CategoryIcon as CategoryIconKey } from '../types';
 import { CATEGORY_ICONS, getCategoryIconLabel } from '../utils/categories';
 import { colors, radius, spacing } from '../theme';
@@ -14,15 +15,19 @@ const COLUMNS = 6;
 const CELL_WIDTH = `${100 / COLUMNS}%` as const;
 
 export default function CategoryIconPicker({ value, onChange }: Props) {
+  const t = useT();
   return (
-    <View accessibilityRole="radiogroup" accessibilityLabel="Icon picker" style={styles.panel}>
+    <View
+      accessibilityRole="radiogroup"
+      accessibilityLabel={t('categories.iconPicker.a11yLabel')}
+      style={styles.panel}>
       {CATEGORY_ICONS.map(icon => {
         const selected = icon === value;
         return (
           <View key={icon} style={styles.cell}>
             <Pressable
               accessibilityRole="radio"
-              accessibilityLabel={getCategoryIconLabel(icon)}
+              accessibilityLabel={getCategoryIconLabel(icon, t)}
               accessibilityState={{ selected }}
               onPress={() => onChange(icon)}
               style={({ pressed }) => [

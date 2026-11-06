@@ -15,6 +15,7 @@ import {
   SessionResult,
   SessionSummary,
 } from '../types';
+import type { Translator } from './i18n';
 
 export function cardReviewCount(card: Card): number {
   return card.okCount + card.okeishCount + card.notOkCount;
@@ -44,15 +45,15 @@ export function answerShares(tally: AnswerTally): AnswerShares | null {
 }
 
 /** Spoken form of the shares, e.g. "74% Ok, 18% Okeish, 8% Not ok"; "Not reviewed yet" for null. */
-export function describeAnswerShares(shares: AnswerShares | null): string {
+export function describeAnswerShares(shares: AnswerShares | null, t: Translator): string {
   if (!shares) {
-    return 'Not reviewed yet';
+    return t('answers.shares.notReviewed');
   }
-  return [
-    `${formatRate(shares.ok)} Ok`,
-    `${formatRate(shares.okeish)} Okeish`,
-    `${formatRate(shares.notOk)} Not ok`,
-  ].join(', ');
+  return t('answers.shares.summary', {
+    ok: formatRate(shares.ok),
+    okeish: formatRate(shares.okeish),
+    notOk: formatRate(shares.notOk),
+  });
 }
 
 // Absorbs float noise such as 70 / 100 * 10 = 7.000000000000001 when flooring and comparing.
@@ -537,9 +538,9 @@ export function formatRate(rate: number | null): string {
   return rate === null ? '--' : `${Math.round(rate)}%`;
 }
 
-export function formatDate(timestamp: number | null): string {
+export function formatDate(timestamp: number | null, t: Translator): string {
   if (!timestamp) {
-    return 'Never';
+    return t('answers.dates.never');
   }
   return new Date(timestamp).toLocaleDateString();
 }
@@ -573,10 +574,10 @@ export function sortCardsByDifficulty(cards: Card[]): Card[] {
   });
 }
 
-/** Month and day only, in the device locale; 'Never' for a null or zero timestamp like `formatDate`. */
-export function formatShortDate(timestamp: number | null): string {
+/** Month and day only, in the device locale; "Never" for a null or zero timestamp like `formatDate`. */
+export function formatShortDate(timestamp: number | null, t: Translator): string {
   if (!timestamp) {
-    return 'Never';
+    return t('answers.dates.never');
   }
   return new Date(timestamp).toLocaleDateString(undefined, { month: 'numeric', day: 'numeric' });
 }

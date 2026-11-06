@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { englishT } from '../src/locales';
 import { parseFlashcardsCsv } from '../src/utils/csv';
 import { serializeDeck } from '../src/utils/deckExport';
 import { detectDeckFormat, parseDeckJson } from '../src/utils/deckImport';
@@ -89,42 +90,42 @@ describe('SAMPLE_DECK_CATEGORY', () => {
 
 describe('describeSampleDeckExport', () => {
   it('reports both files when both were saved', () => {
-    expect(describeSampleDeckExport([csv('saved'), json('saved')])).toEqual({
+    expect(describeSampleDeckExport([csv('saved'), json('saved')], englishT)).toEqual({
       title: 'Sample deck exported',
       message: 'Saved as Sample deck.csv and Sample deck.json.',
     });
   });
 
   it('says the JSON file was not saved when only the CSV was saved', () => {
-    expect(describeSampleDeckExport([csv('saved'), json('cancelled')])).toEqual({
+    expect(describeSampleDeckExport([csv('saved'), json('cancelled')], englishT)).toEqual({
       title: 'Sample deck exported',
       message: 'Saved as Sample deck.csv. The JSON file was not saved.',
     });
   });
 
   it('says the CSV file was not saved when only the JSON was saved', () => {
-    expect(describeSampleDeckExport([csv('cancelled'), json('saved')])).toEqual({
+    expect(describeSampleDeckExport([csv('cancelled'), json('saved')], englishT)).toEqual({
       title: 'Sample deck exported',
       message: 'Saved as Sample deck.json. The CSV file was not saved.',
     });
   });
 
   it('reports a partial export when the JSON failed after the CSV was saved', () => {
-    expect(describeSampleDeckExport([csv('saved'), json('failed')])).toEqual({
+    expect(describeSampleDeckExport([csv('saved'), json('failed')], englishT)).toEqual({
       title: 'Sample deck partly exported',
       message: 'Saved as Sample deck.csv. The JSON file could not be saved: no access.',
     });
   });
 
   it('reports a partial export when the CSV failed after the JSON was saved', () => {
-    expect(describeSampleDeckExport([csv('failed'), json('saved')])).toEqual({
+    expect(describeSampleDeckExport([csv('failed'), json('saved')], englishT)).toEqual({
       title: 'Sample deck partly exported',
       message: 'Saved as Sample deck.json. The CSV file could not be saved: disk full.',
     });
   });
 
   it('reports one sentence per failed file when none was saved', () => {
-    expect(describeSampleDeckExport([csv('failed'), json('failed')])).toEqual({
+    expect(describeSampleDeckExport([csv('failed'), json('failed')], englishT)).toEqual({
       title: 'Export failed',
       message:
         'The CSV file could not be saved: disk full. The JSON file could not be saved: no access.',
@@ -132,7 +133,7 @@ describe('describeSampleDeckExport', () => {
   });
 
   it('reports only the failed file when the other was cancelled', () => {
-    expect(describeSampleDeckExport([csv('cancelled'), json('failed')])).toEqual({
+    expect(describeSampleDeckExport([csv('cancelled'), json('failed')], englishT)).toEqual({
       title: 'Export failed',
       message: 'The JSON file could not be saved: no access.',
     });
@@ -146,13 +147,13 @@ describe('describeSampleDeckExport', () => {
       message: `disk full${stop}`,
     };
 
-    expect(describeSampleDeckExport([failed, json('cancelled')])?.message).toBe(
+    expect(describeSampleDeckExport([failed, json('cancelled')], englishT)?.message).toBe(
       `The CSV file could not be saved: disk full${stop}`,
     );
   });
 
   it('shows nothing when both files were cancelled', () => {
-    expect(describeSampleDeckExport([csv('cancelled'), json('cancelled')])).toBeNull();
+    expect(describeSampleDeckExport([csv('cancelled'), json('cancelled')], englishT)).toBeNull();
   });
 
   it('names a saved file by the suggested name when the dialog returned none', () => {
@@ -163,8 +164,21 @@ describe('describeSampleDeckExport', () => {
       savedAs: null,
     };
 
-    expect(describeSampleDeckExport([unnamed, json('cancelled')])?.message).toBe(
+    expect(describeSampleDeckExport([unnamed, json('cancelled')], englishT)?.message).toBe(
       'Saved as Sample deck.csv. The JSON file was not saved.',
+    );
+  });
+
+  it('says Unknown error when a failure carries no message', () => {
+    const failed: SampleDeckExportOutcome = {
+      format: 'json',
+      suggestedName: 'Sample deck.json',
+      status: 'failed',
+      message: null,
+    };
+
+    expect(describeSampleDeckExport([csv('cancelled'), failed], englishT)?.message).toBe(
+      'The JSON file could not be saved: Unknown error.',
     );
   });
 });

@@ -203,6 +203,34 @@ included — are not drawn with SVG. The iOS gap stated above is unchanged; `rea
 installed would be one way to close it if an iOS build is ever wanted, and that would be a new
 decision.
 
+## Amendment 4 — 2026-11-05
+
+Recorded ahead of the work it governs, under
+[ADR-0020](0020-ui-text-translated-through-typed-catalogue.md), with the owner's approval. The
+decision above stands — same drawables, same folder, same keys, one `require` map. Two details
+move, both about the labels, not the icons.
+
+- **An icon's label is a catalogue message.** Amendment 2 said *"the friendly name is a label,
+  kept in code, and can change freely"*; it is now kept in the catalogue instead. The English
+  labels move out of `EXTRA_CATEGORY_ICON_LABELS` in
+  [`src/utils/categories.ts`](../../../src/utils/categories.ts) into
+  `src/locales/en/categoryNames.ts`, as `categoryNames.icons.<icon key>`, and each translation
+  supplies its own. A default icon is still labelled with its category's name, now its translated
+  display name ([ADR-0012](0012-custom-categories-third-storage-key.md) Amendment 4). The lookup
+  is `getCategoryIconLabel(icon, t)`. Typecheck fails if an extra icon key has no English label.
+- **`EXTRA_CATEGORY_ICONS` becomes an explicit list**, written out in `src/utils/categories.ts`
+  in exactly the order it has when this is recorded. Today it is `Object.keys` of the English
+  label object, so its order comes from how the English labels were written; once the labels move
+  out, nothing else would fix it. **The Icon picker's order is therefore the same in every
+  language**: it is not re-sorted by translated label. A test pins the list's order and that it
+  has no duplicates; the `Record` over the full key union in
+  [`CategoryIcon`](../../../src/components/CategoryIcon.tsx) still makes a key with no drawable
+  fail typecheck.
+
+What does not move: the icon keys, which are permanent and are never translated; the drawables
+and their licence; the fallback icon; `CATEGORY_ICONS`, still the defaults' icons followed by the
+extras. No drawable changes, so this needs no native rebuild, and nothing persisted changes.
+
 ## References
 
 - [ADR-0001](0001-own-the-html-renderer.md) — the precedent for owning a rendering path rather than
@@ -211,6 +239,8 @@ decision.
   its Amendment 2 lets a custom category choose from the full icon set (Amendment 2 here)
 - [ADR-0018](0018-react-native-svg-draws-charts.md) — `react-native-svg` added for data charts
   only; icons stay as they are (Amendment 3 here)
+- [ADR-0020](0020-ui-text-translated-through-typed-catalogue.md) — UI text is translated; icon
+  labels move to the catalogue and the extra icons' order is written out (Amendment 4 here)
 - [React Native 0.78 release notes — Android XML drawables](https://reactnative.dev/blog/2025/02/19/react-native-0.78)
 - [Material Symbols](https://fonts.google.com/icons) — source of the icons, Apache License 2.0
 - [`src/assets/category-icons/`](../../../src/assets/category-icons/) — the drawables and their

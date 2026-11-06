@@ -1,7 +1,9 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import CategorySquare from './CategorySquare';
+import { useT } from '../i18n/I18nProvider';
 import type { Category } from '../types';
+import { categoryDisplayName } from '../utils/categories';
 import { colors, radius, spacing } from '../theme';
 
 type Props = {
@@ -13,21 +15,23 @@ type Props = {
 const CATEGORY_SQUARE_SIZE = 24;
 
 export default function DeckIdentityRow({ cardCount, category }: Props) {
+  const t = useT();
+  const categoryName = category ? categoryDisplayName(category, t) : '';
   return (
     <View style={styles.row}>
       <View style={styles.pill}>
         <Text maxFontSizeMultiplier={1.3} style={styles.text}>
-          {cardCount} {cardCount === 1 ? 'card' : 'cards'}
+          {t('common.counts.cards', { count: cardCount })}
         </Text>
       </View>
       {category ? (
         <View
           accessible
-          accessibilityLabel={`Category: ${category.name}`}
+          accessibilityLabel={t('deckStats.deckIdentityRow.categoryA11yLabel', { name: categoryName })}
           style={[styles.pill, styles.categoryPill]}>
           <CategorySquare category={category} size={CATEGORY_SQUARE_SIZE} />
           <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={[styles.text, styles.name]}>
-            {category.name}
+            {categoryName}
           </Text>
         </View>
       ) : null}

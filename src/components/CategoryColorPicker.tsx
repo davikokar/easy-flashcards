@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { LayoutChangeEvent, Pressable, StyleSheet, View } from 'react-native';
 import { AnswerIcon } from './AnswerIcons';
 import { linearGradient } from './ColorSlider';
+import { useT } from '../i18n/I18nProvider';
 import { colors, radius, spacing } from '../theme';
 import { hueSpectrumStops, isPaletteColor } from '../utils/color';
 
@@ -21,6 +22,7 @@ const MAX_SWATCH = 56;
 const CUSTOM_BACKGROUND = linearGradient('to bottom right', hueSpectrumStops());
 
 export default function CategoryColorPicker({ palette, value, onChange, onCustomPress }: Props) {
+  const t = useT();
   const [width, setWidth] = useState<number | null>(null);
 
   // Boxes share the measured width exactly, so the gap does not depend on the screen.
@@ -39,7 +41,10 @@ export default function CategoryColorPicker({ palette, value, onChange, onCustom
       <Pressable
         key={color}
         accessibilityRole="radio"
-        accessibilityLabel={`Colour ${index + 1} of ${palette.length}`}
+        accessibilityLabel={t('categories.colourPicker.swatchA11yLabel', {
+          position: index + 1,
+          total: palette.length,
+        })}
         accessibilityState={{ selected }}
         onPress={() => onChange(color)}
         style={({ pressed }) => [
@@ -58,8 +63,8 @@ export default function CategoryColorPicker({ palette, value, onChange, onCustom
     <Pressable
       key="custom"
       accessibilityRole="radio"
-      accessibilityLabel="Custom colour"
-      accessibilityHint="Opens the colour chooser"
+      accessibilityLabel={t('categories.customColourSwatch.a11yLabel')}
+      accessibilityHint={t('categories.customColourSwatch.a11yHint')}
       accessibilityState={{ selected: customSelected }}
       onPress={onCustomPress}
       style={({ pressed }) => [
@@ -86,7 +91,7 @@ export default function CategoryColorPicker({ palette, value, onChange, onCustom
   return (
     <View
       accessibilityRole="radiogroup"
-      accessibilityLabel="Colour picker"
+      accessibilityLabel={t('categories.colourPicker.a11yLabel')}
       onLayout={(event: LayoutChangeEvent) => setWidth(event.nativeEvent.layout.width)}
       style={styles.grid}>
       {rows.map((row, index) => (

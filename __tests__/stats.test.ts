@@ -1,3 +1,4 @@
+import { englishT } from '../src/locales';
 import { Answer, Card, Deck, Session } from '../src/types';
 import {
   allocateRingSegments,
@@ -108,19 +109,19 @@ describe('answerShares', () => {
 
 describe('describeAnswerShares', () => {
   it('lists the three rounded percentages in Ok, Okeish, Not ok order', () => {
-    const text = describeAnswerShares({ ok: 73.6, okeish: 18.2, notOk: 8.2 });
+    const text = describeAnswerShares({ ok: 73.6, okeish: 18.2, notOk: 8.2 }, englishT);
 
     expect(text).toBe('74% Ok, 18% Okeish, 8% Not ok');
   });
 
   it('shows a zero share as 0%, not as missing', () => {
-    const text = describeAnswerShares({ ok: 0, okeish: 100, notOk: 0 });
+    const text = describeAnswerShares({ ok: 0, okeish: 100, notOk: 0 }, englishT);
 
     expect(text).toBe('0% Ok, 100% Okeish, 0% Not ok');
   });
 
   it('says not reviewed yet when there are no shares', () => {
-    expect(describeAnswerShares(null)).toBe('Not reviewed yet');
+    expect(describeAnswerShares(null, englishT)).toBe('Not reviewed yet');
   });
 });
 
@@ -458,14 +459,14 @@ describe('EMPTY_SESSION_SUMMARY', () => {
 
 describe('formatDate', () => {
   it('says Never for a null or zero timestamp', () => {
-    expect(formatDate(null)).toBe('Never');
-    expect(formatDate(0)).toBe('Never');
+    expect(formatDate(null, englishT)).toBe('Never');
+    expect(formatDate(0, englishT)).toBe('Never');
   });
 
   it('formats a timestamp with the device locale', () => {
     const timestamp = Date.UTC(2026, 0, 15, 12);
 
-    expect(formatDate(timestamp)).toBe(new Date(timestamp).toLocaleDateString());
+    expect(formatDate(timestamp, englishT)).toBe(new Date(timestamp).toLocaleDateString());
   });
 });
 
@@ -1542,13 +1543,13 @@ describe('formatShortDate', () => {
   it('shows month and day in the device locale', () => {
     const stamp = at(10, 5);
 
-    expect(formatShortDate(stamp)).toBe(
+    expect(formatShortDate(stamp, englishT)).toBe(
       new Date(stamp).toLocaleDateString(undefined, { month: 'numeric', day: 'numeric' }),
     );
   });
 
   it('says Never for a null timestamp, like formatDate', () => {
-    expect(formatShortDate(null)).toBe('Never');
-    expect(formatShortDate(null)).toBe(formatDate(null));
+    expect(formatShortDate(null, englishT)).toBe('Never');
+    expect(formatShortDate(null, englishT)).toBe(formatDate(null, englishT));
   });
 });

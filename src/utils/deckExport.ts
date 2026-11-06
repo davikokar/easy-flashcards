@@ -9,6 +9,12 @@ export type DeckExportFormat = 'json' | 'csv';
 
 export type DeckExportOptions = { format: 'json' } | { format: 'csv'; separator: string };
 
+// File-format names are not translated (ADR-0020).
+export const EXPORT_FORMAT_NAMES: Record<DeckExportFormat, string> = {
+  json: 'JSON',
+  csv: 'CSV',
+};
+
 export const EXPORT_MIME_TYPES: Record<DeckExportFormat, string> = {
   json: 'application/json',
   csv: 'text/csv',
@@ -16,14 +22,13 @@ export const EXPORT_MIME_TYPES: Record<DeckExportFormat, string> = {
 
 export type SeparatorPreset = {
   key: 'comma' | 'semicolon' | 'tab';
-  label: string;
   value: string;
 };
 
 export const SEPARATOR_PRESETS: readonly SeparatorPreset[] = [
-  { key: 'comma', label: 'Comma', value: ',' },
-  { key: 'semicolon', label: 'Semicolon', value: ';' },
-  { key: 'tab', label: 'Tab', value: '\t' },
+  { key: 'comma', value: ',' },
+  { key: 'semicolon', value: ';' },
+  { key: 'tab', value: '\t' },
 ];
 
 export type SeparatorError = 'empty' | 'tooLong' | 'reserved' | 'whitespace' | 'alphanumeric';

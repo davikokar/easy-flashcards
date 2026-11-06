@@ -8,6 +8,7 @@ import MasteryRing from '../components/MasteryRing';
 import MenuIcon from '../components/MenuIcons';
 import SearchBar from '../components/SearchBar';
 import TimeframeChips from '../components/TimeframeChips';
+import { useT } from '../i18n/I18nProvider';
 import { DecksIcon } from '../navigation/TabIcons';
 import { useDecks } from '../state/DecksContext';
 import { StatsStackParamList } from '../navigation/types';
@@ -27,13 +28,8 @@ import { colors, radius, spacing } from '../theme';
 
 type Props = NativeStackScreenProps<StatsStackParamList, 'StatsOverview'>;
 
-const TOTAL_REVIEWS_CAPTION: Record<Timeframe, string> = {
-  all: 'Answers recorded',
-  month: 'Answers this month',
-  week: 'Answers in the last 7 days',
-};
-
 export default function StatsScreen({ navigation }: Props) {
+  const t = useT();
   const { decks, sessions, categories } = useDecks();
   const [timeframe, setTimeframe] = useState<Timeframe>('all');
   // The window is cut from the clock when these are derived, so it is recomputed with the data.
@@ -90,9 +86,13 @@ export default function StatsScreen({ navigation }: Props) {
 
   const toolbar = useMemo(
     () => (
-      <HeaderToolbar onSearch={toggleSearch} searchActive={searchOpen} searchLabel="Search decks" />
+      <HeaderToolbar
+        onSearch={toggleSearch}
+        searchActive={searchOpen}
+        searchLabel={t('stats.statsScreen.searchA11yLabel')}
+      />
     ),
-    [toggleSearch, searchOpen],
+    [toggleSearch, searchOpen, t],
   );
 
   useLayoutEffect(() => {
@@ -110,7 +110,7 @@ export default function StatsScreen({ navigation }: Props) {
           value={query}
           onChangeText={setQuery}
           onClose={closeSearch}
-          placeholder="Search decks"
+          placeholder={t('stats.statsScreen.searchPlaceholder')}
         />
       ) : null}
       {decks.length === 0 ? null : (
@@ -129,46 +129,48 @@ export default function StatsScreen({ navigation }: Props) {
             <View style={styles.header}>
               <View style={styles.section}>
                 <Text accessibilityRole="header" style={styles.sectionHeading}>
-                  Aggregated stats
+                  {t('stats.statsScreen.aggregatedHeading')}
                 </Text>
                 <View style={styles.aggregate}>
                   <MasteryRing shares={globalShares} rate={global.successRate} tally={global} />
                   <View style={styles.tileRow}>
                     <StatTile
                       icon={<DecksIcon color={colors.primary} />}
-                      label="Decks"
+                      label={t('stats.statsScreen.decksTile.label')}
                       value={String(global.deckCount)}
-                      caption="In your library"
+                      caption={t('stats.statsScreen.decksTile.caption')}
                     />
                     <StatTile
                       icon={<MenuIcon name="file" color={colors.primary} />}
-                      label="Total cards"
+                      label={t('stats.statsScreen.totalCardsTile.label')}
                       value={String(global.cardCount)}
-                      caption="Across all decks"
+                      caption={t('stats.statsScreen.totalCardsTile.caption')}
                     />
                   </View>
                   <View style={styles.tileRow}>
                     <StatTile
                       icon={<MenuIcon name="tally" color={colors.primary} />}
-                      label="Total reviews"
+                      label={t('stats.statsScreen.totalReviewsTile.label')}
                       value={String(global.reviewCount)}
-                      caption={TOTAL_REVIEWS_CAPTION[timeframe]}
+                      caption={t(`stats.statsScreen.totalReviewsTile.caption.${timeframe}`)}
                     />
                     <StatTile
                       icon={<MenuIcon name="clock" color={colors.primary} />}
-                      label="Sessions"
+                      label={t('stats.statsScreen.sessionsTile.label')}
                       value={String(sessionCount.total)}
-                      caption={`${sessionCount.active} active`}
+                      caption={t('stats.statsScreen.sessionsTile.caption', {
+                        count: sessionCount.active,
+                      })}
                     />
                   </View>
                 </View>
               </View>
               <View style={styles.breakdownHeading}>
                 <Text accessibilityRole="header" style={styles.sectionHeading}>
-                  Decks breakdown
+                  {t('stats.statsScreen.decksBreakdownHeading')}
                 </Text>
                 <Text style={styles.deckCount}>
-                  {rows.length} {rows.length === 1 ? 'deck' : 'decks'}
+                  {t('stats.statsScreen.deckCount', { count: rows.length })}
                 </Text>
               </View>
             </View>
@@ -177,14 +179,14 @@ export default function StatsScreen({ navigation }: Props) {
         ListEmptyComponent={
           decks.length === 0 ? (
             <EmptyState
-              title="No statistics yet"
-              message="Import a deck and study it; results will show up here."
+              title={t('stats.statsScreen.emptyState.title')}
+              message={t('stats.statsScreen.emptyState.message')}
             />
           ) : (
             <EmptyState
-              title="No matches"
-              message={`Nothing matches "${query.trim()}".`}
-              actionLabel="Clear search"
+              title={t('common.search.noMatchesTitle')}
+              message={t('common.search.noMatchesMessage', { query: query.trim() })}
+              actionLabel={t('common.search.clearSearchButton')}
               onAction={() => setQuery('')}
             />
           )
@@ -217,10 +219,14 @@ function StatTile({
   value: string;
   caption: string;
 }) {
+  const t = useT();
   const { fontScale } = useWindowDimensions();
   const scale = Math.min(fontScale, MAX_TILE_FONT_SCALE);
   return (
-    <View accessible accessibilityLabel={`${label}: ${value}, ${caption}`} style={styles.tile}>
+    <View
+      accessible
+      accessibilityLabel={t('stats.statsScreen.tileA11yLabel', { label, value, caption })}
+      style={styles.tile}>
       <View style={styles.tileHead}>
         {icon ? (
           <View

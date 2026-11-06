@@ -59,38 +59,49 @@ explain non-obvious decisions in short commit messages.
 - **HTML:** parsed and rendered in-repo — [src/utils/html.ts](src/utils/html.ts) and
   [src/components/RichText.tsx](src/components/RichText.tsx)
   ([ADR-0001](docs/architecture/decisions/0001-own-the-html-renderer.md)).
+- **UI text: an in-repo typed catalogue
+  ([ADR-0020](docs/architecture/decisions/0020-ui-text-translated-through-typed-catalogue.md)).**
+  Every user-facing text the app has today lives in `src/locales/` (English, the source of the
+  keys, in `src/locales/en/`, one file per area), looked up with `useT()` from
+  `src/i18n/I18nProvider.tsx` or a `Translator` passed to pure code, in the device's language
+  with English as the fallback. The engine is [src/utils/i18n.ts](src/utils/i18n.ts); the
+  registry of languages is [src/locales/index.ts](src/locales/index.ts). No i18n dependency.
+  ADR-0020's *contract for implementers* and its amendment are binding for text you add or change.
 - **Build:** Gradle for Android (`android/`), CocoaPods for iOS (`ios/`). SDK levels are in
   [android/build.gradle](android/build.gradle); app config in
   [android/app/build.gradle](android/app/build.gradle).
 - **Tests:** Jest with `@react-native/jest-preset`, under [__tests__/](__tests__/): pure logic in
-  `src/utils/`, the reducer, and the storage loaders with AsyncStorage mocked. Nothing renders, and
-  there are no component or end-to-end tests — see *Known gaps*.
+  `src/utils/`, the catalogue in `src/locales/`, the reducer, and the storage loaders with
+  AsyncStorage mocked. Nothing renders, and there are no component or end-to-end tests — see
+  *Known gaps*.
 
 ## Project layout
 
 ```
-App.tsx                 # SafeAreaProvider > DecksProvider > RootNavigator
+App.tsx                 # SafeAreaProvider > I18nProvider > DecksProvider > RootNavigator
 index.js                # AppRegistry entry point
 src/
   types.ts              # Deck, Card, Session, Answer, Category, and the derived stats types
   theme.ts              # colour / spacing / radius tokens and the category palette — the whole design system
   assets/               # category-icons/: Android vector drawables + their licence NOTICE (ADR-0013)
+  i18n/                 # I18nProvider + useT(): the read-only language context (ADR-0020)
+  locales/              # the UI text catalogue: en/ (one file per area), index.ts registers each language
   state/                # DecksContext (provider) + reducer.ts (pure): the single store
   storage/              # AsyncStorage read/write + normalisation, one file per key
   navigation/           # RootNavigator, per-tab stacks, param lists, tab icons
   screens/              # One file per screen
   components/           # Reusable presentational components
-  services/             # Device-boundary operations: picking and saving files
-  utils/                # Pure TypeScript: csv, html, fileUri, stats, categories, and more
-__tests__/              # Jest unit tests: utils, the reducer, the storage loaders
+  services/             # Device-boundary operations: picking and saving files, reading the device language
+  utils/                # Pure TypeScript: csv, html, fileUri, stats, categories, i18n, and more
+__tests__/              # Jest unit tests: utils, the catalogue, the reducer, the storage loaders
 docs/                   # Architecture, decisions, and the original requirements
 samples/                # Example deck files, CSV and JSON (sampleDeck.test.ts checks the sample pair)
 ```
 
-`src/utils/`, `src/types.ts` and `src/state/reducer.ts` import nothing from `react` or
-`react-native`. That is deliberate and it is what makes them testable under Jest without a renderer
-or a mock. Keep new pure logic there; keep anything that touches a device API in `src/services/` or
-`src/storage/`.
+`src/utils/`, `src/locales/`, `src/types.ts` and `src/state/reducer.ts` import nothing from `react`
+or `react-native`. That is deliberate and it is what makes them testable under Jest without a
+renderer or a mock. Keep new pure logic there; keep anything that touches a device API in
+`src/services/` or `src/storage/`.
 
 **Which files are in which directory is owned by
 [docs/architecture/ARCHITECTURE.md](docs/architecture/ARCHITECTURE.md) §3** — this file deliberately
@@ -176,8 +187,11 @@ the owning document instead, so that adding an ADR or a screen does not touch an
 
 - **`DecksContext` is the only store.** It holds `decks`, `sessions`, `categories`, `isLoading` and
   `error`, and
-  it exposes one function per operation. There is no second provider and no global singleton; do
-  not add one ([ADR-0003](docs/architecture/decisions/0003-single-context-reducer-store.md)).
+  it exposes one function per operation. There is no second store and no global singleton; do
+  not add one ([ADR-0003](docs/architecture/decisions/0003-single-context-reducer-store.md)). The
+  one other provider is ADR-0020's `I18nProvider`: read-only, never persisted, and
+  holding only the UI language's translator. It is configuration, not a store, and must not gain
+  app data or a saved setting (ADR-0003 Amendment 8).
 - **A new operation is a new reducer action** in [src/state/reducer.ts](src/state/reducer.ts), not
   a mutation written by a screen, and it gets a test in `__tests__/reducer.test.ts`. Screens call
   `useDecks()` and invoke an exposed function; they never reach into state and write it back.
@@ -355,14 +369,32 @@ writing, and normalising it.
 
 ### Strings and formatting
 
-- **The app is English-only and there is no i18n layer.** User-facing strings are literals in the
-  component that shows them. Do not introduce a translation framework without asking; do not scatter
-  a half-built one.
+- **UI text is a catalogue message
+  ([ADR-0020](docs/architecture/decisions/0020-ui-text-translated-through-typed-catalogue.md)).**
+  Every user-facing text the app had when the migration landed is in `src/locales/`. Text you add
+  or change — labels, alerts, accessibility labels and hints — is a catalogue message looked up
+  with `useT()`, or with a `Translator` passed to pure code, never a literal in a component;
+  follow ADR-0020's key naming rules. A message goes into the area file of the screen or component
+  that shows it, and into `src/locales/en/common.ts` only when several areas show the same words.
+  A whole sentence is one message with placeholders; never join translated fragments. User data,
+  deck-file keys, file-format names and identifiers are never translated; ADR-0020 lists them. No
+  translation library is used; adding one still needs asking.
+- **`npm run lint` guards against new literals, with blind spots.** An ESLint
+  `no-restricted-syntax` override in [.eslintrc.js](.eslintrc.js), for `src/screens/`,
+  `src/components/` and `src/navigation/` only, rejects JSX text with letters, and a string or
+  template literal with letters given to a text prop or object key (`title`, `label`, `message`,
+  `accessibilityLabel`, `accessibilityHint`, `placeholder` and a few more — the list is in the
+  file) or to `Alert.alert`, directly or through up to two levels of `?:` / `&&` / `||` / `??`. It
+  does **not** see a string built by concatenation, text built by a helper function, a literal
+  passed as a plain function argument, or anything in `src/utils/`, `src/services/` or
+  `src/state/`. A clean lint is a net, not proof.
 - Dates shown to the user go through `formatDate` in [src/utils/stats.ts](src/utils/stats.ts),
-  which uses the device locale and returns `'Never'` for a null timestamp. Rates go through
-  `formatRate`, which returns `'--'` when nothing has been reviewed. Use them rather than
-  formatting inline — a bare `0%` and "never reviewed" mean different things and the app
-  distinguishes them.
+  which takes `t`, uses the device locale and returns the catalogue's *never* text
+  (`answers.dates.never`) for a null timestamp; `formatShortDate` is its month-and-day form. Rates
+  go through `formatRate`, which returns `'--'` when nothing has been reviewed. Use them rather
+  than formatting inline — a bare `0%` and "never reviewed" mean different things and the app
+  distinguishes them. Dates and numbers keep the device's regional format even when the text
+  falls back to English.
 - Timestamps are `Date.now()` numbers everywhere, in state and in storage. Do not store a
   `Date` or an ISO string.
 
@@ -442,6 +474,27 @@ These are not preferences. Each one cost a session.
   - **npm will not warn about it on a React Native upgrade.** Its peer ranges are `*`; check its
     supported React Native versions by hand. It is native: installing or upgrading it needs a
     native rebuild, not a Metro reload.
+- **Translation has three platform traps**
+  ([ADR-0020](docs/architecture/decisions/0020-ui-text-translated-through-typed-catalogue.md)
+  and its Amendments 1 and 3):
+  - **Hermes has no `Intl.PluralRules`.** That is why each language supplies its own plural rule
+    function, and why the mainstream i18n libraries would need a polyfill here. Do not call
+    `Intl.PluralRules`; `Intl.DateTimeFormat`, `Intl.NumberFormat` and `localeCompare` do work.
+  - **Android's per-app `en-XA` pseudo-locale is ignored by the test phone.** Setting it with
+    `adb shell cmd locale set-app-locales com.easyflashcards --locales en-XA` left the app on
+    `en-US` on the Samsung test phone, so the shipped pseudo-language cannot be selected there that
+    way. A per-app `de-DE` does reach the app — it is what
+    `Intl.DateTimeFormat().resolvedOptions().locale` returns after a relaunch. To see the
+    pseudo-language on that phone, build with the pseudo-language's `code` in
+    `src/locales/index.ts` temporarily changed to `de`, set the app's locale to `de-DE`, then
+    revert the code and restore the app locale with `--locales ""`.
+  - **`I18nManager.allowRTL` and `forceRTL` act on the next launch, not this one.** On Android
+    they write a preference that React Native reads when it creates the root view, so the first
+    launch on a right-to-left device can still be mirrored once, with
+    `I18nManager.getConstants().isRTL` cached `true` for that run; do not branch on it. Checking
+    the unmirrored layout needs a second cold start, and clearing the app's data resets the
+    preference. Only `android:supportsRtl="false"` holds from the first launch, and that needs
+    asking.
 
 ## Known gaps
 
@@ -488,6 +541,27 @@ Recorded here so they are not rediscovered as surprises. The full list, with rea
   render on Android only. On iOS (never built) the icon would be
   blank but a Category square or tile still paints the category's colour, so a categorised deck
   would show a coloured square with no glyph, not look uncategorised.
+- **Translation covers the text, not everything around it**
+  ([ADR-0020](docs/architecture/decisions/0020-ui-text-translated-through-typed-catalogue.md)).
+  Which languages exist is the registry in [src/locales/index.ts](src/locales/index.ts). **The
+  translations are machine-written and not reviewed by native speakers**; Portuguese is Brazilian
+  wording registered as `pt`, and French, Spanish, Italian and Portuguese have no CLDR `many` form
+  for exact millions, deliberately. **Right-to-left text is shown, but the layout is never
+  mirrored** (ADR-0020 Amendment 3): `keepLayoutLeftToRight()` in
+  [src/services/deviceLocale.ts](src/services/deviceLocale.ts), called from `index.js`, and
+  `direction="ltr"` on the `NavigationContainer` keep it left-to-right — except that **the first
+  launch on a right-to-left device can still be laid out right-to-left once**, because React
+  Native reads those settings when it creates the root view. Only `android:supportsRtl="false"` in
+  the manifest would close that, and it has not been approved. The hand-drawn icons and the Study
+  screen's swipe direction assume left-to-right. There is **no in-app language picker**: the
+  language is the device's, read
+  once when `I18nProvider` mounts, so whether a change made while the app runs is followed is
+  unconfirmed — assume it takes a restart. **The migrated UI has not been seen on a device in any
+  language yet**, English, the pseudo-language and every translation included. Still English in
+  every language: the error detail native code supplies (storage, the picker, the file system),
+  the *Export failed* alert's message when the export error carries one, the sample deck, and the
+  Android app name. Dates and numbers keep the device's regional format whatever the text
+  language, and percentages are not localised.
 
 ## What to ask before doing
 
@@ -498,6 +572,12 @@ Recorded here so they are not rediscovered as surprises. The full list, with rea
   permissions it merges in. Check the merged manifest when a native dependency lands.
 - Introducing a new architectural pattern not described above, or contradicting an active ADR —
   adding a second store, a navigation library, a styling system, or an i18n framework all qualify.
+  For translation that means a language library, a stored language setting or in-app language
+  picker, and mirroring the layout for right-to-left text all need asking, as do another
+  right-to-left language, such as Hebrew or Persian, and setting `android:supportsRtl="false"` in
+  the manifest (ADR-0020 Amendment 3). **Adding a left-to-right language does not**: it is one
+  module under `src/locales/`, typed as the full catalogue with its own plural rule, plus its entry
+  in `src/locales/index.ts` (ADR-0020).
 - Changing a storage key, its shape, or what `/v1` means. This is the one class of mistake here
   that the user cannot recover from: it loses their decks and their history rather than failing a
   build.

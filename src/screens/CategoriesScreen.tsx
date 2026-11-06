@@ -5,11 +5,13 @@ import AppMenu from '../components/AppMenu';
 import Button from '../components/Button';
 import CategoryTile from '../components/CategoryTile';
 import MenuSheet from '../components/MenuSheet';
+import { useT } from '../i18n/I18nProvider';
 import { useDecks } from '../state/DecksContext';
 import { CategoriesStackParamList } from '../navigation/types';
 import { Category } from '../types';
 import {
   DEFAULT_CATEGORIES,
+  categoryDisplayName,
   countDecksInCategory,
   sortCategoriesByName,
 } from '../utils/categories';
@@ -19,7 +21,8 @@ type Props = NativeStackScreenProps<CategoriesStackParamList, 'CategoriesList'>;
 
 export default function CategoriesScreen({ navigation }: Props) {
   const { decks, categories, deleteCategory } = useDecks();
-  const customs = useMemo(() => sortCategoriesByName(categories), [categories]);
+  const t = useT();
+  const customs = useMemo(() => sortCategoriesByName(categories, t), [categories, t]);
   // The sheet keeps its category while it fades out, so `menuVisible` is separate from it.
   const [menuCategory, setMenuCategory] = useState<Category | null>(null);
   const [menuVisible, setMenuVisible] = useState(false);
@@ -42,26 +45,35 @@ export default function CategoriesScreen({ navigation }: Props) {
   const confirmDelete = useCallback(
     (category: Category) => {
       const deckCount = countDecksInCategory(decks, category.id);
-      const consequence =
+      const message =
         deckCount === 0
-          ? ''
-          : deckCount === 1
-            ? ' 1 deck will have no category.'
-            : ` ${deckCount} decks will have no category.`;
-      Alert.alert('Delete category?', `"${category.name}" will be deleted.${consequence}`, [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete', style: 'destructive', onPress: () => deleteCategory(category.id) },
+          ? t('categories.deleteCategoryAlert.message', { name: category.name })
+          : t('categories.deleteCategoryAlert.messageWithDecks', {
+              name: category.name,
+              count: deckCount,
+            });
+      Alert.alert(t('categories.deleteCategoryAlert.title'), message, [
+        { text: t('common.actions.cancel'), style: 'cancel' },
+        {
+          text: t('common.actions.delete'),
+          style: 'destructive',
+          onPress: () => deleteCategory(category.id),
+        },
       ]);
     },
-    [decks, deleteCategory],
+    [decks, deleteCategory, t],
   );
 
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Section title="Custom categories" subtitle={`${customs.length} available`}>
+        <Section
+          title={t('categories.categoriesScreen.customSectionTitle')}
+          subtitle={t('categories.categoriesScreen.customSectionSubtitle', {
+            count: customs.length,
+          })}>
           {customs.length === 0 ? (
-            <Text style={styles.hint}>Your own categories will appear here.</Text>
+            <Text style={styles.hint}>{t('categories.categoriesScreen.customEmptyHint')}</Text>
           ) : (
             <View style={styles.grid}>
               {customs.map(category => (
@@ -70,7 +82,9 @@ export default function CategoriesScreen({ navigation }: Props) {
                     name={category.name}
                     color={category.color}
                     icon={category.icon}
-                    accessibilityLabel={`Options for ${category.name}`}
+                    accessibilityLabel={t('categories.categoriesScreen.categoryTileA11yLabel', {
+                      name: category.name,
+                    })}
                     onPress={() => openMenu(category)}
                   />
                 </View>
@@ -78,11 +92,19 @@ export default function CategoriesScreen({ navigation }: Props) {
             </View>
           )}
         </Section>
-        <Section title="Default categories" subtitle={`${DEFAULT_CATEGORIES.length} built in`}>
+        <Section
+          title={t('categories.categoriesScreen.defaultSectionTitle')}
+          subtitle={t('categories.categoriesScreen.defaultSectionSubtitle', {
+            count: DEFAULT_CATEGORIES.length,
+          })}>
           <View style={styles.grid}>
             {DEFAULT_CATEGORIES.map(category => (
               <View key={category.id} style={styles.cell}>
-                <CategoryTile name={category.name} color={category.color} icon={category.icon} />
+                <CategoryTile
+                  name={categoryDisplayName(category, t)}
+                  color={category.color}
+                  icon={category.icon}
+                />
               </View>
             ))}
           </View>
@@ -91,7 +113,10 @@ export default function CategoriesScreen({ navigation }: Props) {
 
       {/* A sibling of the scroll view, not an overlay, so it never covers the last row. */}
       <View style={styles.footer}>
-        <Button label="New category" onPress={() => navigation.navigate('NewCategory')} />
+        <Button
+          label={t('categories.categoriesScreen.newCategoryButton')}
+          onPress={() => navigation.navigate('NewCategory')}
+        />
       </View>
 
       <MenuSheet
@@ -102,7 +127,7 @@ export default function CategoriesScreen({ navigation }: Props) {
           menuCategory
             ? [
                 {
-                  label: 'Delete category',
+                  label: t('categories.categoryOptionsMenu.deleteItem'),
                   icon: 'delete',
                   destructive: true,
                   onPress: () => confirmDelete(menuCategory),

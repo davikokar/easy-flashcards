@@ -1,5 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { useT } from '../i18n/I18nProvider';
 import { AnswerShares, AnswerTally } from '../types';
 import { allocateRingSegments, describeAnswerShares, formatRate } from '../utils/stats';
 import { colors, spacing } from '../theme';
@@ -14,9 +15,9 @@ type Props = {
 };
 
 const ROWS = [
-  { key: 'ok', count: 'okCount', label: 'Ok', icon: 'tick', color: colors.success },
-  { key: 'okeish', count: 'okeishCount', label: 'Okeish', icon: 'question', color: colors.warning },
-  { key: 'notOk', count: 'notOkCount', label: 'Not ok', icon: 'cross', color: colors.danger },
+  { key: 'ok', count: 'okCount', icon: 'tick', color: colors.success },
+  { key: 'okeish', count: 'okeishCount', icon: 'question', color: colors.warning },
+  { key: 'notOk', count: 'notOkCount', icon: 'cross', color: colors.danger },
 ] as const;
 
 const RING_SIZE = 144;
@@ -49,14 +50,23 @@ function barColors(shares: AnswerShares | null): string[] {
 }
 
 export default function MasteryRing({ shares, rate, tally }: Props) {
+  const t = useT();
   const reviewed = shares !== null;
   const bars = barColors(shares);
-  const counts = ROWS.map(r => `${tally[r.count]} ${r.label}`).join(', ');
+  const counts = t('answers.shares.summary', {
+    ok: tally.okCount,
+    okeish: tally.okeishCount,
+    notOk: tally.notOkCount,
+  });
 
   return (
     <View
       accessible
-      accessibilityLabel={`Success rate ${formatRate(rate)}. ${describeAnswerShares(shares)}. Counts: ${counts}`}
+      accessibilityLabel={t('stats.masteryRing.summaryA11yLabel', {
+        rate: formatRate(rate),
+        shares: describeAnswerShares(shares, t),
+        counts,
+      })}
       style={styles.panel}>
       <View
         accessibilityElementsHidden
@@ -73,7 +83,7 @@ export default function MasteryRing({ shares, rate, tally }: Props) {
             {formatRate(rate)}
           </Text>
           <Text maxFontSizeMultiplier={1.2} style={styles.caption}>
-            Success rate
+            {t('stats.masteryRing.caption')}
           </Text>
         </View>
       </View>

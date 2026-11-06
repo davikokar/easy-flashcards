@@ -1,6 +1,7 @@
 import { Card, Deck } from '../types';
 import { findCategory } from './categories';
 import { DeckExportFormat, DeckExportOptions } from './deckExport';
+import type { Translator } from './i18n';
 
 function sampleCard(n: number, question: string, answer: string): Card {
   return {
@@ -55,7 +56,8 @@ export const SAMPLE_DECK_EXPORTS: readonly DeckExportOptions[] = [
 export type SampleDeckExportOutcome = { format: DeckExportFormat; suggestedName: string } & (
   | { status: 'saved'; savedAs: string | null }
   | { status: 'cancelled' }
-  | { status: 'failed'; message: string }
+  /** `message` is the error's own text; null when the thrown value had none. */
+  | { status: 'failed'; message: string | null }
 );
 
 /** The message ending in exactly one full stop, unless it already ends in `.`, `!` or `?`. */
@@ -67,29 +69,40 @@ function endWithStop(message: string): string {
 /** The alert for what the save dialogs returned; null when every file was cancelled. */
 export function describeSampleDeckExport(
   outcomes: readonly SampleDeckExportOutcome[],
+  t: Translator,
 ): { title: string; message: string } | null {
   const savedNames: string[] = [];
   const notSaved: string[] = [];
   const failed: string[] = [];
 
   for (const outcome of outcomes) {
-    const label = outcome.format.toUpperCase();
+    const format = outcome.format.toUpperCase();
     if (outcome.status === 'saved') {
       savedNames.push(outcome.savedAs ?? outcome.suggestedName);
     } else if (outcome.status === 'failed') {
-      failed.push(`The ${label} file could not be saved: ${endWithStop(outcome.message)}`);
+      const details = endWithStop(outcome.message ?? t('importExport.sampleExport.unknownError'));
+      failed.push(t('importExport.sampleExport.fileFailed', { format, details }));
     } else {
-      notSaved.push(`The ${label} file was not saved.`);
+      notSaved.push(t('importExport.sampleExport.fileNotSaved', { format }));
     }
   }
 
   if (savedNames.length === 0) {
-    return failed.length === 0 ? null : { title: 'Export failed', message: failed.join(' ') };
+    return failed.length === 0
+      ? null
+      : { title: t('importExport.sampleExport.failedTitle'), message: failed.join(' ') };
   }
 
-  const saved = `Saved as ${savedNames.join(' and ')}.`;
+  // There is one file per format, so at most two names.
+  const saved =
+    savedNames.length === 1
+      ? t('importExport.sampleExport.savedAsOne', { name: savedNames[0] })
+      : t('importExport.sampleExport.savedAsTwo', { first: savedNames[0], second: savedNames[1] });
   return {
-    title: failed.length === 0 ? 'Sample deck exported' : 'Sample deck partly exported',
+    title:
+      failed.length === 0
+        ? t('importExport.sampleExport.successTitle')
+        : t('importExport.sampleExport.partlyTitle'),
     message: [saved, ...failed, ...notSaved].join(' '),
   };
 }

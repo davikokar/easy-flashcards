@@ -60,7 +60,8 @@ the answers usually are:
 - `docs/architecture/ARCHITECTURE.md` — what the system is, including §3's per-file lists and §8's
   known debt — and `docs/architecture/README.md`, the ADR index with each decision's status.
 - `.github/instructions/ui-vocabulary.instructions.md` — the canonical names, and the real
-  accessibility labels they quote.
+  accessibility labels they quote. The labels themselves live in the English catalogue under
+  `src/locales/en/`, one file per area; a component holds only the key.
 - `package.json` — every dependency and every script. Quote it rather than quoting a document that
   restates it.
 - `docs/requirements/flashcards_app_requirements.md` — the **frozen** original brief. It is
@@ -80,9 +81,11 @@ the answers usually are:
   naming a term. Dead exports are a real question here.
 - **Whether a document still matches the code.** Quote the document line and the code line side by
   side and let the difference speak. Do not rule on which is wrong. The UI vocabulary quotes real
-  UI strings, so "does this label still say that?" is a common and answerable version of this.
-- **What the test suite actually covers.** `__tests__/` holds unit tests of `src/utils/`,
-  `src/state/reducer.ts` and the storage loaders, and nothing renders. If asked whether
+  UI strings, so "does this label still say that?" is a common and answerable version of this:
+  find the key the component passes to `t(...)` and quote the message under `src/locales/en/`,
+  since the component itself holds no text.
+- **What the test suite actually covers.** `__tests__/` holds unit tests of `src/utils/`, the
+  catalogue in `src/locales/`, `src/state/reducer.ts` and the storage loaders, and nothing renders. If asked whether
   something is tested, name the files and let the caller conclude.
 - **Whether a device is attached.** `adb devices`, reported verbatim. `adb` is not on `PATH` here;
   use `"$HOME/AppData/Local/Android/Sdk/platform-tools/adb.exe"`.

@@ -96,7 +96,20 @@ for the required format and status rules.
 > Amendment 5 to ADR-0011, Amendment 5 to ADR-0016 and Amendment 3 to ADR-0017: a CSV import now
 > reads its `# title:` and `# description:` lines, so the deck is named after the file's title in
 > either format and keeps its description. It changes nothing persisted, and ARCHITECTURE.md links
-> to it.
+> to it. ADR-0020 was recorded ahead of its work, together with Amendment 8 to ADR-0003,
+> Amendment 4 to ADR-0012, Amendment 4 to ADR-0013 and Amendment 4 to ADR-0017: every label the
+> user sees moves into an in-repo typed catalogue and is shown in the device's language, falling
+> back to English, with no new dependency; a second, read-only React Context supplies the
+> language and is not a store. It changes nothing persisted, and ARCHITECTURE.md links to it
+> now that the migration has landed. ADR-0020 carries an Amendment 1, recorded after the work:
+> what the migration found — the test phone ignores a per-app `en-XA`, the lint guard's actual
+> coverage, and where the shipped code differs in detail from the contract. The migrated UI has
+> not yet been checked on a device. Amendment 2 records that machine-written translations,
+> unreviewed by native speakers, landed under the decision unchanged. Amendment 3 records seven
+> more, Arabic among them, and reverses the record's "no right-to-left support" with the owner's
+> approval: right-to-left text is shown but the layout is never mirrored, though the first launch
+> on a right-to-left device can still be mirrored once, and the `android:supportsRtl="false"`
+> manifest change that would close that is not approved. Chinese is Simplified only (`zh-CN`).
 
 ### Index
 
@@ -121,3 +134,4 @@ for the required format and status rules.
 | [ADR-0017](decisions/0017-deck-import-reads-exported-formats.md) | Deck import reads the formats the app exports — CSV with any supported separator and leading comments, and the versioned JSON file | Active | 2026-11-04 |
 | [ADR-0018](decisions/0018-react-native-svg-draws-charts.md) | react-native-svg draws charts | Active | 2026-11-04 |
 | [ADR-0019](decisions/0019-deck-file-format-version-2.md) | Deck files move to format version 2 — CSV and JSON carry the same metadata, and the category as one language-neutral reference | Active | 2026-11-05 |
+| [ADR-0020](decisions/0020-ui-text-translated-through-typed-catalogue.md) | UI text is translated through an in-repo typed catalogue, and the language follows the device | Active | 2026-11-05 |

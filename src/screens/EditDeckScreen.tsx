@@ -16,6 +16,7 @@ import CategoryField from '../components/CategoryField';
 import CategoryPicker from '../components/CategoryPicker';
 import EmptyState from '../components/EmptyState';
 import FormField from '../components/FormField';
+import { useT } from '../i18n/I18nProvider';
 import { useDecks } from '../state/DecksContext';
 import { DecksStackParamList } from '../navigation/types';
 import { Deck } from '../types';
@@ -42,6 +43,7 @@ type KeyedDraft = CardDraft & { key: string };
 
 export default function EditDeckScreen({ navigation, route }: Props) {
   const { getDeck } = useDecks();
+  const t = useT();
 
   if (route.name === 'NewDeck') {
     return <DeckEditor deck={null} navigation={navigation} />;
@@ -53,9 +55,9 @@ export default function EditDeckScreen({ navigation, route }: Props) {
     return (
       <View style={styles.container}>
         <EmptyState
-          title="Deck not found"
-          message="This deck no longer exists."
-          actionLabel="Back to decks"
+          title={t('editDeck.deckNotFound.title')}
+          message={t('editDeck.deckNotFound.message')}
+          actionLabel={t('editDeck.deckNotFound.backButton')}
           onAction={() => navigation.goBack()}
         />
       </View>
@@ -73,6 +75,7 @@ function DeckEditor({
   navigation: NativeStackNavigationProp<DecksStackParamList, 'EditDeck' | 'NewDeck'>;
 }) {
   const { addDeck, updateDeck, categories } = useDecks();
+  const t = useT();
   const [name, setName] = useState(deck ? deck.name : '');
   const [description, setDescription] = useState(deck ? deck.description : '');
   const [draftCategoryId, setDraftCategoryId] = useState<string | null>(
@@ -99,7 +102,7 @@ function DeckEditor({
     const stored = findCategory(deck ? deck.categoryId : null, categories);
     return stored ? stored.id : null;
   }, [deck, categories]);
-  const allCategories = useMemo(() => getAllCategories(categories), [categories]);
+  const allCategories = useMemo(() => getAllCategories(categories, t), [categories, t]);
 
   const edit = useMemo<DeckEdit>(
     () => ({
@@ -120,12 +123,15 @@ function DeckEditor({
 
   const save = useCallback(() => {
     if (edit.name === '') {
-      Alert.alert('Title needed', 'Give the deck a title.');
+      Alert.alert(t('editDeck.titleNeededAlert.title'), t('editDeck.titleNeededAlert.message'));
       return;
     }
     const incomplete = firstIncompleteCard(edit.cards);
     if (incomplete !== null) {
-      Alert.alert('Card incomplete', `Card ${incomplete} needs both a question and an answer.`);
+      Alert.alert(
+        t('editDeck.cardIncompleteAlert.title'),
+        t('editDeck.cardIncompleteAlert.message', { number: incomplete }),
+      );
       return;
     }
     if (!deck) {
@@ -149,30 +155,31 @@ function DeckEditor({
       return;
     }
     Alert.alert(
-      'Remove cards?',
-      `${removed} card${removed === 1 ? '' : 's'} will be removed from the deck, together with ` +
-        `${removed === 1 ? 'its' : 'their'} statistics.`,
+      t('editDeck.removeCardsAlert.title'),
+      t('editDeck.removeCardsAlert.message', { count: removed }),
       [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Save', style: 'destructive', onPress: commit },
+        { text: t('common.actions.cancel'), style: 'cancel' },
+        { text: t('common.actions.save'), style: 'destructive', onPress: commit },
       ],
     );
-  }, [deck, edit, navigation, addDeck, updateDeck]);
+  }, [deck, edit, navigation, addDeck, updateDeck, t]);
 
   const saveButton = useMemo(
     () => (
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Save deck"
+        accessibilityLabel={t('editDeck.editDeckScreen.saveButtonA11yLabel')}
         accessibilityState={{ disabled: !isChanged }}
         disabled={!isChanged}
         hitSlop={8}
         onPress={save}
         style={({ pressed }) => [pressed && styles.pressed]}>
-        <Text style={[styles.save, !isChanged && styles.saveDisabled]}>Save</Text>
+        <Text style={[styles.save, !isChanged && styles.saveDisabled]}>
+          {t('common.actions.save')}
+        </Text>
       </Pressable>
     ),
-    [isChanged, save],
+    [isChanged, save, t],
   );
 
   useLayoutEffect(() => {
@@ -187,19 +194,21 @@ function DeckEditor({
         }
         event.preventDefault();
         Alert.alert(
-          'Discard changes?',
-          deck ? 'Your edits to this deck have not been saved.' : 'This deck has not been saved.',
+          t('editDeck.discardChangesAlert.title'),
+          deck
+            ? t('editDeck.discardChangesAlert.messageEdit')
+            : t('editDeck.discardChangesAlert.messageNew'),
           [
-            { text: 'Keep editing', style: 'cancel' },
+            { text: t('common.actions.keepEditing'), style: 'cancel' },
             {
-              text: 'Discard',
+              text: t('common.actions.discard'),
               style: 'destructive',
               onPress: () => navigation.dispatch(event.data.action),
             },
           ],
         );
       }),
-    [navigation, isChanged, deck],
+    [navigation, isChanged, deck, t],
   );
 
   const changeCard = useCallback(
@@ -229,13 +238,18 @@ function DeckEditor({
 
   const header = (
     <View style={styles.header}>
-      <FormField label="Title" value={name} onChangeText={setName} autoFocus={!deck} />
       <FormField
-        label="Description"
+        label={t('editDeck.editDeckScreen.titleLabel')}
+        value={name}
+        onChangeText={setName}
+        autoFocus={!deck}
+      />
+      <FormField
+        label={t('editDeck.editDeckScreen.descriptionLabel')}
         value={description}
         onChangeText={setDescription}
         multiline
-        placeholder="Optional"
+        placeholder={t('editDeck.editDeckScreen.descriptionPlaceholder')}
       />
       <CategoryField
         category={category}
@@ -245,7 +259,7 @@ function DeckEditor({
         }}
       />
       <Text style={styles.sectionTitle}>
-        {cards.length} card{cards.length === 1 ? '' : 's'}
+        {t('common.counts.cards', { count: cards.length })}
       </Text>
     </View>
   );
@@ -269,7 +283,13 @@ function DeckEditor({
         onContentSizeChange={scrollToNewCard}
         onLayout={scrollToNewCard}
         ListHeaderComponent={header}
-        ListFooterComponent={<Button variant="secondary" label="Add card" onPress={addCard} />}
+        ListFooterComponent={
+          <Button
+            variant="secondary"
+            label={t('editDeck.editDeckScreen.addCardButton')}
+            onPress={addCard}
+          />
+        }
         renderItem={({ item, index }) => (
           <CardEditor
             cardKey={item.key}

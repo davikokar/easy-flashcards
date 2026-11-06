@@ -2,6 +2,7 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import FormField from './FormField';
 import MenuIcon from './MenuIcons';
+import { useT } from '../i18n/I18nProvider';
 import { colors, radius, spacing } from '../theme';
 
 type Props = {
@@ -16,13 +17,14 @@ type Props = {
 };
 
 function CardEditor({ cardKey, index, question, answer, autoFocus, onChange, onRemove }: Props) {
+  const t = useT();
   return (
     <View style={styles.card}>
       <View style={styles.header}>
-        <Text style={styles.title}>Card {index}</Text>
+        <Text style={styles.title}>{t('editDeck.cardEditor.title', { number: index })}</Text>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`Remove card ${index}`}
+          accessibilityLabel={t('editDeck.cardEditor.removeButtonA11yLabel', { number: index })}
           hitSlop={4}
           onPress={() => onRemove(cardKey)}
           style={({ pressed }) => [styles.remove, pressed && styles.pressed]}>
@@ -30,16 +32,16 @@ function CardEditor({ cardKey, index, question, answer, autoFocus, onChange, onR
         </Pressable>
       </View>
       <FormField
-        label="Question"
-        accessibilityLabel={`Question for card ${index}`}
+        label={t('editDeck.cardEditor.questionLabel')}
+        accessibilityLabel={t('editDeck.cardEditor.questionA11yLabel', { number: index })}
         value={question}
         onChangeText={text => onChange(cardKey, 'question', text)}
         autoFocus={autoFocus}
         multiline
       />
       <FormField
-        label="Answer"
-        accessibilityLabel={`Answer for card ${index}`}
+        label={t('editDeck.cardEditor.answerLabel')}
+        accessibilityLabel={t('editDeck.cardEditor.answerA11yLabel', { number: index })}
         value={answer}
         onChangeText={text => onChange(cardKey, 'answer', text)}
         multiline

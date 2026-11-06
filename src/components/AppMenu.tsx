@@ -3,6 +3,7 @@ import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text } from 'react-nat
 import Button from './Button';
 import KebabMenu from './KebabMenu';
 import type { MenuItem } from './MenuSheet';
+import { useT } from '../i18n/I18nProvider';
 import { exportSampleDeck } from '../services/exportSampleDeck';
 import { colors, radius, spacing } from '../theme';
 import { describeSampleDeckExport } from '../utils/sampleDeck';
@@ -14,6 +15,7 @@ type Props = {
 };
 
 export default function AppMenu({ variant, extraItems = [] }: Props) {
+  const t = useT();
   const [isExportVisible, setIsExportVisible] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const exportInFlight = useRef(false);
@@ -27,7 +29,7 @@ export default function AppMenu({ variant, extraItems = [] }: Props) {
     setIsExporting(true);
     try {
       const outcomes = await exportSampleDeck();
-      const alert = describeSampleDeckExport(outcomes);
+      const alert = describeSampleDeckExport(outcomes, t);
       if (alert === null) {
         return;
       }
@@ -39,24 +41,25 @@ export default function AppMenu({ variant, extraItems = [] }: Props) {
       exportInFlight.current = false;
       setIsExporting(false);
     }
-  }, []);
+  }, [t]);
 
   return (
     <>
       <KebabMenu
-        accessibilityLabel="App menu"
+        accessibilityLabel={t('shell.appMenu.triggerA11yLabel')}
         variant={variant}
         items={[
           ...extraItems,
           {
-            label: 'Export sample deck',
+            label: t('shell.appMenu.exportSampleDeckItem'),
             icon: 'export',
             onPress: () => setIsExportVisible(true),
           },
           {
-            label: 'Settings',
+            label: t('shell.appMenu.settingsItem'),
             icon: 'settings',
-            onPress: () => Alert.alert('Settings', 'Settings are not available yet.'),
+            onPress: () =>
+              Alert.alert(t('shell.settingsAlert.title'), t('shell.settingsAlert.message')),
           },
         ]}
       />
@@ -68,30 +71,18 @@ export default function AppMenu({ variant, extraItems = [] }: Props) {
         onRequestClose={() => setIsExportVisible(false)}>
         <Pressable style={styles.backdrop} onPress={() => setIsExportVisible(false)}>
           <Pressable style={styles.dialog}>
-            <Text style={styles.title}>Export sample deck</Text>
+            <Text style={styles.title}>{t('shell.exportSampleDeckDialog.title')}</Text>
             <ScrollView>
-              <Text style={styles.body}>
-                This saves the same sample deck as two files, CSV and JSON. You are asked where to
-                save each one and can cancel either to skip it.
-                {'\n\n'}
-                CSV: lines starting with # (title, description, category) are skipped on import,
-                then a {'"question"'} / {'"answer"'} header and one card per row, separated here by
-                semicolons (a comma, a tab or another single symbol also works).
-                {'\n\n'}
-                JSON: also brings back the title, description and category.
-                {'\n\n'}
-                Basic HTML such as {'<b>'}, {'<i>'} and {'<br />'} is allowed on either side of a
-                card.
-              </Text>
+              <Text style={styles.body}>{t('shell.exportSampleDeckDialog.body')}</Text>
             </ScrollView>
             <Button
-              label="Export"
+              label={t('common.actions.export')}
               onPress={handleExport}
               loading={isExporting}
               disabled={isExporting}
             />
             <Button
-              label="Cancel"
+              label={t('common.actions.cancel')}
               variant="secondary"
               onPress={() => setIsExportVisible(false)}
               disabled={isExporting}

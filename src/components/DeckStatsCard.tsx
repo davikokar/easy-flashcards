@@ -2,6 +2,7 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import CategorySquare from './CategorySquare';
 import MasteryBar from './MasteryBar';
+import { useT } from '../i18n/I18nProvider';
 import type { AnswerShares, Category } from '../types';
 import { describeAnswerShares, formatDate } from '../utils/stats';
 import { colors, radius, spacing } from '../theme';
@@ -21,8 +22,6 @@ type Props = {
   onPress: () => void;
 };
 
-const plural = (n: number, noun: string) => `${n} ${noun}${n === 1 ? '' : 's'}`;
-
 const LABEL_LINE_HEIGHT = 14;
 const VALUE_LINE_HEIGHT = 18;
 
@@ -36,16 +35,21 @@ export default function DeckStatsCard({
   lastSessionAt,
   onPress,
 }: Props) {
-  const last = formatDate(lastSessionAt);
+  const t = useT();
+  const last = formatDate(lastSessionAt, t);
 
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${name}: ${describeAnswerShares(shares)}, ${plural(
-        cardCount,
-        'card',
-      )}, ${plural(sessionCount, 'session')}, ${plural(reviewCount, 'review')}, last ${last}`}
-      accessibilityHint="Opens per-card details"
+      accessibilityLabel={t('stats.deckStatsCard.summaryA11yLabel', {
+        name,
+        shares: describeAnswerShares(shares, t),
+        cards: t('common.counts.cards', { count: cardCount }),
+        sessions: t('common.counts.sessions', { count: sessionCount }),
+        reviews: t('common.counts.reviews', { count: reviewCount }),
+        last,
+      })}
+      accessibilityHint={t('stats.deckStatsCard.openA11yHint')}
       onPress={onPress}
       style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
       <View style={styles.header}>
@@ -59,10 +63,10 @@ export default function DeckStatsCard({
       <MasteryBar shares={shares} />
 
       <View style={styles.grid}>
-        <Stat label="Cards" value={String(cardCount)} />
-        <Stat label="Sessions" value={String(sessionCount)} />
-        <Stat label="Reviews" value={String(reviewCount)} />
-        <Stat label="Last" value={last} wide />
+        <Stat label={t('stats.deckStatsCard.cardsLabel')} value={String(cardCount)} />
+        <Stat label={t('stats.deckStatsCard.sessionsLabel')} value={String(sessionCount)} />
+        <Stat label={t('stats.deckStatsCard.reviewsLabel')} value={String(reviewCount)} />
+        <Stat label={t('stats.deckStatsCard.lastLabel')} value={last} wide />
       </View>
     </Pressable>
   );

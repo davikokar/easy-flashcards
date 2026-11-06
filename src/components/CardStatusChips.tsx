@@ -1,24 +1,12 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useT } from '../i18n/I18nProvider';
 import type { CardStatus } from '../types';
 import { colors, radius, spacing } from '../theme';
 
 export type CardStatusFilter = 'all' | CardStatus;
 
-export const CARD_STATUS_LABELS: Record<CardStatus, string> = {
-  needsReview: 'Needs review',
-  learning: 'Learning',
-  mastered: 'Mastered',
-  new: 'New',
-};
-
-const OPTIONS: { value: CardStatusFilter; label: string }[] = [
-  { value: 'all', label: 'All' },
-  { value: 'needsReview', label: CARD_STATUS_LABELS.needsReview },
-  { value: 'learning', label: CARD_STATUS_LABELS.learning },
-  { value: 'mastered', label: CARD_STATUS_LABELS.mastered },
-  { value: 'new', label: CARD_STATUS_LABELS.new },
-];
+const OPTIONS: CardStatusFilter[] = ['all', 'needsReview', 'learning', 'mastered', 'new'];
 
 type Props = {
   value: CardStatusFilter;
@@ -29,25 +17,28 @@ type Props = {
   onChange: (value: CardStatusFilter) => void;
 };
 
-const plural = (n: number) => `${n} ${n === 1 ? 'card' : 'cards'}`;
-
 export default function CardStatusChips({ value, counts, total, onChange }: Props) {
+  const t = useT();
   return (
     // importantForAccessibility keeps the label's node in the tree; a bare container can be pruned.
     <View
       accessibilityRole="radiogroup"
-      accessibilityLabel="Card status"
+      accessibilityLabel={t('deckStats.cardStatusChips.groupA11yLabel')}
       importantForAccessibility="yes"
       style={styles.row}>
-      {OPTIONS.map(({ value: option, label }) => {
+      {OPTIONS.map(option => {
         const selected = option === value;
         const count = option === 'all' ? total : counts[option];
+        const label =
+          option === 'all'
+            ? t('deckStats.cardStatusChips.allChip')
+            : t(`answers.cardStatus.${option}`);
         return (
           // The Pressable is the 48-point touch target; the pill inside it is the visible chip.
           <Pressable
             key={option}
             accessibilityRole="radio"
-            accessibilityLabel={`${label}, ${plural(count)}`}
+            accessibilityLabel={t('deckStats.cardStatusChips.chipA11yLabel', { label, count })}
             accessibilityState={{ checked: selected, selected }}
             onPress={() => onChange(option)}
             style={styles.target}>
@@ -58,7 +49,7 @@ export default function CardStatusChips({ value, counts, total, onChange }: Prop
                   maxFontSizeMultiplier={1.3}
                   numberOfLines={1}
                   style={[styles.label, selected && styles.labelSelected]}>
-                  {`${label} (${count})`}
+                  {t('deckStats.cardStatusChips.chipLabel', { label, count })}
                 </Text>
               </View>
             )}

@@ -2,7 +2,9 @@ import React from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Button from './Button';
 import CategoryTile from './CategoryTile';
+import { useT } from '../i18n/I18nProvider';
 import type { Category } from '../types';
+import { categoryDisplayName } from '../utils/categories';
 import { colors, radius, spacing } from '../theme';
 
 type Props = {
@@ -25,6 +27,7 @@ export default function CategoryPicker({
   onSelect,
   onClose,
 }: Props) {
+  const t = useT();
   const pick = (id: string | null) => {
     onSelect(id);
     onClose();
@@ -36,18 +39,18 @@ export default function CategoryPicker({
         {/* A Pressable of its own, so a press inside the dialog does not reach the backdrop. */}
         <Pressable style={styles.dialog} accessibilityViewIsModal>
           <Text style={styles.title} accessibilityRole="header">
-            Category
+            {t('editDeck.categoryPicker.title')}
           </Text>
           <ScrollView>
             <View
               accessibilityRole="radiogroup"
-              accessibilityLabel="Category picker"
+              accessibilityLabel={t('editDeck.categoryPicker.groupA11yLabel')}
               style={styles.grid}>
               <View style={styles.cell}>
                 <CategoryTile
                   none
-                  name="No category"
-                  accessibilityLabel="No category"
+                  name={t('editDeck.categoryPicker.noneTile')}
+                  accessibilityLabel={t('editDeck.categoryPicker.noneTile')}
                   selected={selectedId === null}
                   onPress={() => pick(null)}
                 />
@@ -55,7 +58,7 @@ export default function CategoryPicker({
               {categories.map(category => (
                 <View key={category.id} style={styles.cell}>
                   <CategoryTile
-                    name={category.name}
+                    name={categoryDisplayName(category, t)}
                     color={category.color}
                     icon={category.icon}
                     selected={category.id === selectedId}
@@ -65,7 +68,7 @@ export default function CategoryPicker({
               ))}
             </View>
           </ScrollView>
-          <Button label="Cancel" variant="secondary" onPress={onClose} />
+          <Button label={t('common.actions.cancel')} variant="secondary" onPress={onClose} />
         </Pressable>
       </Pressable>
     </Modal>

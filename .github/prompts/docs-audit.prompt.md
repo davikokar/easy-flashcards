@@ -50,7 +50,8 @@ Verify, do not assume. Particular things worth checking:
 - Does `AGENTS.md`'s tech stack match `package.json`'s actual dependencies — both directions, a
   dependency present but undocumented as well as one documented but removed?
 - Does `ARCHITECTURE.md` §3's file list match what is actually in `src/utils/`, `src/storage/`,
-  `src/services/` and `src/components/`?
+  `src/services/` and `src/components/`, and its descriptions of `src/locales/` and `src/i18n/`
+  match those folders?
 - Does the navigator tree in §4 match `src/navigation/RootNavigator.tsx` route for route, and the
   param lists in `src/navigation/types.ts`?
 - Does §2's list of store actions match the reducer's `switch`, and the exposed API match
@@ -58,7 +59,10 @@ Verify, do not assume. Particular things worth checking:
 - Does the storage-key table match the keys in `src/storage/`?
 - Does every screen, component, control and label named in the UI vocabulary still exist under
   that name and with that string? The vocabulary quotes real labels; a renamed button makes it
-  wrong.
+  wrong. A label is not in the component: follow the key the component passes to `t(...)` and
+  check the vocabulary against the English message under `src/locales/en/`. A literal still in a
+  component is a finding too
+  ([ADR-0020](../../docs/architecture/decisions/0020-ui-text-translated-through-typed-catalogue.md)).
 - Do the test conventions match what `__tests__/` actually does, and what `jest.config.js`
   configures? In particular: is the claim that there are **no component tests** still true?
 - Does `README.md` describe the app that exists? It is known to describe two tabs; check whether

@@ -4,6 +4,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Defs, G, Line, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 import { AnswerIcon } from './AnswerIcons';
 import { ANSWER_SEGMENTS } from './MasteryTrack';
+import { useT } from '../i18n/I18nProvider';
 import type { SessionHistoryEntry } from '../types';
 import {
   HISTORY_CHART_INSETS,
@@ -49,11 +50,15 @@ function gradientId(key: HistoryAnswerKey): string {
 }
 
 export default function SessionHistoryChart({ entries, sessionCount }: Props) {
+  const t = useT();
   const [width, setWidth] = useState(0);
   const subtitle =
     sessionCount > entries.length
-      ? `Latest ${entries.length} of ${sessionCount}`
-      : `${sessionCount} ${sessionCount === 1 ? 'session' : 'sessions'}`;
+      ? t('deckStats.sessionHistoryChart.subtitleLatest', {
+          shown: entries.length,
+          total: sessionCount,
+        })
+      : t('common.counts.sessions', { count: sessionCount });
 
   const geometry = useMemo(
     () =>
@@ -75,16 +80,16 @@ export default function SessionHistoryChart({ entries, sessionCount }: Props) {
     <View style={styles.card}>
       <View style={styles.header}>
         <Text accessibilityRole="header" style={styles.title}>
-          Session history
+          {t('deckStats.sessionHistoryChart.title')}
         </Text>
         <Text style={styles.subtitle}>{subtitle}</Text>
       </View>
 
       {entries.length === 0 ? (
         <View style={styles.empty}>
-          <Text style={styles.emptyTitle}>No sessions for this deck</Text>
+          <Text style={styles.emptyTitle}>{t('deckStats.sessionHistoryChart.empty.title')}</Text>
           <Text style={styles.emptyMessage}>
-            Start one from the Decks tab and its results will show here.
+            {t('deckStats.sessionHistoryChart.empty.message')}
           </Text>
         </View>
       ) : (
@@ -105,12 +110,12 @@ export default function SessionHistoryChart({ entries, sessionCount }: Props) {
               <View style={styles.legendItem}>
                 <View style={styles.swatch} />
                 <Text maxFontSizeMultiplier={1.3} style={styles.legendText}>
-                  Unanswered
+                  {t('deckStats.sessionHistoryChart.unansweredLegend')}
                 </Text>
               </View>
             ) : null}
             <Text maxFontSizeMultiplier={1.3} style={styles.legendNote}>
-              % of each session's cards
+              {t('deckStats.sessionHistoryChart.legendNote')}
             </Text>
           </View>
 
@@ -302,20 +307,29 @@ function ChartPlot({
 }
 
 function SessionLabel({ entry, latest }: { entry: SessionHistoryEntry; latest: boolean }) {
+  const t = useT();
   const { tally, rate, cardCount, startedAt } = entry;
   const answered = tally.okCount + tally.okeishCount + tally.notOkCount;
-  const rateText = rate === null ? 'no answers yet' : formatRate(rate);
+  const values = {
+    count: cardCount,
+    date: formatDate(startedAt, t),
+    answered,
+    ok: tally.okCount,
+    okeish: tally.okeishCount,
+    notOk: tally.notOkCount,
+  };
+  const label =
+    rate === null
+      ? t('deckStats.sessionHistoryChart.sessionNoAnswersA11yLabel', values)
+      : t('deckStats.sessionHistoryChart.sessionA11yLabel', { ...values, rate: formatRate(rate) });
 
   return (
-    <View
-      accessible
-      accessibilityLabel={`Session on ${formatDate(startedAt)}: success rate ${rateText}, ${answered} of ${cardCount} cards answered — ${tally.okCount} ok, ${tally.okeishCount} okeish, ${tally.notOkCount} not ok`}
-      style={styles.label}>
+    <View accessible accessibilityLabel={label} style={styles.label}>
       <Text
         maxFontSizeMultiplier={1.3}
         numberOfLines={1}
         style={[styles.labelDate, latest && styles.labelLatest]}>
-        {formatShortDate(startedAt)}
+        {formatShortDate(startedAt, t)}
       </Text>
       <Text
         maxFontSizeMultiplier={1.3}

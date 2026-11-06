@@ -79,7 +79,7 @@ function assertNotNewerVersion(comments: Map<string, string>): void {
   const version = comments.get('version') ?? '';
   if (comments.get('format') === DECK_FILE_FORMAT && /^\d+$/.test(version)) {
     if (Number(version) > DECK_FILE_VERSION) {
-      throw new DeckImportError(NEWER_VERSION_MESSAGE);
+      throw new DeckImportError('newerVersion', NEWER_VERSION_MESSAGE);
     }
   }
 }
@@ -92,7 +92,7 @@ function assertNotNewerVersion(comments: Map<string, string>): void {
 export function parseFlashcardsCsv(raw: string): ParsedCsv {
   const text = stripBom(raw).replace(/\r\n?/g, '\n');
   if (text.trim().length === 0) {
-    throw new DeckImportError(EMPTY_FILE_MESSAGE);
+    throw new DeckImportError('emptyFile', EMPTY_FILE_MESSAGE);
   }
 
   const lines = text.split('\n');
@@ -102,7 +102,7 @@ export function parseFlashcardsCsv(raw: string): ParsedCsv {
 
   const delimiter = headerIndex < 0 ? null : findSeparator(lines[headerIndex]);
   if (delimiter === null) {
-    throw new DeckImportError(NO_HEADER_MESSAGE);
+    throw new DeckImportError('noHeader', NO_HEADER_MESSAGE);
   }
 
   const result = Papa.parse<Record<string, string | undefined>>(
@@ -132,7 +132,10 @@ export function parseFlashcardsCsv(raw: string): ParsedCsv {
   }
 
   if (cards.length === 0) {
-    throw new DeckImportError('No usable rows found. Every row needs a question and an answer.');
+    throw new DeckImportError(
+      'noUsableRows',
+      'No usable rows found. Every row needs a question and an answer.',
+    );
   }
 
   return {
@@ -145,10 +148,11 @@ export function parseFlashcardsCsv(raw: string): ParsedCsv {
   };
 }
 
-export function deckNameFromFileName(fileName: string | null | undefined): string {
+/** Null when the file name gives nothing usable; the screen then names the deck with its translated default. */
+export function deckNameFromFileName(fileName: string | null | undefined): string | null {
   if (!fileName) {
-    return 'Imported deck';
+    return null;
   }
   const withoutExtension = fileName.replace(/\.[^.]+$/, '').trim();
-  return withoutExtension.length > 0 ? withoutExtension : 'Imported deck';
+  return withoutExtension.length > 0 ? withoutExtension : null;
 }

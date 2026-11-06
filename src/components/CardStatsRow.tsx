@@ -1,9 +1,9 @@
 import React, { memo, useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { AnswerIcon } from './AnswerIcons';
-import { CARD_STATUS_LABELS } from './CardStatusChips';
 import MasteryTrack, { ANSWER_SEGMENTS } from './MasteryTrack';
 import RichText from './RichText';
+import { useT } from '../i18n/I18nProvider';
 import type { Card, CardStatus } from '../types';
 import { htmlToPlainText } from '../utils/html';
 import {
@@ -36,6 +36,7 @@ const BADGES: Record<CardStatus, { icon: 'tick' | 'question' | 'cross' | null; c
 };
 
 function CardStatsRow({ card, lastAnsweredAt }: Props) {
+  const t = useT();
   const reviews = cardReviewCount(card);
   const rate = successRate(card.okCount, card.okeishCount, card.notOkCount);
   const shares = answerShares({
@@ -48,30 +49,43 @@ function CardStatsRow({ card, lastAnsweredAt }: Props) {
   const question = useMemo(() => htmlToPlainText(card.question), [card.question]);
   const answer = useMemo(() => htmlToPlainText(card.answer), [card.answer]);
 
-  const reviewsText = `${reviews} ${reviews === 1 ? 'review' : 'reviews'}`;
-  const reviewedShort = lastAnsweredAt === null ? null : formatShortDate(lastAnsweredAt);
+  const reviewedShort = lastAnsweredAt === null ? null : formatShortDate(lastAnsweredAt, t);
   const footerText =
     reviews === 0
-      ? 'Never reviewed'
+      ? t('deckStats.cardStatsRow.footerNeverReviewed')
       : reviewedShort === null
-      ? reviewsText
-      : `${reviewsText} · Reviewed ${reviewedShort}`;
+      ? t('common.counts.reviews', { count: reviews })
+      : t('deckStats.cardStatsRow.footerReviewed', { count: reviews, date: reviewedShort });
 
-  const statusLabel = CARD_STATUS_LABELS[status];
-  const spoken =
-    reviews === 0
-      ? `${statusLabel}. Never reviewed.`
-      : `${statusLabel}, success rate ${formatRate(rate)}. ${reviewsText}: ${card.okCount} ok, ${
-          card.okeishCount
-        } okeish, ${card.notOkCount} not ok.${
-          lastAnsweredAt === null ? '' : ` Reviewed ${formatDate(lastAnsweredAt)}.`
-        }`;
+  const statusLabel = t(`answers.cardStatus.${status}`);
+  const tallyValues = {
+    count: reviews,
+    question,
+    answer,
+    status: statusLabel,
+    rate: formatRate(rate),
+    ok: card.okCount,
+    okeish: card.okeishCount,
+    notOk: card.notOkCount,
+  };
+  let label: string;
+  if (reviews === 0) {
+    label = t('deckStats.cardStatsRow.neverReviewedA11yLabel', {
+      question,
+      answer,
+      status: statusLabel,
+    });
+  } else if (lastAnsweredAt === null) {
+    label = t('deckStats.cardStatsRow.reviewedA11yLabel', tallyValues);
+  } else {
+    label = t('deckStats.cardStatsRow.reviewedOnA11yLabel', {
+      ...tallyValues,
+      date: formatDate(lastAnsweredAt, t),
+    });
+  }
 
   return (
-    <View
-      accessible
-      accessibilityLabel={`Question: ${question}. Answer: ${answer}. ${spoken}`}
-      style={styles.card}>
+    <View accessible accessibilityLabel={label} style={styles.card}>
       <View style={styles.topRow}>
         <View style={styles.question}>
           <RichText html={card.question} style={styles.questionText} numberOfLines={2} />
@@ -108,6 +122,7 @@ function CardStatsRow({ card, lastAnsweredAt }: Props) {
 
 // The row's label says the status, so the badge itself is hidden from accessibility.
 function StatusBadge({ status }: { status: CardStatus }) {
+  const t = useT();
   const { icon, color } = BADGES[status];
   return (
     <View
@@ -124,7 +139,7 @@ function StatusBadge({ status }: { status: CardStatus }) {
         maxFontSizeMultiplier={1.3}
         numberOfLines={1}
         style={[styles.badgeText, color !== null && { color }]}>
-        {CARD_STATUS_LABELS[status]}
+        {t(`answers.cardStatus.${status}`)}
       </Text>
     </View>
   );

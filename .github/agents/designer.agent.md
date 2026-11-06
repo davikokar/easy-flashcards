@@ -68,9 +68,14 @@ You are a subagent and start with no memory of earlier phases. Spend the time to
   the child that draws it. This is both accessibility and the only way a control could ever be
   found by a test. The app has **no `testID`s**; if a label is too vague to identify a control by,
   the label is what to fix.
-- **The app is English-only** with no i18n layer. Strings are literals in the component. Write them
-  in sentence case and keep them short; a label that needs a second line usually means the
-  interaction is wrong.
+- **UI text is a catalogue message, never a literal in the component**
+  ([ADR-0020](../../docs/architecture/decisions/0020-ui-text-translated-through-typed-catalogue.md)).
+  English is the source, under `src/locales/en/`, and the device's language is shown when the
+  app has it. Follow ADR-0020's contract for keys, placeholders and plurals, and `AGENTS.md`
+  *Strings and formatting* for which file a message goes in. Write English in sentence case and
+  keep it short; a label that needs a second line usually means the interaction is wrong, and a
+  translation is often a third longer. A sentence is one message with placeholders — never join
+  fragments.
 - **Switching tab is not navigation into a hierarchy.** The tabs are peers with independent
   stacks, and the Study screen is a route inside the Learn stack. A design that assumes a global
   back stack will not work.

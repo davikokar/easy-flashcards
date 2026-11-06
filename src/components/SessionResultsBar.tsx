@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { AnswerShares, AnswerTally } from '../types';
+import { useT } from '../i18n/I18nProvider';
 import { colors, radius, spacing } from '../theme';
 import { AnswerIcon } from './AnswerIcons';
 
@@ -12,21 +13,27 @@ type Props = {
 };
 
 const SEGMENTS = [
-  { key: 'ok', count: 'okCount', label: 'ok', icon: 'tick', color: colors.success },
-  { key: 'okeish', count: 'okeishCount', label: 'okeish', icon: 'question', color: colors.warning },
-  { key: 'notOk', count: 'notOkCount', label: 'not ok', icon: 'cross', color: colors.danger },
+  { key: 'ok', count: 'okCount', icon: 'tick', color: colors.success },
+  { key: 'okeish', count: 'okeishCount', icon: 'question', color: colors.warning },
+  { key: 'notOk', count: 'notOkCount', icon: 'cross', color: colors.danger },
 ] as const;
 
 const LEGEND_ICON_SIZE = 16;
 
 export default function SessionResultsBar({ shares, tally, cardCount }: Props) {
+  const t = useT();
   const answered = tally.okCount + tally.okeishCount + tally.notOkCount;
-  const summary = SEGMENTS.map(s => `${tally[s.count]} ${s.label}`).join(', ');
 
   return (
     <View
       accessible
-      accessibilityLabel={`Progress: ${answered} of ${cardCount} answered \u2014 ${summary}`}
+      accessibilityLabel={t('learn.sessionResultsBar.progressA11yLabel', {
+        answered,
+        cardCount,
+        ok: tally.okCount,
+        okeish: tally.okeishCount,
+        notOk: tally.notOkCount,
+      })}
       style={styles.container}>
       <View style={styles.track}>
         {SEGMENTS.filter(s => shares[s.key] > 0).map(s => (

@@ -4,10 +4,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import Button from '../components/Button';
 import CardSearchField from '../components/CardSearchField';
 import CardStatsRow from '../components/CardStatsRow';
-import CardStatusChips, {
-  CARD_STATUS_LABELS,
-  type CardStatusFilter,
-} from '../components/CardStatusChips';
+import CardStatusChips, { type CardStatusFilter } from '../components/CardStatusChips';
 import DeckIdentityRow from '../components/DeckIdentityRow';
 import DeckMasteryCard from '../components/DeckMasteryCard';
 import EmptyState from '../components/EmptyState';
@@ -15,9 +12,10 @@ import KebabMenu from '../components/KebabMenu';
 import MenuIcon from '../components/MenuIcons';
 import MenuSheet from '../components/MenuSheet';
 import SessionHistoryChart, { SESSION_HISTORY_LIMIT } from '../components/SessionHistoryChart';
+import { useT } from '../i18n/I18nProvider';
 import { useDecks } from '../state/DecksContext';
 import { StatsStackParamList } from '../navigation/types';
-import type { CardSortOrder, CardStatus } from '../types';
+import type { CardSortOrder } from '../types';
 import { findCategory } from '../utils/categories';
 import { cardSearchText, filterByTitle } from '../utils/search';
 import {
@@ -37,21 +35,11 @@ type Props = NativeStackScreenProps<StatsStackParamList, 'DeckStats'>;
 
 const renderSortIcon = (color: string) => <MenuIcon name="sort" color={color} />;
 
-const SORT_OPTIONS: { value: CardSortOrder; label: string }[] = [
-  { value: 'hardest', label: 'Hardest first' },
-  { value: 'deck', label: 'Deck order' },
-  { value: 'recent', label: 'Recently reviewed' },
-];
-
-const STATUS_EMPTY: Record<CardStatus, { title: string; message: string }> = {
-  needsReview: { title: 'No cards need review', message: 'No card is below 40% success.' },
-  learning: { title: 'No cards are learning', message: 'No card is between 40% and 70% success.' },
-  mastered: { title: 'No mastered cards yet', message: 'A card is mastered at 70% success or more.' },
-  new: { title: 'No new cards', message: 'Every card has been reviewed at least once.' },
-};
+const SORT_ORDERS: CardSortOrder[] = ['hardest', 'deck', 'recent'];
 
 export default function DeckStatsScreen({ route, navigation }: Props) {
   const { deckId } = route.params;
+  const t = useT();
   const { getDeck, sessions, categories, resetDeckStats } = useDecks();
   const deck = getDeck(deckId);
   const deckName = deck?.name;
@@ -64,33 +52,45 @@ export default function DeckStatsScreen({ route, navigation }: Props) {
 
   const confirmReset = useCallback(() => {
     Alert.alert(
-      'Reset statistics',
-      `Clear all recorded results and sessions for "${deckName}"?`,
+      t('deckStats.deckStatsScreen.resetAlert.title'),
+      t('deckStats.deckStatsScreen.resetAlert.message', { deckName: deckName ?? '' }),
       [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Reset', style: 'destructive', onPress: () => resetDeckStats(deckId) },
+        { text: t('common.actions.cancel'), style: 'cancel' },
+        {
+          text: t('common.actions.reset'),
+          style: 'destructive',
+          onPress: () => resetDeckStats(deckId),
+        },
       ],
     );
-  }, [deckName, deckId, resetDeckStats]);
+  }, [deckName, deckId, resetDeckStats, t]);
 
   const headerMenu = useMemo(
     () =>
       deckName === undefined ? null : (
         <KebabMenu
           variant="plain"
-          accessibilityLabel={`Options for ${deckName} statistics`}
+          accessibilityLabel={t('deckStats.deckStatsScreen.optionsA11yLabel', { deckName })}
           title={deckName}
           items={[
-            { label: 'Reset statistics', icon: 'delete', destructive: true, onPress: confirmReset },
+            {
+              label: t('deckStats.deckStatsScreen.resetStatisticsMenuItem'),
+              icon: 'delete',
+              destructive: true,
+              onPress: confirmReset,
+            },
           ]}
         />
       ),
-    [deckName, confirmReset],
+    [deckName, confirmReset, t],
   );
 
   useLayoutEffect(() => {
-    navigation.setOptions({ title: deckName ?? 'Deck statistics', headerRight: () => headerMenu });
-  }, [navigation, deckName, headerMenu]);
+    navigation.setOptions({
+      title: deckName ?? t('navigation.headers.deckStats'),
+      headerRight: () => headerMenu,
+    });
+  }, [navigation, deckName, headerMenu, t]);
 
   const overview = useMemo(() => {
     if (!deck) {
@@ -121,9 +121,9 @@ export default function DeckStatsScreen({ route, navigation }: Props) {
     return (
       <View style={styles.container}>
         <EmptyState
-          title="Deck not found"
-          message="This deck has been deleted."
-          actionLabel="Back"
+          title={t('deckStats.deckStatsScreen.notFound.title')}
+          message={t('deckStats.deckStatsScreen.notFound.message')}
+          actionLabel={t('common.actions.back')}
           onAction={() => navigation.goBack()}
         />
       </View>
@@ -133,37 +133,47 @@ export default function DeckStatsScreen({ route, navigation }: Props) {
   const { stats, shares, sessionSummary, rateChange, history, lastAnsweredAt, statusCounts } =
     overview;
   const cardCount = deck.cards.length;
-  const sortLabel = SORT_OPTIONS.find(option => option.value === sort)?.label ?? '';
+  const sortLabel = t(`answers.sortOrders.${sort}`);
   const isNarrowed = visibleCards.length !== cardCount;
-  const countText = `${cardCount} ${cardCount === 1 ? 'card' : 'cards'}`;
-  const subtitle = `${
-    isNarrowed ? `${visibleCards.length} of ${cardCount} cards` : countText
-  } · ${sortLabel}`;
+  const subtitle = isNarrowed
+    ? t('deckStats.deckStatsScreen.subtitleNarrowed', {
+        count: cardCount,
+        shown: visibleCards.length,
+        sort: sortLabel,
+      })
+    : t('deckStats.deckStatsScreen.subtitle', { count: cardCount, sort: sortLabel });
 
   let emptyState: React.ReactElement;
   if (cardCount === 0) {
     emptyState = (
       <EmptyState
-        title="No cards yet"
-        message="Add cards to this deck to see how each one performs."
+        title={t('deckStats.deckStatsScreen.noCards.title')}
+        message={t('deckStats.deckStatsScreen.noCards.message')}
       />
     );
   } else if (status !== 'all' && statusCounts[status] === 0) {
     emptyState = (
       <EmptyState
-        title={STATUS_EMPTY[status].title}
-        message={STATUS_EMPTY[status].message}
-        actionLabel="Show all cards"
+        title={t(`deckStats.deckStatsScreen.statusEmpty.${status}.title`)}
+        message={t(`deckStats.deckStatsScreen.statusEmpty.${status}.message`)}
+        actionLabel={t('deckStats.deckStatsScreen.showAllCardsButton')}
         onAction={() => setStatus('all')}
       />
     );
   } else {
-    const filterNote = status === 'all' ? '' : ` with the ${CARD_STATUS_LABELS[status]} filter`;
+    const trimmedQuery = query.trim();
     emptyState = (
       <EmptyState
-        title="No matches"
-        message={`Nothing matches "${query.trim()}"${filterNote}.`}
-        actionLabel="Clear search"
+        title={t('common.search.noMatchesTitle')}
+        message={
+          status === 'all'
+            ? t('common.search.noMatchesMessage', { query: trimmedQuery })
+            : t('deckStats.deckStatsScreen.noMatches.filteredMessage', {
+                query: trimmedQuery,
+                status: t(`answers.cardStatus.${status}`),
+              })
+        }
+        actionLabel={t('common.search.clearSearchButton')}
         onAction={() => setQuery('')}
       />
     );
@@ -190,7 +200,7 @@ export default function DeckStatsScreen({ route, navigation }: Props) {
         <View style={styles.sectionHeader}>
           <View style={styles.sectionTitles}>
             <Text accessibilityRole="header" style={styles.sectionTitle}>
-              Card performance
+              {t('deckStats.deckStatsScreen.cardPerformanceTitle')}
             </Text>
             <Text
               accessibilityLiveRegion={isNarrowed ? 'polite' : 'none'}
@@ -201,7 +211,9 @@ export default function DeckStatsScreen({ route, navigation }: Props) {
           {cardCount === 0 ? null : (
             <Button
               variant="secondary"
-              accessibilityLabel={`Sort cards: ${sortLabel}`}
+              accessibilityLabel={t('deckStats.deckStatsScreen.sortButtonA11yLabel', {
+                sort: sortLabel,
+              })}
               icon={renderSortIcon}
               onPress={() => setSortOpen(true)}
             />
@@ -237,11 +249,11 @@ export default function DeckStatsScreen({ route, navigation }: Props) {
       />
       <MenuSheet
         visible={sortOpen}
-        title="Sort cards"
-        items={SORT_OPTIONS.map(option => ({
-          label: option.label,
-          selected: option.value === sort,
-          onPress: () => setSort(option.value),
+        title={t('deckStats.deckStatsScreen.sortSheetTitle')}
+        items={SORT_ORDERS.map(order => ({
+          label: t(`answers.sortOrders.${order}`),
+          selected: order === sort,
+          onPress: () => setSort(order),
         }))}
         onClose={() => setSortOpen(false)}
       />

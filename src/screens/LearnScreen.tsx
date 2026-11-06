@@ -7,6 +7,7 @@ import EmptyState from '../components/EmptyState';
 import HeaderToolbar from '../components/HeaderToolbar';
 import SearchBar from '../components/SearchBar';
 import SessionCard from '../components/SessionCard';
+import { useT } from '../i18n/I18nProvider';
 import { useDecks } from '../state/DecksContext';
 import { LearnStackParamList, RootTabParamList } from '../navigation/types';
 import { Category, Session } from '../types';
@@ -30,9 +31,6 @@ type Props = CompositeScreenProps<
   BottomTabScreenProps<RootTabParamList>
 >;
 
-const showDeckUnavailable = () =>
-  Alert.alert('Deck unavailable', 'This deck no longer exists or has no cards.');
-
 export default function LearnScreen({ navigation }: Props) {
   const {
     sessions,
@@ -43,6 +41,7 @@ export default function LearnScreen({ navigation }: Props) {
     clearSession,
     clearCompletedSessions,
   } = useDecks();
+  const t = useT();
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState('');
   const ordered = useMemo(() => sortSessions(listedSessions(sessions)), [sessions]);
@@ -82,30 +81,35 @@ export default function LearnScreen({ navigation }: Props) {
 
   const confirmClearCompleted = useCallback(() => {
     if (clearableCount === 0) {
-      Alert.alert('Clear completed sessions', 'No completed sessions to clear.');
+      Alert.alert(
+        t('learn.clearCompletedSessionsAlert.title'),
+        t('learn.clearCompletedSessionsAlert.nothingToClear'),
+      );
       return;
     }
     Alert.alert(
-      'Clear completed sessions',
-      `Remove ${clearableCount} completed session${
-        clearableCount === 1 ? '' : 's'
-      } from this list? Their results stay in Statistics.`,
+      t('learn.clearCompletedSessionsAlert.title'),
+      t('learn.clearCompletedSessionsAlert.message', { count: clearableCount }),
       [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Clear', style: 'destructive', onPress: clearCompletedSessions },
+        { text: t('common.actions.cancel'), style: 'cancel' },
+        {
+          text: t('common.actions.clear'),
+          style: 'destructive',
+          onPress: clearCompletedSessions,
+        },
       ],
     );
-  }, [clearableCount, clearCompletedSessions]);
+  }, [clearableCount, clearCompletedSessions, t]);
 
   const toolbar = useMemo(
     () => (
       <HeaderToolbar
         onSearch={toggleSearch}
         searchActive={searchOpen}
-        searchLabel="Search sessions"
+        searchLabel={t('learn.learnScreen.searchA11yLabel')}
         menuItems={[
           {
-            label: 'Clear completed sessions',
+            label: t('learn.headerToolbar.clearCompletedItem'),
             icon: 'delete',
             destructive: true,
             onPress: confirmClearCompleted,
@@ -113,7 +117,7 @@ export default function LearnScreen({ navigation }: Props) {
         ]}
       />
     ),
-    [toggleSearch, searchOpen, confirmClearCompleted],
+    [toggleSearch, searchOpen, confirmClearCompleted, t],
   );
 
   useLayoutEffect(() => {
@@ -128,25 +132,33 @@ export default function LearnScreen({ navigation }: Props) {
     (session: Session) => {
       if (isSessionActive(session)) {
         Alert.alert(
-          'Discard session',
-          `Discard the unfinished session for "${session.deckName}"? Its answers are also removed from Statistics.`,
+          t('learn.discardSessionAlert.title'),
+          t('learn.discardSessionAlert.message', { deckName: session.deckName }),
           [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Discard', style: 'destructive', onPress: () => deleteSession(session.id) },
+            { text: t('common.actions.cancel'), style: 'cancel' },
+            {
+              text: t('common.actions.discard'),
+              style: 'destructive',
+              onPress: () => deleteSession(session.id),
+            },
           ],
         );
         return;
       }
       Alert.alert(
-        'Clear session',
-        `Remove the completed session for "${session.deckName}" from this list? Its results stay in Statistics.`,
+        t('learn.clearSessionAlert.title'),
+        t('learn.clearSessionAlert.message', { deckName: session.deckName }),
         [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Clear', style: 'destructive', onPress: () => clearSession(session.id) },
+          { text: t('common.actions.cancel'), style: 'cancel' },
+          {
+            text: t('common.actions.clear'),
+            style: 'destructive',
+            onPress: () => clearSession(session.id),
+          },
         ],
       );
     },
-    [clearSession, deleteSession],
+    [clearSession, deleteSession, t],
   );
 
   // Starts a counted session over the session's own cards and clears the original, atomically.
@@ -155,13 +167,13 @@ export default function LearnScreen({ navigation }: Props) {
       const deck = getDeck(session.deckId);
       const cardIds = deck ? resolvableCardIds(session.cardIds, deck) : [];
       if (!deck || cardIds.length === 0) {
-        showDeckUnavailable();
+        Alert.alert(t('learn.deckUnavailableAlert.title'), t('learn.deckUnavailableAlert.message'));
         return;
       }
       const next = replaySession(session.id, deck, { inverted: session.inverted }, cardIds);
       navigation.navigate('Study', { sessionId: next.id });
     },
-    [getDeck, navigation, replaySession],
+    [getDeck, navigation, replaySession, t],
   );
 
   return (
@@ -171,7 +183,7 @@ export default function LearnScreen({ navigation }: Props) {
           value={query}
           onChangeText={setQuery}
           onClose={closeSearch}
-          placeholder="Search sessions"
+          placeholder={t('learn.learnScreen.searchPlaceholder')}
         />
       ) : null}
       <FlatList
@@ -187,20 +199,24 @@ export default function LearnScreen({ navigation }: Props) {
         ListEmptyComponent={
           ordered.length === 0 ? (
             <EmptyState
-              title={sessions.length === 0 ? 'No sessions yet' : 'No sessions to show'}
+              title={
+                sessions.length === 0
+                  ? t('learn.emptyState.noSessionsTitle')
+                  : t('learn.emptyState.allClearedTitle')
+              }
               message={
                 sessions.length === 0
-                  ? 'Pick a deck and start a learning session; it will show up here until you finish it.'
-                  : 'Cleared sessions still count in Statistics. Start a new session from a deck to see it here.'
+                  ? t('learn.emptyState.noSessionsMessage')
+                  : t('learn.emptyState.allClearedMessage')
               }
-              actionLabel="Go to decks"
+              actionLabel={t('learn.emptyState.goToDecksButton')}
               onAction={() => navigation.navigate('DecksTab', { screen: 'DecksList' })}
             />
           ) : (
             <EmptyState
-              title="No matches"
-              message={`Nothing matches "${query.trim()}".`}
-              actionLabel="Clear search"
+              title={t('common.search.noMatchesTitle')}
+              message={t('common.search.noMatchesMessage', { query: query.trim() })}
+              actionLabel={t('common.search.clearSearchButton')}
               onAction={() => setQuery('')}
             />
           )
@@ -229,10 +245,12 @@ export default function LearnScreen({ navigation }: Props) {
               cardCount={cardCount}
               tally={tally}
               shares={sessionProgressShares(tally, cardCount)}
-              startedLabel={formatDate(item.startedAt)}
+              startedLabel={formatDate(item.startedAt, t)}
               menuItems={[
                 {
-                  label: isActive ? 'Discard session' : 'Clear session',
+                  label: isActive
+                    ? t('learn.sessionOptionsMenu.discardItem')
+                    : t('learn.sessionOptionsMenu.clearItem'),
                   icon: 'delete',
                   destructive: true,
                   onPress: () => confirmDelete(item),

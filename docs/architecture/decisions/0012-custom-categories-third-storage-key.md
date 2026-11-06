@@ -282,6 +282,51 @@ Consequences of this amendment:
 - **Two custom categories can now share a colour no default has**, and a custom colour can sit
   very close to, but not equal, a palette colour. Nothing depends on colours being distinct.
 
+## Amendment 4 — 2026-11-05
+
+Recorded ahead of the work it governs, under
+[ADR-0020](0020-ui-text-translated-through-typed-catalogue.md), with the owner's approval. The
+decision above stands — the defaults are still code, custom categories are still the only stored
+ones, under the same key and shape. **A built-in category's name becomes display text in the
+device's language**, and three details move with it.
+
+- **A built-in's name is a catalogue message.** It is looked up by the built-in's icon key,
+  `categoryNames.builtIn.<icon key>`, in `src/locales/en/categoryNames.ts` and each translation.
+  `DEFAULT_CATEGORIES[].name` keeps the English name in code, but **nothing displays it
+  directly**: every place that shows a category's name calls
+  `categoryDisplayName(category, t)` in [`src/utils/categories.ts`](../../../src/utils/categories.ts),
+  which returns the translated name for a built-in and the stored name, verbatim, for a custom
+  category. **A custom category's name is the user's text and is never translated.**
+- **Lists of categories are ordered by display name**, in the current language:
+  `sortCategoriesByName(categories, t)` and `getAllCategories(customs, t)` compare display names
+  with `localeCompare`, ignoring case, in the device locale, as today. The order shown can
+  therefore differ between languages.
+- **The name rule compares against the built-in names in both the current language and English**,
+  ignoring case and surrounding whitespace, as well as against the stored custom names:
+  `validateCategoryName(input, customs, t)`. English is always included so that a custom category
+  created while the device is in another language cannot take a built-in's English name, which
+  would show two identical names on an English device. It is still applied on creation only.
+
+What does not move:
+
+- **Ids, icons, colours and the order of the defaults' list in code.** A default category still
+  takes its colour from its position in that list, not from where it sorts on screen, so
+  translation recolours nothing.
+- **Deck files**: a built-in category is written and matched by its id, never by any name
+  ([ADR-0019](0019-deck-file-format-version-2.md)), so a file is read the same whatever the
+  language of the device that wrote it. The resolver still never matches a built-in by name, in
+  English or in translation.
+- **Storage**: no key, no shape and no loader rule changes. Nothing persisted changes.
+
+Consequences of this amendment:
+
+- **A custom name can collide with a translated built-in name after a language change.** A custom
+  `Astronomie` created on an English device stays when the device is switched to German, where the
+  built-in Astronomy is also `Astronomie`. Both are shown; the name rule is not re-applied to
+  stored names, as already accepted under *Consequences*.
+- The name rule's result now depends on the device language, so the same name can be accepted on
+  one device and refused on another.
+
 ## References
 
 - [ADR-0001](0001-own-the-html-renderer.md) — the precedent for owning a control rather than
@@ -303,6 +348,10 @@ Consequences of this amendment:
   brightness to hex, the contrast check, and the palette comparison (Amendment 3)
 - [ADR-0014](0014-deck-belongs-to-one-category.md) — decks refer to categories; what deleting one
   in use does (Amendment 1)
+- [ADR-0020](0020-ui-text-translated-through-typed-catalogue.md) — UI text is translated; built-in
+  names become display text and the name rule compares in two languages (Amendment 4)
+- [ADR-0019](0019-deck-file-format-version-2.md) — a built-in category travels in a file by its
+  id, never its name (Amendment 4)
 - [`src/storage/categoriesStorage.ts`](../../../src/storage/categoriesStorage.ts)
 - [`src/utils/categories.ts`](../../../src/utils/categories.ts) — the defaults, the icon keys and
   the name rule

@@ -1,10 +1,6 @@
 export type Timeframe = 'all' | 'month' | 'week';
 
-export const TIMEFRAMES: { value: Timeframe; label: string }[] = [
-  { value: 'all', label: 'All time' },
-  { value: 'month', label: 'This month' },
-  { value: 'week', label: 'Last 7 days' },
-];
+export const TIMEFRAMES: readonly Timeframe[] = ['all', 'month', 'week'];
 
 /**
  * The earliest `answeredAt` a timeframe includes, in the device's local time; null for all time.

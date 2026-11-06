@@ -335,6 +335,39 @@ skipped.
   applies to both formats.
 - Nothing persisted changes: no storage key, no stored shape, no store action.
 
+## Amendment 4 — 2026-11-05
+
+Recorded ahead of the work it governs, under
+[ADR-0020](0020-ui-text-translated-through-typed-catalogue.md), with the owner's approval. The
+decision stands — import reads exactly the formats ADR-0016 and ADR-0019 define, by every rule
+above. What changes is how a failure is worded to the user.
+
+- **The *Import failed* alert shows a translated message chosen by the error's code**, not
+  `DeckImportError.message`. *The flow*'s *"its message is shown in the existing Import failed
+  alert"* no longer holds. `DeckImportError` gains a `readonly code`, one of `emptyFile`,
+  `notADeck`, `newerVersion`, `noCards` (JSON), `noHeader`, `noUsableRows` (CSV) and
+  `unreadable`, and is constructed as `new DeckImportError(code, message)`.
+- **`message` stays English and is for diagnostics only.** Its wording is unchanged, and the
+  English catalogue message for each code says the same thing, so an English device reads exactly
+  what it reads today.
+- **The service's read failure is a code too.** `src/services/importDeck.ts` throws
+  `DeckImportError('unreadable', …)` when the picked file cannot be read, rather than a message
+  for display.
+- **Any other error** — one that is not a `DeckImportError` — shows a translated sentence followed
+  by its raw `message`, which comes from native code and may be English; a thrown value that is not
+  an `Error` shows the translated sentence alone.
+- **The success alert is translated** with whole-sentence plural messages for the card count and
+  the skipped rows or cards, replacing today's `card${s}` concatenation.
+- **The deck-name fallback is chosen by the screen.** `deckNameFromFileName` returns `null`
+  instead of `Imported deck` when the file name gives nothing usable; the screen then uses the
+  translated default name. That name is stored as the deck's name, in the language active at
+  import, and is not translated afterwards: from then on it is the user's data.
+
+What does not move: every file key, every `# key:` line, the `format` value, the CSV header names
+`question` and `answer`, and the category reference are read as they are and never compared with
+translated text. Import behaves identically in every language. Tests assert `code`, not the
+message. Nothing persisted changes: no storage key, no stored shape, no store action.
+
 ## References
 
 - [ADR-0016](0016-deck-export-file-formats.md) — the formats read here; amended by this record
@@ -342,6 +375,8 @@ skipped.
 - [ADR-0019](0019-deck-file-format-version-2.md) — format version 2: CSV comment lines read, the
   category reference and its resolution (Amendment 2); the CSV title and description read
   (Amendment 3; ADR-0019 Amendment 1)
+- [ADR-0020](0020-ui-text-translated-through-typed-catalogue.md) — UI text is translated; import
+  errors carry a code and the alert is worded from it (Amendment 4)
 - [ADR-0014](0014-deck-belongs-to-one-category.md) — resolving a category id; amended by this
   record (Amendment 4)
 - [ADR-0011](0011-deck-editing-is-one-action.md) — the description; amended by this record

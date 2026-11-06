@@ -33,6 +33,15 @@ const CATEGORY: Category = {
   createdAt: 1,
 };
 
+function errorCodeOf(run: () => unknown): string | null {
+  try {
+    run();
+  } catch (error) {
+    return error instanceof DeckImportError ? error.code : null;
+  }
+  return null;
+}
+
 describe('parseFlashcardsCsv', () => {
   it('parses a semicolon separated file', () => {
     const result = parseFlashcardsCsv(
@@ -62,6 +71,7 @@ describe('parseFlashcardsCsv', () => {
 
   it('rejects a file whose header row names no question and answer columns', () => {
     expect(() => parseFlashcardsCsv('Front;Back\nQ1;A1')).toThrow(/No header row found/);
+    expect(errorCodeOf(() => parseFlashcardsCsv('Front;Back\nQ1;A1'))).toBe('noHeader');
   });
 
   it('rejects a header row that has only one of the two columns', () => {
@@ -72,11 +82,13 @@ describe('parseFlashcardsCsv', () => {
     expect(() => parseFlashcardsCsv('   ')).toThrow(DeckImportError);
     expect(() => parseFlashcardsCsv('')).toThrow(/empty/);
     expect(() => parseFlashcardsCsv('\n \n')).toThrow(/empty/);
+    expect(errorCodeOf(() => parseFlashcardsCsv(''))).toBe('emptyFile');
   });
 
   it('rejects a file with a header and no usable rows', () => {
     expect(() => parseFlashcardsCsv('Question;Answer\n')).toThrow(/No usable rows/);
     expect(() => parseFlashcardsCsv('Question;Answer\nQ1;\n;A2')).toThrow(/No usable rows/);
+    expect(errorCodeOf(() => parseFlashcardsCsv('Question;Answer\n'))).toBe('noUsableRows');
   });
 
   describe('separator detection', () => {
@@ -384,7 +396,9 @@ describe('deckNameFromFileName', () => {
     expect(deckNameFromFileName('Spanish verbs.csv')).toBe('Spanish verbs');
   });
 
-  it('falls back when no name is available', () => {
-    expect(deckNameFromFileName(null)).toBe('Imported deck');
+  it('falls back to null when no name is available', () => {
+    expect(deckNameFromFileName(null)).toBeNull();
+    expect(deckNameFromFileName('')).toBeNull();
+    expect(deckNameFromFileName('.csv')).toBeNull();
   });
 });

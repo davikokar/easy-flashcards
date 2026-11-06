@@ -1,5 +1,6 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useT } from '../i18n/I18nProvider';
 import { TIMEFRAMES, type Timeframe } from '../utils/timeframe';
 import { colors, radius, spacing } from '../theme';
 
@@ -9,15 +10,17 @@ type Props = {
 };
 
 export default function TimeframeChips({ value, onChange }: Props) {
+  const t = useT();
   return (
     // importantForAccessibility keeps the label's node in the tree; a bare container can be pruned.
     <View
       accessibilityRole="radiogroup"
-      accessibilityLabel="Timeframe"
+      accessibilityLabel={t('stats.timeframeChips.groupA11yLabel')}
       importantForAccessibility="yes"
       style={styles.row}>
-      {TIMEFRAMES.map(({ value: option, label }) => {
+      {TIMEFRAMES.map(option => {
         const selected = option === value;
+        const label = t(`answers.timeframes.${option}`);
         return (
           // The Pressable is the 48-point touch target; the pill inside it is the visible chip.
           <Pressable

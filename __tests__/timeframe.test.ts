@@ -1,12 +1,8 @@
 import { TIMEFRAMES, timeframeStart } from '../src/utils/timeframe';
 
 describe('TIMEFRAMES', () => {
-  it('lists All time, This month and Last 7 days in that order', () => {
-    expect(TIMEFRAMES).toEqual([
-      { value: 'all', label: 'All time' },
-      { value: 'month', label: 'This month' },
-      { value: 'week', label: 'Last 7 days' },
-    ]);
+  it('lists all, month and week in that order, with no labels', () => {
+    expect(TIMEFRAMES).toEqual(['all', 'month', 'week']);
   });
 });
 

@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { AnswerShares, AnswerTally, Category } from '../types';
+import { useT } from '../i18n/I18nProvider';
 import { colors, radius, spacing } from '../theme';
 import { AnswerIcon } from './AnswerIcons';
 import Button from './Button';
@@ -57,16 +58,14 @@ export default function SessionCard({
   onReplay,
   review,
 }: Props) {
-  const cards = `card${cardCount === 1 ? '' : 's'}`;
+  const t = useT();
   const status = isActive
-    ? `In progress \u2014 ${answeredCount}/${cardCount} ${cards}`
-    : `Completed \u2014 ${cardCount} ${cards}`;
+    ? t('learn.sessionCard.inProgressStatus', { count: cardCount, answered: answeredCount })
+    : t('learn.sessionCard.completedStatus', { count: cardCount });
   const reviewLabel = review
     ? review.done
-      ? `All missed or unsure cards fixed for ${deckName}`
-      : `Review the ${review.count} missed or unsure card${
-          review.count === 1 ? '' : 's'
-        } for ${deckName}`
+      ? t('learn.sessionCard.reviewErrorsDoneA11yLabel', { deckName })
+      : t('learn.sessionCard.reviewErrorsButtonA11yLabel', { count: review.count, deckName })
     : '';
 
   return (
@@ -93,10 +92,10 @@ export default function SessionCard({
             {inverted ? (
               <View
                 accessible
-                accessibilityLabel="Inverted session"
+                accessibilityLabel={t('learn.sessionCard.invertedPillA11yLabel')}
                 style={[styles.pill, styles.pillInverted]}>
                 <Text style={[styles.pillText, styles.pillTextInverted]} numberOfLines={1}>
-                  Inverted
+                  {t('learn.sessionCard.invertedPill')}
                 </Text>
               </View>
             ) : null}
@@ -105,7 +104,7 @@ export default function SessionCard({
         <KebabMenu
           title={deckName}
           category={category}
-          accessibilityLabel={`Options for the ${deckName} session`}
+          accessibilityLabel={t('learn.sessionCard.optionsA11yLabel', { deckName })}
           items={menuItems}
         />
       </View>
@@ -116,14 +115,14 @@ export default function SessionCard({
         <View style={styles.started}>
           <MenuIcon name="clock" color={colors.textDim} size={14} />
           <Text style={styles.startedText} numberOfLines={1}>
-            Started {startedLabel}
+            {t('learn.sessionCard.started', { date: startedLabel })}
           </Text>
         </View>
         <View style={styles.actions}>
           {isActive && onResume ? (
             <Button
               variant="primary"
-              accessibilityLabel={`Resume session for ${deckName}`}
+              accessibilityLabel={t('learn.sessionCard.resumeButtonA11yLabel', { deckName })}
               icon={renderResumeIcon}
               onPress={onResume}
             />
@@ -139,7 +138,7 @@ export default function SessionCard({
           {!isActive && onReplay ? (
             <Button
               variant="secondary"
-              accessibilityLabel={`Replay session for ${deckName}`}
+              accessibilityLabel={t('learn.sessionCard.replayButtonA11yLabel', { deckName })}
               icon={renderReplayIcon}
               onPress={onReplay}
             />

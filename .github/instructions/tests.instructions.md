@@ -18,7 +18,14 @@ These rules apply only to test files. They complement the project-wide rules in
 
 The suite is **unit tests, and nothing renders**. It covers:
 
-- the pure logic in `src/utils/`;
+- the pure logic in `src/utils/`, including the translation engine `src/utils/i18n.ts` in
+  `__tests__/i18n.test.ts`;
+- the UI text catalogue in `src/locales/`, in `__tests__/locales.test.ts`: every registered
+  language has English's keys, placeholders and plural messages, every form its plural rule
+  returns for 0 to 1000, the CLDR form its rule gives for a few known integers, no empty message,
+  keys that follow ADR-0020's naming rules, and a label
+  for every category icon and built-in category. It checks the catalogue's shape, not that a
+  screen uses it — a literal left in a component passes;
 - the reducer in `src/state/reducer.ts`, called directly with a state and an action;
 - the storage loaders, one test file per module in `src/storage/`, with
   `@react-native-async-storage/async-storage` replaced by a `jest.mock` in each test file. That is
@@ -67,7 +74,10 @@ make a brief easier.
 - **Assert on returned values**, never on how a function got there.
 - Test the failure path as well as the happy one. `parseFlashcardsCsv` and `parseDeckJson` throw
   `DeckImportError` on a file they cannot use, and that is part of their contract — assert on the
-  throw and its message, not just on the parse.
+  throw and its `code`, which is what the Decks screen turns into a message. The English `message`
+  is for diagnostics only
+  ([ADR-0017](../../docs/architecture/decisions/0017-deck-import-reads-exported-formats.md)
+  Amendment 4); a test may still assert it, but the code is the contract.
 - A round trip is built literally too: `csv.test.ts` and `deckImport.test.ts` serialise a deck
   built in the test with `deckExport.ts` and parse the result, rather than reading an exported file.
 - Test the tolerance that is deliberate. `parseHtml` absorbing an unclosed tag and
@@ -77,11 +87,37 @@ make a brief easier.
   `toLocaleDateString`, and Jest cannot change the default locale, so compare it with
   `new Date(timestamp).toLocaleDateString()` for the same value.
 
+## Text and translation
+
+- **A function that takes `t` is called with `englishT`** from `src/locales/index.ts`, and the
+  test asserts the English the app shows. Do not build a translator of your own for that, and do
+  not stub `t`: `englishT` is the real catalogue, so a test also catches a message that changed.
+- **To test the engine itself, build a small `Language` literally in the test**, as
+  `i18n.test.ts` does — including one with a plural form English lacks — rather than leaning on
+  the English catalogue's current wording.
+- **Type-level rules are tested with `// @ts-expect-error`.** `i18n.test.ts` proves that an
+  unknown key, a missing value and an extra value fail to compile, over a sample catalogue typed
+  with `CatalogueKey` / `CatalogueArgs` and over `englishT`. Jest strips types and never sees
+  these; `npm run typecheck` does, because `tsconfig.json` includes `__tests__/`. An
+  `@ts-expect-error` line that stops erroring fails typecheck, which is the point. Keep each one
+  on its own call and give it a reason.
+- A new language needs one test entry: its plural rule's CLDR forms for a few integers in the
+  `EXPECTED` table of `locales.test.ts`'s *plural rules* block, which fails until every code in
+  `LANGUAGES` is listed there. Every other check runs over each entry of `LANGUAGES` unchanged.
+
+## Which modules a test may import
+
+`src/utils/`, `src/locales/`, `src/types.ts`, `src/theme.ts`, `src/state/reducer.ts`, and the
+modules in `src/storage/` with AsyncStorage mocked. Nothing else loads cleanly: `src/i18n/`,
+`src/services/` (including `deviceLocale.ts`), `src/state/DecksContext.tsx`, screens and
+components import `react-native` or a native module. `useT()` and the device-language reading are
+therefore untested.
+
 ## What is testable, and where new logic belongs
 
-`src/utils/`, `src/types.ts` and `src/state/reducer.ts` import nothing from `react` or
-`react-native`. That is the property that makes them testable under Jest with no renderer and no
-mocks, and it is deliberate.
+`src/utils/`, `src/locales/`, `src/types.ts` and `src/state/reducer.ts` import nothing from
+`react` or `react-native`. That is the property that makes them testable under Jest with no
+renderer and no mocks, and it is deliberate.
 
 - **New pure logic goes in `src/utils/` and gets a test.** A derived number, a sort, a format, a
   parse — all of it. If you find yourself writing a calculation inside a screen, that is the signal
@@ -119,7 +155,8 @@ apply, recorded now so they are not rediscovered:
 - Resolve controls by accessibility label. The app has **no `testID` anywhere** — every control is
   found by its `accessibilityLabel` or its text. The existing labels are listed in
   [the UI vocabulary](ui-vocabulary.instructions.md); use them rather than adding a parallel set of
-  test ids.
+  test ids. They are catalogue messages now, so render under no `I18nProvider` (`useT()` then
+  returns English) or look the label up with `englishT` rather than copying the English text.
 - `FlipCard`, `HistoryStrip` and `MenuSheet` use `Animated`, `ScrollView.scrollTo` and `Modal`
   respectively. Each needs its own handling under a test renderer, and none of it exists yet.
 - `CategoryIcon` `require`s `.xml` vector drawables, and `@react-native/jest-preset` has no

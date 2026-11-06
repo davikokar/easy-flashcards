@@ -19,6 +19,10 @@ and tests.
 Where a symbol predates its canonical name, the symbol is given in parentheses and the mismatch is
 called out. Use the canonical name in prose; use the real symbol in code.
 
+Quoted labels and messages in this file are the **English** text of the UI catalogue, the default
+language; the UI follows the device's language, and the names here stay as they are. See *Writing
+UI* and *Naming and the catalogue*.
+
 ## Tabs
 
 The app has **four tabs**, in this order. They are peers — switching tab is not navigation into a
@@ -150,6 +154,16 @@ screen can add items without `AppMenu` gaining store knowledge: each root screen
 
 Everything else that interrupts the user is a native `Alert` — confirmations, failures, and the
 "not available yet" stubs.
+
+- **Alerts**: named by their title in camelCase plus `Alert`, which is also their catalogue owner
+  (see *Naming and the catalogue*). The titled confirmations and refusals are `emptyDeckAlert`
+  (`Empty deck`), `deleteDeckAlert`, `titleNeededAlert` (`Title needed`), `cardIncompleteAlert`
+  (`Card incomplete`), `removeCardsAlert` (`Remove cards?`), `discardChangesAlert` (the **Discard
+  prompt**; the Edit deck and New category screens each have one), `deckUnavailableAlert`,
+  `clearCompletedSessionsAlert`, `discardSessionAlert`, `clearSessionAlert`, `deleteCategoryAlert`
+  and `settingsAlert` (the stub). The Deck statistics screen's `Reset statistics` alert is its
+  `resetAlert`, and the import and export outcome alerts are the `importAlert`, `exportAlert` and
+  `sampleExport` groups of the `importExport` catalogue file, not screens' own.
 
 ## Header toolbar
 
@@ -797,7 +811,8 @@ and the words appear only in accessibility labels.
   one whose category no longer resolves, shows **no Category pill and no gap**
   ([ADR-0014](../../docs/architecture/decisions/0014-deck-belongs-to-one-category.md)). Neither pill
   is pressable. Not the **Deck meta row**.
-- **Overall mastery card**: the first `surface` card — the **Success rate headline** with the
+- **Overall mastery card** (`DeckMasteryCard`, which predates the name): the first `surface` card —
+  the **Success rate headline** with the
   **Mastery change chip**, the **Mastery track**, the three **Answer tiles**, and the **Figures
   ribbon**. It has no heading of its own; the headline's caption names it.
 - **Success rate headline**: `formatRate` of the deck's success rate at 40 points, weight 800, with
@@ -1072,12 +1087,38 @@ These are constraints, not suggestions. Each one is load-bearing somewhere.
 - **The app has no `testID` anywhere.** Controls are found by accessibility label or by text. Keep
   it that way rather than introducing a parallel identification scheme; if a label is too vague to
   find a control by, the label is the thing to fix.
-- **The app is English-only and has no i18n layer.** Strings are literals in the component that
-  shows them. Write them in sentence case, keep them short, and do not introduce a translation
-  framework without asking.
+- **UI text comes from the typed catalogue, and the quoted labels in this file are its English
+  text** ([ADR-0020](../../docs/architecture/decisions/0020-ui-text-translated-through-typed-catalogue.md)).
+  English, in `src/locales/en/`, is the default language and the fallback; the UI follows the
+  device's language. A label is a message looked up with `useT()` (or a `Translator` passed to pure
+  code), never a literal in a component. Write English in sentence case and keep it short; do not
+  add a translation framework without asking.
+- **A translated UI renames nothing.** The names in this file stay English identifiers whatever
+  language the UI shows, and they are the source of the catalogue's owner segment (see *Naming and
+  the catalogue*). User data is never translated: deck names, descriptions, card text and custom
+  category names are shown as stored.
 - **The app is dark-only.** There is no light scheme and no theme switch. Do not design a surface
   that assumes one.
-- **Dates and rates go through `formatDate` and `formatRate`.** They return `Never` and `--`
-  respectively for the no-data case, which is deliberately distinct from `0%`.
+- **Dates and rates go through `formatDate`, `formatShortDate` and `formatRate`.** The date
+  functions take the `Translator` as their last argument and return the catalogue message for
+  `Never`; `formatRate` returns `--`. Both no-data cases are deliberately distinct from `0%`. A date
+  keeps the device's regional format, whatever language the text is in.
 - **A destructive action is confirmed by an `Alert`, and its menu item carries `destructive: true`.**
   Both, every time.
+
+## Naming and the catalogue
+
+A catalogue key is `<area>.<owner>.<element>`, and **the owner segment is the name of the screen,
+area or control that shows the text, in camelCase**: the **Deck card** is `decks.deckCard.*`, the
+**Session card** `learn.sessionCard.*`, the **Flip card** `study.flipCard.*`. Where an entry gives a
+symbol (`DeckStatsScreen`), the owner is the symbol's camelCase (`deckStatsScreen`), because that
+is what the code already uses.
+
+- **Adding a named screen, area or control also names its owner segment**: use its camelCase name
+  here, and use the same name in the catalogue.
+- **A name change is the Designer's**, as it always is, **and it moves catalogue keys**: every key
+  under the old owner changes with it, and so does every other language's catalogue. Say so when
+  routing it.
+- **An `Alert` is owned by its own name**, the title in camelCase plus `Alert` (`emptyDeckAlert`,
+  `removeCardsAlert`, `discardChangesAlert`); the alerts are listed under *Alerts* in **Header and
+  menus**. A line that belongs to no named thing (a shared action such as `Cancel`) is in `common`.

@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Button from './Button';
 import ColorSlider from './ColorSlider';
+import { useT } from '../i18n/I18nProvider';
 import { colors, radius, spacing } from '../theme';
 import {
   brightnessStops,
@@ -26,6 +27,7 @@ const HUE_STOPS = hueSpectrumStops();
 const PREVIEW_SIZE = 64;
 
 export default function CustomColorDialog({ visible, color, onUse, onCancel }: Props) {
+  const t = useT();
   const [hsv, setHsv] = useState(() => hexToHsv(color));
   const [wasVisible, setWasVisible] = useState(visible);
   // While a slider is held the scroll view must not scroll under the finger.
@@ -52,13 +54,15 @@ export default function CustomColorDialog({ visible, color, onUse, onCancel }: P
         {/* A Pressable of its own, so a press inside the dialog does not reach the backdrop. */}
         <Pressable style={styles.dialog} accessibilityViewIsModal>
           <Text style={styles.title} accessibilityRole="header">
-            Custom colour
+            {t('categories.customColourDialog.title')}
           </Text>
           <ScrollView scrollEnabled={!sliding} keyboardShouldPersistTaps="handled">
             <View style={styles.body}>
               <ColorSlider
-                label="Hue"
-                valueLabel={`${Math.round(hsv.h)}°`}
+                label={t('categories.customColourDialog.hueLabel')}
+                valueLabel={t('categories.customColourDialog.hueValue', {
+                  value: Math.round(hsv.h),
+                })}
                 value={hsv.h}
                 min={0}
                 max={360}
@@ -68,8 +72,10 @@ export default function CustomColorDialog({ visible, color, onUse, onCancel }: P
                 onSlidingChange={setSliding}
               />
               <ColorSlider
-                label="Saturation"
-                valueLabel={`${Math.round(hsv.s * 100)}%`}
+                label={t('categories.customColourDialog.saturationLabel')}
+                valueLabel={t('categories.customColourDialog.percentValue', {
+                  value: Math.round(hsv.s * 100),
+                })}
                 value={hsv.s * 100}
                 min={0}
                 max={100}
@@ -79,8 +85,10 @@ export default function CustomColorDialog({ visible, color, onUse, onCancel }: P
                 onSlidingChange={setSliding}
               />
               <ColorSlider
-                label="Brightness"
-                valueLabel={`${Math.round(hsv.v * 100)}%`}
+                label={t('categories.customColourDialog.brightnessLabel')}
+                valueLabel={t('categories.customColourDialog.percentValue', {
+                  value: Math.round(hsv.v * 100),
+                })}
                 value={hsv.v * 100}
                 min={0}
                 max={100}
@@ -93,19 +101,25 @@ export default function CustomColorDialog({ visible, color, onUse, onCancel }: P
                 <View
                   accessible
                   accessibilityRole="image"
-                  accessibilityLabel={`Colour preview ${draft}`}
+                  accessibilityLabel={t('categories.customColourDialog.previewA11yLabel', {
+                    color: draft,
+                  })}
                   style={[styles.preview, { backgroundColor: draft }]}
                 />
                 <Text
                   accessibilityLiveRegion="polite"
                   style={[styles.status, !readable && styles.statusError]}>
-                  {readable ? draft : 'Too dark for the icon. Try a lighter colour.'}
+                  {readable ? draft : t('categories.customColourDialog.tooDark')}
                 </Text>
               </View>
             </View>
           </ScrollView>
-          <Button label="Use colour" disabled={!readable} onPress={() => onUse(draft)} />
-          <Button label="Cancel" variant="secondary" onPress={onCancel} />
+          <Button
+            label={t('categories.customColourDialog.useButton')}
+            disabled={!readable}
+            onPress={() => onUse(draft)}
+          />
+          <Button label={t('common.actions.cancel')} variant="secondary" onPress={onCancel} />
         </Pressable>
       </Pressable>
     </Modal>

@@ -1,5 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { useT } from '../i18n/I18nProvider';
 import { AnswerShares } from '../types';
 import { describeAnswerShares, formatRate } from '../utils/stats';
 import { colors, radius, spacing } from '../theme';
@@ -14,10 +15,13 @@ type Props = {
 const LEGEND_ICON_SIZE = 16;
 
 export default function MasteryBar({ shares }: Props) {
+  const t = useT();
   return (
     <View
       accessible
-      accessibilityLabel={`Mastery: ${describeAnswerShares(shares)}`}
+      accessibilityLabel={t('decks.masteryBar.a11yLabel', {
+        summary: describeAnswerShares(shares, t),
+      })}
       style={styles.panel}>
       <MasteryTrack shares={shares} />
       <View style={styles.legend}>

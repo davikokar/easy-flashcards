@@ -1,5 +1,6 @@
 import { categoryPalette } from '../theme';
 import { Category, CategoryIcon, DefaultCategoryIcon, Deck, ExtraCategoryIcon } from '../types';
+import type { Translator } from './i18n';
 
 export const DEFAULT_CATEGORY_ICONS: readonly DefaultCategoryIcon[] = [
   'astronomy',
@@ -25,96 +26,94 @@ export const DEFAULT_CATEGORY_ICONS: readonly DefaultCategoryIcon[] = [
   'zoology',
 ];
 
-// What each extra icon shows, sorted by label (ignoring case). A key is permanent once shipped; a label is not.
-export const EXTRA_CATEGORY_ICON_LABELS: Record<ExtraCategoryIcon, string> = {
-  plane_contrails: 'Aeroplane',
-  anchor: 'Anchor',
-  nutrition: 'Apple',
-  emergency: 'Asterisk',
-  microbiology: 'Bacterium',
-  finance: 'Bar chart',
-  sports_basketball: 'Basketball',
-  neurology: 'Brain',
-  bug_report: 'Bug',
-  calendar_month: 'Calendar',
-  photo_camera: 'Camera',
-  camera: 'Camera aperture',
-  cannabis: 'Cannabis leaf',
-  directions_car: 'Car',
-  chess_pawn: 'Chess pawn',
-  language_chinese_dayi: 'Chinese and Latin letters',
-  location_city: 'City',
-  circle_circle: 'Concentric circles',
-  restaurant: 'Cutlery',
-  database: 'Database',
-  nest_heat_link_e: 'Dot in a circle',
-  engineering: 'Engineer',
-  face: 'Face',
-  face_3: 'Face with hair',
-  theaters: 'Film strip',
-  flag_2: 'Flag',
-  science: 'Flask',
-  save: 'Floppy disk',
-  sports_and_outdoors: 'Football',
-  skillet: 'Frying pan',
-  sports_esports: 'Game controller',
-  language: 'Globe',
-  diversity_3: 'Group of people',
-  psychology: 'Head with cog',
-  headphones: 'Headphones',
-  health_and_safety: 'Health shield',
-  landscape_2: 'Hills',
-  hive: 'Honeycomb',
-  hourglass_empty: 'Hourglass',
-  house: 'House',
-  icecream: 'Ice cream',
-  temp_preferences_eco: 'Leaves',
-  electric_bolt: 'Lightning bolt',
-  wand_stars: 'Magic wand',
-  biotech: 'Microscope',
-  mindfulness: 'Mindfulness',
-  motorcycle: 'Motorcycle',
-  music_note_2: 'Musical note',
-  network_node: 'Network',
-  import_contacts: 'Open book',
-  pan_tool: 'Open hand',
-  pets: 'Paw',
-  stylus: 'Pencil',
-  person: 'Person',
-  history_edu: 'Quill and paper',
-  radio: 'Radio',
-  raven: 'Raven',
-  rib_cage: 'Rib cage',
-  rocket_launch: 'Rocket',
-  scatter_plot: 'Scatter plot',
-  category: 'Shapes',
-  interests: 'Shapes and heart',
-  shopping_cart: 'Shopping cart',
-  functions: 'Sigma',
-  skull: 'Skull',
-  emoji_language: 'Smiley and globe',
-  snowflake: 'Snowflake',
-  hotel_class: 'Star',
-  mountain_flag: 'Summit flag',
-  sunny: 'Sun',
-  mixture_med: 'Syringe and pill',
-  temple_buddhist: 'Temple',
-  text_snippet: 'Text document',
-  theater_comedy: 'Theatre masks',
-  nest_thermostat_gen_3: 'Thermostat',
-  translate: 'Translate',
-  nature: 'Tree',
-  fertile: 'Tulip',
-  videocam: 'Video camera',
-  coronavirus: 'Virus',
-  volcano: 'Volcano',
-  warning: 'Warning',
-  water: 'Waves',
-  air: 'Wind',
-  build: 'Wrench',
-};
-
-export const EXTRA_CATEGORY_ICONS = Object.keys(EXTRA_CATEGORY_ICON_LABELS) as ExtraCategoryIcon[];
+// The extra icons in the order the Icon picker shows them, the same in every language. A key is permanent once shipped.
+export const EXTRA_CATEGORY_ICONS: readonly ExtraCategoryIcon[] = [
+  'plane_contrails',
+  'anchor',
+  'nutrition',
+  'emergency',
+  'microbiology',
+  'finance',
+  'sports_basketball',
+  'neurology',
+  'bug_report',
+  'calendar_month',
+  'photo_camera',
+  'camera',
+  'cannabis',
+  'directions_car',
+  'chess_pawn',
+  'language_chinese_dayi',
+  'location_city',
+  'circle_circle',
+  'restaurant',
+  'database',
+  'nest_heat_link_e',
+  'engineering',
+  'face',
+  'face_3',
+  'theaters',
+  'flag_2',
+  'science',
+  'save',
+  'sports_and_outdoors',
+  'skillet',
+  'sports_esports',
+  'language',
+  'diversity_3',
+  'psychology',
+  'headphones',
+  'health_and_safety',
+  'landscape_2',
+  'hive',
+  'hourglass_empty',
+  'house',
+  'icecream',
+  'temp_preferences_eco',
+  'electric_bolt',
+  'wand_stars',
+  'biotech',
+  'mindfulness',
+  'motorcycle',
+  'music_note_2',
+  'network_node',
+  'import_contacts',
+  'pan_tool',
+  'pets',
+  'stylus',
+  'person',
+  'history_edu',
+  'radio',
+  'raven',
+  'rib_cage',
+  'rocket_launch',
+  'scatter_plot',
+  'category',
+  'interests',
+  'shopping_cart',
+  'functions',
+  'skull',
+  'emoji_language',
+  'snowflake',
+  'hotel_class',
+  'mountain_flag',
+  'sunny',
+  'mixture_med',
+  'temple_buddhist',
+  'text_snippet',
+  'theater_comedy',
+  'nest_thermostat_gen_3',
+  'translate',
+  'nature',
+  'fertile',
+  'videocam',
+  'coronavirus',
+  'volcano',
+  'warning',
+  'water',
+  'air',
+  'build',
+];
 
 /** Every icon a custom category can choose: the defaults' icons first, then the extras. */
 export const CATEGORY_ICONS: readonly CategoryIcon[] = [
@@ -166,10 +165,25 @@ export function isCategoryIcon(value: unknown): value is CategoryIcon {
   return typeof value === 'string' && (CATEGORY_ICONS as readonly string[]).includes(value);
 }
 
+function isDefaultCategoryIcon(icon: CategoryIcon): icon is DefaultCategoryIcon {
+  return (DEFAULT_CATEGORY_ICONS as readonly CategoryIcon[]).includes(icon);
+}
+
+/**
+ * What the app shows for a category's name: a built-in's translated name, a custom category's
+ * stored name as it is. `DEFAULT_CATEGORIES[].name` is English and is never shown directly.
+ */
+export function categoryDisplayName(category: Category, t: Translator): string {
+  return isDefaultCategoryId(category.id)
+    ? t(`categoryNames.builtIn.${category.icon as DefaultCategoryIcon}`)
+    : category.name;
+}
+
 /** A default icon is labelled with its category's name; an extra icon with what it shows. */
-export function getCategoryIconLabel(icon: CategoryIcon): string {
-  const category = DEFAULT_CATEGORIES.find(candidate => candidate.icon === icon);
-  return category ? category.name : EXTRA_CATEGORY_ICON_LABELS[icon as ExtraCategoryIcon];
+export function getCategoryIconLabel(icon: CategoryIcon, t: Translator): string {
+  return isDefaultCategoryIcon(icon)
+    ? t(`categoryNames.builtIn.${icon}`)
+    : t(`categoryNames.icons.${icon}`);
 }
 
 /** #rgb, #rgba, #rrggbb or #rrggbbaa. */
@@ -229,10 +243,14 @@ export type CategoryNameResult =
   | { ok: true; name: string }
   | { ok: false; reason: 'empty' | 'tooLong' | 'duplicate' };
 
-/** Checks a new category's name against the defaults and the given custom categories. */
+/**
+ * Checks a new category's name against the custom categories and the built-ins, whose names are
+ * compared in the current language and in English (the name kept in code).
+ */
 export function validateCategoryName(
   input: string,
   customs: readonly Category[],
+  t: Translator,
 ): CategoryNameResult {
   const name = input.trim();
   if (name === '') {
@@ -242,20 +260,24 @@ export function validateCategoryName(
     return { ok: false, reason: 'tooLong' };
   }
   const lower = name.toLowerCase();
-  const taken = [...DEFAULT_CATEGORIES, ...customs].some(
-    category => category.name.trim().toLowerCase() === lower,
-  );
+  const takenNames = [
+    ...DEFAULT_CATEGORIES.flatMap(category => [categoryDisplayName(category, t), category.name]),
+    ...customs.map(category => category.name),
+  ];
+  const taken = takenNames.some(candidate => candidate.trim().toLowerCase() === lower);
   return taken ? { ok: false, reason: 'duplicate' } : { ok: true, name };
 }
 
-/** A new array ordered by name, ignoring case; equal names keep their order. */
-export function sortCategoriesByName(categories: readonly Category[]): Category[] {
+/** A new array ordered by display name, ignoring case; equal names keep their order. */
+export function sortCategoriesByName(categories: readonly Category[], t: Translator): Category[] {
   return [...categories].sort((a, b) =>
-    a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }),
+    categoryDisplayName(a, t).localeCompare(categoryDisplayName(b, t), undefined, {
+      sensitivity: 'base',
+    }),
   );
 }
 
-/** Every category the app shows, defaults and customs together, ordered by name. */
-export function getAllCategories(customs: readonly Category[]): Category[] {
-  return sortCategoriesByName([...DEFAULT_CATEGORIES, ...customs]);
+/** Every category the app shows, defaults and customs together, ordered by display name. */
+export function getAllCategories(customs: readonly Category[], t: Translator): Category[] {
+  return sortCategoriesByName([...DEFAULT_CATEGORIES, ...customs], t);
 }

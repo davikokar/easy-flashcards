@@ -91,6 +91,7 @@ export function DecksProvider({ children }: { children: React.ReactNode }) {
         if (!cancelled) {
           dispatch({
             type: 'loadFailed',
+            // Diagnostic only: the Decks screen shows its own translated message for any load error.
             message: error instanceof Error ? error.message : 'Could not read saved decks.',
           });
         }

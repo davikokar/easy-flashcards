@@ -10,6 +10,7 @@ import HeaderToolbar from '../components/HeaderToolbar';
 import MenuSheet from '../components/MenuSheet';
 import SearchBar from '../components/SearchBar';
 import SessionSetupDialog from '../components/SessionSetupDialog';
+import { useT } from '../i18n/I18nProvider';
 import { useDecks } from '../state/DecksContext';
 import { DecksStackParamList, RootTabParamList } from '../navigation/types';
 import { Deck } from '../types';
@@ -23,11 +24,13 @@ import {
 import { findCategory } from '../utils/categories';
 import {
   DeckExportOptions,
+  EXPORT_FORMAT_NAMES,
   SEPARATOR_PRESETS,
   SeparatorError,
   validateCustomSeparator,
 } from '../utils/deckExport';
 import { filterByTitle } from '../utils/search';
+import { DeckImportError } from '../utils/deckImport';
 import { shuffle } from '../utils/shuffle';
 import { ExportCancelledError, exportDeck } from '../services/exportDeck';
 import { ImportCancelledError, pickAndParseDeck } from '../services/importDeck';
@@ -42,6 +45,7 @@ const START_DEBOUNCE_MS = 1000;
 
 export default function DecksScreen({ navigation }: Props) {
   const { decks, sessions, categories, error, addDeck, deleteDeck, startSession } = useDecks();
+  const t = useT();
   const [isImporting, setIsImporting] = useState(false);
   const lastStartAt = useRef(0);
   const [openMenu, setOpenMenu] = useState<'add' | null>(null);
@@ -79,10 +83,10 @@ export default function DecksScreen({ navigation }: Props) {
       <HeaderToolbar
         onSearch={toggleSearch}
         searchActive={searchOpen}
-        searchLabel="Search decks"
+        searchLabel={t('decks.decksScreen.searchA11yLabel')}
       />
     ),
-    [toggleSearch, searchOpen],
+    [toggleSearch, searchOpen, t],
   );
 
   useLayoutEffect(() => {
@@ -98,52 +102,62 @@ export default function DecksScreen({ navigation }: Props) {
     try {
       const imported = await pickAndParseDeck();
       const deck = addDeck({
-        name: imported.deckName,
+        name: imported.deckName ?? t('importExport.defaultDeckName'),
         description: imported.description,
         categoryId: imported.categoryRef,
         sourceFileName: imported.fileName,
         cards: imported.cards,
       });
       const skipped = imported.skipped;
-      const unit = imported.format === 'csv' ? 'row' : 'card';
+      const skippedMessage =
+        imported.format === 'csv'
+          ? t('importExport.importAlert.skippedRows', { count: skipped })
+          : t('importExport.importAlert.skippedCards', { count: skipped });
       Alert.alert(
-        'Deck imported',
-        `"${deck.name}" now has ${deck.cards.length} card${deck.cards.length === 1 ? '' : 's'}.` +
-          (skipped > 0 ? `\n${skipped} incomplete ${unit}${skipped === 1 ? '' : 's'} skipped.` : ''),
+        t('importExport.importAlert.successTitle'),
+        t('importExport.importAlert.successMessage', {
+          name: deck.name,
+          count: deck.cards.length,
+        }) + (skipped > 0 ? `\n${skippedMessage}` : ''),
       );
     } catch (importError) {
       if (importError instanceof ImportCancelledError) {
         return;
       }
-      Alert.alert(
-        'Import failed',
-        importError instanceof Error
-          ? importError.message
-          : 'Unknown error while importing the file.',
-      );
+      let message = t('importExport.importAlert.failedUnknown');
+      if (importError instanceof DeckImportError) {
+        message = t(`importExport.importErrors.${importError.code}`);
+      } else if (importError instanceof Error) {
+        message = t('importExport.importAlert.failedWithDetails', { details: importError.message });
+      }
+      Alert.alert(t('importExport.importAlert.failedTitle'), message);
     } finally {
       setIsImporting(false);
     }
-  }, [addDeck]);
+  }, [addDeck, t]);
 
   const confirmDelete = useCallback(
     (deck: Deck) => {
       Alert.alert(
-        'Delete deck',
-        `Delete "${deck.name}", its sessions and all of its statistics?`,
+        t('decks.deleteDeckAlert.title'),
+        t('decks.deleteDeckAlert.message', { name: deck.name }),
         [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Delete', style: 'destructive', onPress: () => deleteDeck(deck.id) },
+          { text: t('common.actions.cancel'), style: 'cancel' },
+          {
+            text: t('common.actions.delete'),
+            style: 'destructive',
+            onPress: () => deleteDeck(deck.id),
+          },
         ],
       );
     },
-    [deleteDeck],
+    [deleteDeck, t],
   );
 
   const handleStartSession = useCallback(
     (deck: Deck, inverted = false, shuffled = true) => {
       if (deck.cards.length === 0) {
-        Alert.alert('Empty deck', 'This deck has no cards to learn.');
+        Alert.alert(t('decks.emptyDeckAlert.title'), t('decks.emptyDeckAlert.message'));
         return;
       }
       // A double tap would otherwise start two sessions before the navigation lands.
@@ -161,19 +175,22 @@ export default function DecksScreen({ navigation }: Props) {
         params: { sessionId: session.id },
       });
     },
-    [navigation, startSession],
+    [navigation, startSession, t],
   );
 
-  const openSessionSetup = useCallback((deck: Deck) => {
-    if (deck.cards.length === 0) {
-      Alert.alert('Empty deck', 'This deck has no cards to learn.');
-      return;
-    }
-    setSetupDeckId(deck.id);
-    setSetupInverted(false);
-    setSetupShuffled(true);
-    setSetupVisible(true);
-  }, []);
+  const openSessionSetup = useCallback(
+    (deck: Deck) => {
+      if (deck.cards.length === 0) {
+        Alert.alert(t('decks.emptyDeckAlert.title'), t('decks.emptyDeckAlert.message'));
+        return;
+      }
+      setSetupDeckId(deck.id);
+      setSetupInverted(false);
+      setSetupShuffled(true);
+      setSetupVisible(true);
+    },
+    [t],
+  );
 
   const closeSessionSetup = useCallback(() => setSetupVisible(false), []);
 
@@ -192,17 +209,17 @@ export default function DecksScreen({ navigation }: Props) {
   const addMenuItems = useMemo(
     () => [
       {
-        label: 'Import deck from file',
+        label: t('decks.addDeckMenu.importItem'),
         icon: 'import' as const,
         onPress: handleImport,
       },
       {
-        label: 'Add deck manually',
+        label: t('decks.addDeckMenu.manualItem'),
         icon: 'edit' as const,
         onPress: () => navigation.navigate('NewDeck'),
       },
     ],
-    [handleImport, navigation],
+    [handleImport, navigation, t],
   );
 
   const exportDeckToFile = useMemo(
@@ -225,7 +242,7 @@ export default function DecksScreen({ navigation }: Props) {
       const deck = decks.find(candidate => candidate.id === exportDeckId);
       if (!deck) {
         setCustomVisible(false);
-        Alert.alert('Export failed', 'This deck no longer exists.');
+        Alert.alert(t('importExport.exportAlert.failedTitle'), t('importExport.exportAlert.deckGone'));
         return;
       }
       exportInFlight.current = true;
@@ -233,27 +250,34 @@ export default function DecksScreen({ navigation }: Props) {
       try {
         const name = await exportDeck(deck, findCategory(deck.categoryId, categories), options);
         setCustomVisible(false);
-        Alert.alert('Deck exported', name ? `Saved as ${name}.` : 'The deck was saved.');
+        Alert.alert(
+          t('importExport.exportAlert.successTitle'),
+          name
+            ? t('importExport.exportAlert.savedAs', { name })
+            : t('importExport.exportAlert.saved'),
+        );
       } catch (exportError) {
         if (exportError instanceof ExportCancelledError) {
           return;
         }
         Alert.alert(
-          'Export failed',
-          exportError instanceof Error ? exportError.message : 'Could not export the deck.',
+          t('importExport.exportAlert.failedTitle'),
+          exportError instanceof Error
+            ? exportError.message
+            : t('importExport.exportAlert.failedFallback'),
         );
       } finally {
         exportInFlight.current = false;
         setIsExportingDeck(false);
       }
     },
-    [decks, categories, exportDeckId],
+    [decks, categories, exportDeckId, t],
   );
 
   const exportFormatItems = useMemo(
     () => [
-      { label: 'JSON', icon: 'file' as const, onPress: () => startExport({ format: 'json' }) },
-      { label: 'CSV', icon: 'file' as const, onPress: () => setExportMenu('separator') },
+      { label: EXPORT_FORMAT_NAMES.json, icon: 'file' as const, onPress: () => startExport({ format: 'json' }) },
+      { label: EXPORT_FORMAT_NAMES.csv, icon: 'file' as const, onPress: () => setExportMenu('separator') },
     ],
     [startExport],
   );
@@ -261,18 +285,18 @@ export default function DecksScreen({ navigation }: Props) {
   const exportSeparatorItems = useMemo(
     () => [
       ...SEPARATOR_PRESETS.map(preset => ({
-        label: `${preset.label}${preset.key === 'tab' ? '' : ` (${preset.value})`}`,
+        label: t(`importExport.separators.${preset.key}`),
         onPress: () => startExport({ format: 'csv', separator: preset.value }),
       })),
       {
-        label: 'Custom…',
+        label: t('decks.csvSeparatorMenu.customItem'),
         onPress: () => {
           setCustomSeparator('');
           setCustomVisible(true);
         },
       },
     ],
-    [startExport],
+    [startExport, t],
   );
 
   const exportWithCustomSeparator = useCallback(() => {
@@ -295,7 +319,7 @@ export default function DecksScreen({ navigation }: Props) {
           value={query}
           onChangeText={setQuery}
           onClose={closeSearch}
-          placeholder="Search decks"
+          placeholder={t('decks.decksScreen.searchPlaceholder')}
         />
       ) : null}
       <FlatList
@@ -308,18 +332,20 @@ export default function DecksScreen({ navigation }: Props) {
           // No matches stays top-aligned: the keyboard overlays the bottom half of the list.
           visibleDecks.length === 0 && decks.length === 0 && styles.listContentEmpty,
         ]}
-        ListHeaderComponent={error ? <Text style={styles.error}>{error}</Text> : undefined}
+        ListHeaderComponent={
+          error ? <Text style={styles.error}>{t('decks.decksScreen.loadError')}</Text> : undefined
+        }
         ListEmptyComponent={
           decks.length === 0 ? (
             <EmptyState
-              title="No decks yet"
-              message="Use the + button to import a deck file and create your first deck."
+              title={t('decks.decksScreen.emptyTitle')}
+              message={t('decks.decksScreen.emptyMessage')}
             />
           ) : (
             <EmptyState
-              title="No matches"
-              message={`Nothing matches "${query.trim()}".`}
-              actionLabel="Clear search"
+              title={t('common.search.noMatchesTitle')}
+              message={t('common.search.noMatchesMessage', { query: query.trim() })}
+              actionLabel={t('common.search.clearSearchButton')}
               onAction={() => setQuery('')}
             />
           )
@@ -335,21 +361,21 @@ export default function DecksScreen({ navigation }: Props) {
               shares={answerShares(stats)}
               sessionCount={summary.total}
               activeCount={summary.active}
-              lastSession={formatDate(summary.lastSessionAt)}
+              lastSession={formatDate(summary.lastSessionAt, t)}
               onStart={() => handleStartSession(item)}
               menuItems={[
                 {
-                  label: 'Start session with options',
+                  label: t('decks.deckOptionsMenu.startWithOptionsItem'),
                   icon: 'play',
                   onPress: () => openSessionSetup(item),
                 },
                 {
-                  label: 'Edit deck',
+                  label: t('decks.deckOptionsMenu.editItem'),
                   icon: 'edit',
                   onPress: () => navigation.navigate('EditDeck', { deckId: item.id }),
                 },
                 {
-                  label: 'Export to file',
+                  label: t('decks.deckOptionsMenu.exportItem'),
                   icon: 'export',
                   onPress: () => {
                     setExportDeckId(item.id);
@@ -357,7 +383,7 @@ export default function DecksScreen({ navigation }: Props) {
                   },
                 },
                 {
-                  label: 'Delete deck',
+                  label: t('decks.deckOptionsMenu.deleteItem'),
                   icon: 'delete',
                   destructive: true,
                   onPress: () => confirmDelete(item),
@@ -370,7 +396,7 @@ export default function DecksScreen({ navigation }: Props) {
 
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Add a deck"
+        accessibilityLabel={t('decks.decksScreen.addDeckA11yLabel')}
         disabled={isImporting}
         onPress={() => setOpenMenu('add')}
         style={({ pressed }) => [styles.fab, pressed && styles.fabPressed]}>
@@ -386,14 +412,18 @@ export default function DecksScreen({ navigation }: Props) {
 
       <MenuSheet
         visible={openMenu !== null}
-        title="Add a deck"
+        title={t('decks.addDeckMenu.title')}
         items={addMenuItems}
         onClose={() => setOpenMenu(null)}
       />
 
       <MenuSheet
         visible={exportMenu !== null}
-        title={exportMenu === 'separator' ? 'CSV separator' : 'Export deck to file'}
+        title={
+          exportMenu === 'separator'
+            ? t('decks.csvSeparatorMenu.title')
+            : t('decks.exportFormatMenu.title')
+        }
         items={exportMenu === 'separator' ? exportSeparatorItems : exportFormatItems}
         onClose={() => setExportMenu(null)}
       />

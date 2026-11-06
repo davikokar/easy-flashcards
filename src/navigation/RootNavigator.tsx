@@ -11,6 +11,7 @@ import NewCategoryScreen from '../screens/NewCategoryScreen';
 import StudyScreen from '../screens/StudyScreen';
 import StatsScreen from '../screens/StatsScreen';
 import DeckStatsScreen from '../screens/DeckStatsScreen';
+import { useT } from '../i18n/I18nProvider';
 import { useDecks } from '../state/DecksContext';
 import { isSessionActive } from '../utils/stats';
 import {
@@ -51,69 +52,77 @@ const screenOptions = {
 } as const;
 
 function DecksNavigator() {
+  const t = useT();
   return (
     <DecksStack.Navigator screenOptions={screenOptions}>
       <DecksStack.Screen
         name="DecksList"
         component={DecksScreen}
-        options={{ title: 'Decks' }}
+        options={{ title: t('navigation.headers.decksList') }}
       />
       <DecksStack.Screen
         name="EditDeck"
         component={EditDeckScreen}
-        options={{ title: 'Edit deck' }}
+        options={{ title: t('navigation.headers.editDeck') }}
       />
       <DecksStack.Screen
         name="NewDeck"
         component={EditDeckScreen}
-        options={{ title: 'New deck' }}
+        options={{ title: t('navigation.headers.newDeck') }}
       />
     </DecksStack.Navigator>
   );
 }
 
 function LearnNavigator() {
+  const t = useT();
   return (
     <LearnStack.Navigator screenOptions={screenOptions}>
       <LearnStack.Screen
         name="LearnList"
         component={LearnScreen}
-        options={{ title: 'Learn' }}
+        options={{ title: t('navigation.headers.learnList') }}
       />
-      <LearnStack.Screen name="Study" component={StudyScreen} options={{ title: 'Session' }} />
+      <LearnStack.Screen
+        name="Study"
+        component={StudyScreen}
+        options={{ title: t('navigation.headers.study') }}
+      />
     </LearnStack.Navigator>
   );
 }
 
 function CategoriesNavigator() {
+  const t = useT();
   return (
     <CategoriesStack.Navigator screenOptions={screenOptions}>
       <CategoriesStack.Screen
         name="CategoriesList"
         component={CategoriesScreen}
-        options={{ title: 'Categories' }}
+        options={{ title: t('navigation.headers.categoriesList') }}
       />
       <CategoriesStack.Screen
         name="NewCategory"
         component={NewCategoryScreen}
-        options={{ title: 'New category' }}
+        options={{ title: t('navigation.headers.newCategory') }}
       />
     </CategoriesStack.Navigator>
   );
 }
 
 function StatsNavigator() {
+  const t = useT();
   return (
     <StatsStack.Navigator screenOptions={screenOptions}>
       <StatsStack.Screen
         name="StatsOverview"
         component={StatsScreen}
-        options={{ title: 'Statistics' }}
+        options={{ title: t('navigation.headers.statsOverview') }}
       />
       <StatsStack.Screen
         name="DeckStats"
         component={DeckStatsScreen}
-        options={{ title: 'Deck statistics' }}
+        options={{ title: t('navigation.headers.deckStats') }}
       />
     </StatsStack.Navigator>
   );
@@ -126,6 +135,7 @@ const renderStatsIcon = ({ color }: { color: string }) => <StatsIcon color={colo
 
 export default function RootNavigator() {
   const { sessions, isLoading } = useDecks();
+  const t = useT();
 
   // The landing tab depends on persisted sessions, so wait for them before mounting the tabs.
   if (isLoading) {
@@ -139,7 +149,8 @@ export default function RootNavigator() {
   const hasActiveSession = sessions.some(isSessionActive);
 
   return (
-    <NavigationContainer theme={navigationTheme}>
+    // The layout is never mirrored; text direction is handled per paragraph.
+    <NavigationContainer theme={navigationTheme} direction="ltr">
       <Tabs.Navigator
         initialRouteName={hasActiveSession ? 'LearnTab' : 'DecksTab'}
         screenOptions={{
@@ -152,7 +163,7 @@ export default function RootNavigator() {
           name="DecksTab"
           component={DecksNavigator}
           options={{
-            title: 'Decks',
+            title: t('navigation.tabs.decks'),
             tabBarIcon: renderDecksIcon,
           }}
         />
@@ -160,7 +171,7 @@ export default function RootNavigator() {
           name="LearnTab"
           component={LearnNavigator}
           options={{
-            title: 'Learn',
+            title: t('navigation.tabs.learn'),
             tabBarIcon: renderLearnIcon,
           }}
         />
@@ -168,7 +179,7 @@ export default function RootNavigator() {
           name="CategoriesTab"
           component={CategoriesNavigator}
           options={{
-            title: 'Categories',
+            title: t('navigation.tabs.categories'),
             tabBarIcon: renderCategoriesIcon,
           }}
         />
@@ -176,7 +187,7 @@ export default function RootNavigator() {
           name="StatsTab"
           component={StatsNavigator}
           options={{
-            title: 'Statistics',
+            title: t('navigation.tabs.statistics'),
             tabBarIcon: renderStatsIcon,
           }}
         />

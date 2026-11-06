@@ -2,6 +2,7 @@ import React from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { AnswerIcon } from './AnswerIcons';
 import Button from './Button';
+import { useT } from '../i18n/I18nProvider';
 import { colors, radius, spacing } from '../theme';
 
 type Props = {
@@ -52,30 +53,31 @@ export default function SessionSetupDialog({
   onStart,
   onCancel,
 }: Props) {
+  const t = useT();
   return (
     <Modal transparent visible={visible} animationType="fade" onRequestClose={onCancel}>
       <Pressable style={styles.backdrop} onPress={onCancel}>
         <Pressable style={styles.dialog}>
           <View style={styles.header}>
-            <Text style={styles.title}>Start session</Text>
+            <Text style={styles.title}>{t('decks.sessionSetupDialog.title')}</Text>
             <Text style={styles.subtitle} numberOfLines={1}>
               {deckName}
             </Text>
           </View>
           <OptionRow
-            label="Inverted"
-            description="Show the answer first and the question on the back."
+            label={t('decks.sessionSetupDialog.invertedLabel')}
+            description={t('decks.sessionSetupDialog.invertedDescription')}
             checked={inverted}
             onChange={onInvertedChange}
           />
           <OptionRow
-            label="Shuffle"
-            description="Study the cards in random order."
+            label={t('decks.sessionSetupDialog.shuffleLabel')}
+            description={t('decks.sessionSetupDialog.shuffleDescription')}
             checked={shuffled}
             onChange={onShuffledChange}
           />
-          <Button label="Start" onPress={onStart} />
-          <Button label="Cancel" variant="secondary" onPress={onCancel} />
+          <Button label={t('common.actions.start')} onPress={onStart} />
+          <Button label={t('common.actions.cancel')} variant="secondary" onPress={onCancel} />
         </Pressable>
       </Pressable>
     </Modal>

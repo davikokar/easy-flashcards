@@ -22,7 +22,8 @@ const MIME_TYPES = [
 export type ImportedFile = {
   /** Detected from the file's content. */
   format: DeckImportFormat;
-  deckName: string;
+  /** The file's title, else its name; null when neither is usable, and the screen then supplies the default. */
+  deckName: string | null;
   fileName: string | null;
   description: string;
   /** Unresolved; `addDeck` stores null for a reference that matches no category. */
@@ -60,7 +61,7 @@ export async function pickAndParseDeck(): Promise<ImportedFile> {
   });
 
   if (copy.status !== 'success') {
-    throw new DeckImportError('Could not read the selected file.');
+    throw new DeckImportError('unreadable', 'Could not read the selected file.');
   }
 
   const raw = await readFile(fileUriToPath(copy.localUri), 'utf8');

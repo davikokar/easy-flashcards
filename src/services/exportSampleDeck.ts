@@ -26,7 +26,7 @@ export async function exportSampleDeck(): Promise<SampleDeckExportOutcome[]> {
       if (error instanceof ExportCancelledError) {
         outcomes.push({ ...file, status: 'cancelled' });
       } else {
-        const message = error instanceof Error ? error.message : 'Unknown error';
+        const message = error instanceof Error ? error.message : null;
         outcomes.push({ ...file, status: 'failed', message });
       }
     }

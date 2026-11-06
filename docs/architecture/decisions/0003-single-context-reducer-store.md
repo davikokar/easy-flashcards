@@ -185,6 +185,31 @@ Amendment 1. The decision and `addDeck`'s shape are unchanged.
   `categoryId` — the same fields a JSON import passes.
 - Nothing persisted changes.
 
+## Amendment 8 — 2026-11-05
+
+Recorded ahead of the work it governs, under
+[ADR-0020](0020-ui-text-translated-through-typed-catalogue.md), with the owner's approval. The
+decision above is unchanged — one Context over `useReducer` holds all app data, and there is no
+second store. One sentence of it is narrowed:
+
+- **"No second provider" now reads "no second store".** ADR-0020 adds `I18nProvider` in
+  `src/i18n/I18nProvider.tsx`, a second React Context whose value is a `Translator` derived from
+  the device language when it mounts. It is configuration, not a store: no reducer, no actions,
+  no dispatch, no load or save effect, nothing persisted, and nothing in it that the user changes.
+  [`App.tsx`](../../../App.tsx) nests it outside the store, as
+  `SafeAreaProvider > I18nProvider > DecksProvider > RootNavigator`.
+- **The store does not hold text and does not read the language.** The reducer and
+  `DecksContextValue` are unchanged; `State.error` keeps the raw diagnostic text, and the screen
+  that shows it supplies the translated wording.
+- **`useT()` does not throw outside its provider**, unlike `useDecks()`: it returns the English
+  translator, because a component with no provider above it should still read as English rather
+  than crash.
+- **What would make it a store.** Anything the user chooses or the app saves — an in-app language
+  choice, above all — is not allowed in this context. Such a setting is persisted state, so it
+  needs a storage key ([ADR-0004](0004-versioned-defensive-storage.md)), an ADR and approval, and
+  then belongs in this store or in a decision that says otherwise.
+- Nothing persisted changes.
+
 ## References
 
 - [`src/state/reducer.ts`](../../../src/state/reducer.ts)
@@ -199,4 +224,6 @@ Amendment 1. The decision and `addDeck`'s shape are unchanged.
   (Amendment 5; ADR-0011 Amendment 4)
 - [ADR-0019](0019-deck-file-format-version-2.md) — `addDeck` resolves a category reference
   (Amendment 6); a CSV import passes its title and description (Amendment 7)
+- [ADR-0020](0020-ui-text-translated-through-typed-catalogue.md) — the read-only i18n context,
+  which is not a store (Amendment 8)
 - [ARCHITECTURE.md §2, §3](../ARCHITECTURE.md)

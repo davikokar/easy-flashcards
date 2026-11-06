@@ -84,11 +84,11 @@ describe('validateCustomSeparator', () => {
 });
 
 describe('SEPARATOR_PRESETS', () => {
-  it('lists comma, semicolon and tab with labels', () => {
-    expect(SEPARATOR_PRESETS.map(preset => [preset.label, preset.value])).toEqual([
-      ['Comma', ','],
-      ['Semicolon', ';'],
-      ['Tab', '\t'],
+  it('lists comma, semicolon and tab by key, with no label', () => {
+    expect(SEPARATOR_PRESETS.map(preset => [preset.key, preset.value])).toEqual([
+      ['comma', ','],
+      ['semicolon', ';'],
+      ['tab', '\t'],
     ]);
   });
 });
