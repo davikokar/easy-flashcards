@@ -68,12 +68,13 @@ export default function CategoryColorPicker({ palette, value, onChange, onCustom
       accessibilityState={{ selected: customSelected }}
       onPress={onCustomPress}
       style={({ pressed }) => [
-        styles.swatch,
+        styles.customSwatch,
         boxStyle,
         { backgroundImage: CUSTOM_BACKGROUND },
-        customSelected && styles.swatchSelected,
         pressed && styles.pressed,
       ]}>
+      {/* The gradient does not follow a border's rounded edge, so the ring is an overlay. */}
+      {customSelected ? <View pointerEvents="none" style={styles.customRing} /> : null}
       {/* A rainbow is no ground for the tick the palette swatches use, so it sits on a disc. */}
       {customSelected ? (
         <View style={styles.disc}>
@@ -120,6 +121,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   swatchSelected: {
+    borderColor: colors.text,
+  },
+  customSwatch: {
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  customRing: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: radius.md,
+    borderWidth: 3,
     borderColor: colors.text,
   },
   disc: {
