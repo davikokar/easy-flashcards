@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import type { ScrollViewInstance } from 'react-native';
 import { SessionResult } from '../types';
 import { useT } from '../i18n/I18nProvider';
@@ -8,12 +8,15 @@ import { colors, spacing } from '../theme';
 type Props = {
   results: SessionResult[];
   currentIndex: number;
+  total: number;
+  onSelect: (position: number) => void;
 };
 
 const TILE_WIDTH = 12;
 const TILE_GAP = 4;
+const TILE_HIT_SLOP = { top: 3, bottom: 3, left: TILE_GAP / 2, right: TILE_GAP / 2 };
 
-export default function HistoryStrip({ results, currentIndex }: Props) {
+export default function HistoryStrip({ results, currentIndex, total, onSelect }: Props) {
   const t = useT();
   const scrollRef = useRef<ScrollViewInstance>(null);
 
@@ -30,8 +33,15 @@ export default function HistoryStrip({ results, currentIndex }: Props) {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.content}>
         {results.map((result, position) => (
-          <View
+          <Pressable
             key={position}
+            accessibilityRole="button"
+            accessibilityLabel={t('study.progressHeader.position', {
+              current: position + 1,
+              total,
+            })}
+            hitSlop={TILE_HIT_SLOP}
+            onPress={() => onSelect(position)}
             style={[
               styles.tile,
               result.answer === 'ok'

@@ -517,7 +517,8 @@ The densest screen in the app, and the one with vocabulary worth being precise a
 - **History strip** (`HistoryStrip`, labelled `Answers so far`): the horizontal row of small tiles,
   one per answer — green for ok, yellow (warning) for okeish, red for not ok. The tile for the
   card on screen is taller and outlined. Auto-scrolls to keep the current card in view. In review
-  mode it shows the **pass's own** answers, not the session's. Its tiles are the **History strip**'s
+  mode it shows the **pass's own** answers, not the session's. Tapping a tile shows that answered
+  card, as swiping back does; the tile for the card already on screen does nothing. Its tiles are the **History strip**'s
   and are not the **Answer tiles** of the Deck statistics screen, which are counts.
   Aliases: **the history tiles**
 - **Flip card** (`FlipCard`): the card itself. Two faces, **Question** and **Answer**, rotated with

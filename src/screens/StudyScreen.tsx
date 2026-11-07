@@ -189,6 +189,17 @@ export default function StudyScreen({ route, navigation }: Props) {
     [translateX],
   );
 
+  const goToAnsweredCard = useCallback(
+    (target: number) => {
+      const { viewIndex: from, frontier } = navStateRef.current;
+      if (target === from || target >= frontier) {
+        return;
+      }
+      slideTo(target, target < from ? windowWidth : -windowWidth);
+    },
+    [slideTo, windowWidth],
+  );
+
   const panResponder = useMemo(
     () =>
       PanResponder.create({
@@ -373,7 +384,12 @@ export default function StudyScreen({ route, navigation }: Props) {
       </View>
       <SuccessBar rate={(index / queue.length) * 100} height={6} color={colors.text} />
 
-      <HistoryStrip results={results} currentIndex={viewIndex} />
+      <HistoryStrip
+        results={results}
+        currentIndex={viewIndex}
+        total={queue.length}
+        onSelect={goToAnsweredCard}
+      />
 
       <Animated.View
         style={[styles.cardArea, { transform: [{ translateX }] }]}
