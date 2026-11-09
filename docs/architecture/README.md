@@ -115,6 +115,10 @@ for the required format and status rules.
 > a new `@easy-flashcards/settings/v1` key that the i18n provider loads and saves (not the store),
 > and buy a one-off tip through `react-native-iap`. ARCHITECTURE.md links to it now that the work
 > has landed.
+> ADR-0022 was recorded ahead of its work: the app's first network calls, to share decks through a
+> public GitHub repository and a Cloudflare Worker that alone writes to it, with a fifth storage key
+> for the author's identity and an optional `communityId` on a deck. ARCHITECTURE.md links to it
+> now that the work has landed.
 
 ### Index
 
@@ -141,3 +145,4 @@ for the required format and status rules.
 | [ADR-0019](decisions/0019-deck-file-format-version-2.md) | Deck files move to format version 2 — CSV and JSON carry the same metadata, and the category as one language-neutral reference | Active | 2026-11-05 |
 | [ADR-0020](decisions/0020-ui-text-translated-through-typed-catalogue.md) | UI text is translated through an in-repo typed catalogue, and the language follows the device | Active | 2026-11-05 |
 | [ADR-0021](decisions/0021-settings-screen-language-choice-and-tip-purchase.md) | A Settings screen holds a stored language choice, the app's links, and a one-off tip purchase | Active | 2026-11-06 |
+| [ADR-0022](decisions/0022-community-decks-shared-through-github-and-a-worker.md) | Community decks are shared through a public GitHub repository and a Cloudflare Worker, with no accounts | Active | 2026-11-09 |

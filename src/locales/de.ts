@@ -320,6 +320,32 @@ const messages: Catalogue = {
         'Einen Kaffee zu spendieren ist gerade nicht möglich. Bitte versuche es später erneut.',
     },
   },
+  community: {
+    title: 'Community-Stapel',
+    searchPlaceholder: 'Community-Stapel durchsuchen',
+    retryButton: 'Erneut versuchen',
+    emptyTitle: 'Noch keine Community-Stapel',
+    emptyMessage: 'Teile einen deiner Stapel über sein Optionsmenü, um die Sammlung zu starten.',
+    loadFailedTitle: 'Stapel konnten nicht geladen werden',
+    yoursBadge: 'Von dir',
+    downloadA11yLabel: '{name} herunterladen',
+    shareAlert: {
+      confirmTitle: 'In der Community teilen',
+      confirmMessage:
+        '"{name}" veröffentlichen, damit jeder den Stapel herunterladen kann? Wenn du diesen Stapel schon geteilt hast, wird die geteilte Kopie aktualisiert.',
+      confirmButton: 'Teilen',
+      noCardsMessage: 'Füge mindestens eine Karte hinzu, bevor du diesen Stapel teilst.',
+      successTitle: 'Stapel geteilt',
+      successMessage: '"{name}" ist jetzt in den Community-Stapeln.',
+      failedTitle: 'Teilen fehlgeschlagen',
+    },
+    errors: {
+      network: 'Die Community ist nicht erreichbar. Prüfe deine Internetverbindung und versuche es erneut.',
+      server: 'Beim Community-Dienst ist ein Problem aufgetreten. Versuche es später erneut.',
+      notOwner: 'Dieser Stapel wurde von einem anderen Gerät geteilt und kann von diesem Gerät nicht aktualisiert werden.',
+      invalid: 'Dieser Stapel kann nicht geteilt werden. Prüfe, ob er einen Titel und vollständige Karten hat.',
+    },
+  },
   decks: {
     decksScreen: {
       searchA11yLabel: 'Stapel durchsuchen',
@@ -342,11 +368,13 @@ const messages: Catalogue = {
       title: 'Stapel hinzufügen',
       importItem: 'Stapel aus Datei importieren',
       manualItem: 'Stapel manuell hinzufügen',
+      communityItem: 'Aus der Community importieren',
     },
     deckOptionsMenu: {
       startWithOptionsItem: 'Sitzung mit Optionen starten',
       editItem: 'Stapel bearbeiten',
       exportItem: 'In Datei exportieren',
+      shareItem: 'In der Community teilen',
       deleteItem: 'Stapel löschen',
     },
     exportFormatMenu: {

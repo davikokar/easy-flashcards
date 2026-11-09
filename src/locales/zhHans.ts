@@ -312,6 +312,32 @@ const messages: Catalogue = {
       message: '目前无法请喝咖啡，请稍后再试。',
     },
   },
+  community: {
+    title: '社区卡组',
+    searchPlaceholder: '搜索社区卡组',
+    retryButton: '重试',
+    emptyTitle: '还没有社区卡组',
+    emptyMessage: '从卡组的选项菜单中分享你的卡组，开始收藏。',
+    loadFailedTitle: '无法加载卡组',
+    yoursBadge: '我的',
+    downloadA11yLabel: '下载 {name}',
+    shareAlert: {
+      confirmTitle: '分享到社区',
+      confirmMessage:
+        '公开“{name}”，让所有人都能下载吗？如果你之前分享过这个卡组，已分享的副本将被更新。',
+      confirmButton: '分享',
+      noCardsMessage: '分享这个卡组之前，请至少添加一张卡片。',
+      successTitle: '卡组已分享',
+      successMessage: '“{name}”现在已在社区卡组中。',
+      failedTitle: '分享失败',
+    },
+    errors: {
+      network: '无法连接到社区。请检查网络连接后重试。',
+      server: '社区服务出现问题。请稍后再试。',
+      notOwner: '这个卡组是从另一台设备分享的，所以无法从这台设备更新。',
+      invalid: '无法分享这个卡组。请检查它是否有标题和完整的卡片。',
+    },
+  },
   decks: {
     decksScreen: {
       searchA11yLabel: '搜索卡组',
@@ -333,11 +359,13 @@ const messages: Catalogue = {
       title: '添加卡组',
       importItem: '从文件导入卡组',
       manualItem: '手动添加卡组',
+      communityItem: '从社区导入',
     },
     deckOptionsMenu: {
       startWithOptionsItem: '带选项开始学习会话',
       editItem: '编辑卡组',
       exportItem: '导出到文件',
+      shareItem: '分享到社区',
       deleteItem: '删除卡组',
     },
     exportFormatMenu: {

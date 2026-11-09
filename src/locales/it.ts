@@ -321,6 +321,32 @@ export const it: Language = {
         message: 'Offrire un caffè non è possibile al momento. Riprova più tardi.',
       },
     },
+    community: {
+      title: 'Mazzi della community',
+      searchPlaceholder: 'Cerca mazzi della community',
+      retryButton: 'Riprova',
+      emptyTitle: 'Ancora nessun mazzo della community',
+      emptyMessage: "Condividi uno dei tuoi mazzi dal suo menu delle opzioni per avviare la raccolta.",
+      loadFailedTitle: 'Impossibile caricare i mazzi',
+      yoursBadge: 'Tuo',
+      downloadA11yLabel: 'Scarica {name}',
+      shareAlert: {
+        confirmTitle: 'Condividi con la community',
+        confirmMessage:
+          'Pubblicare "{name}" in modo che chiunque possa scaricarlo? Se hai già condiviso questo mazzo, la copia condivisa viene aggiornata.',
+        confirmButton: 'Condividi',
+        noCardsMessage: 'Aggiungi almeno una carta prima di condividere questo mazzo.',
+        successTitle: 'Mazzo condiviso',
+        successMessage: '"{name}" è ora tra i mazzi della community.',
+        failedTitle: 'Condivisione non riuscita',
+      },
+      errors: {
+        network: 'Impossibile raggiungere la community. Controlla la connessione a Internet e riprova.',
+        server: 'Il servizio della community ha avuto un problema. Riprova più tardi.',
+        notOwner: 'Questo mazzo è stato condiviso da un altro dispositivo, quindi non può essere aggiornato da questo.',
+        invalid: 'Questo mazzo non può essere condiviso. Controlla che abbia un titolo e carte complete.',
+      },
+    },
     decks: {
       decksScreen: {
         searchA11yLabel: 'Cerca mazzi',
@@ -344,11 +370,13 @@ export const it: Language = {
         title: 'Aggiungi un mazzo',
         importItem: 'Importa mazzo da file',
         manualItem: 'Aggiungi mazzo manualmente',
+        communityItem: 'Importa dalla community',
       },
       deckOptionsMenu: {
         startWithOptionsItem: 'Avvia sessione con opzioni',
         editItem: 'Modifica mazzo',
         exportItem: 'Esporta in un file',
+        shareItem: 'Condividi con la community',
         deleteItem: 'Elimina mazzo',
       },
       exportFormatMenu: {

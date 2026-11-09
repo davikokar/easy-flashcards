@@ -3,6 +3,7 @@ import { answers } from './answers';
 import { categories } from './categories';
 import { categoryNames } from './categoryNames';
 import { common } from './common';
+import { community } from './community';
 import { deckStats } from './deckStats';
 import { decks } from './decks';
 import { editDeck } from './editDeck';
@@ -23,6 +24,7 @@ export const en = {
   shell,
   settings,
   decks,
+  community,
   editDeck,
   learn,
   study,

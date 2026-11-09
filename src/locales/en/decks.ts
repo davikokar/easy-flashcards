@@ -20,11 +20,13 @@ export const decks = {
     title: 'Add a deck',
     importItem: 'Import deck from file',
     manualItem: 'Add deck manually',
+    communityItem: 'Import from community',
   },
   deckOptionsMenu: {
     startWithOptionsItem: 'Start session with options',
     editItem: 'Edit deck',
     exportItem: 'Export to file',
+    shareItem: 'Share to community',
     deleteItem: 'Delete deck',
   },
   exportFormatMenu: {

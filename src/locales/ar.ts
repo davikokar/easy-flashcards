@@ -360,6 +360,32 @@ const messages: Catalogue = {
       message: 'شراء القهوة غير متاح حاليًا. يُرجى المحاولة لاحقًا.',
     },
   },
+  community: {
+    title: 'مجموعات المجتمع',
+    searchPlaceholder: 'البحث في مجموعات المجتمع',
+    retryButton: 'إعادة المحاولة',
+    emptyTitle: 'لا توجد مجموعات من المجتمع بعد',
+    emptyMessage: 'شارك إحدى مجموعاتك من قائمة خياراتها لتبدأ المجموعة.',
+    loadFailedTitle: 'تعذر تحميل المجموعات',
+    yoursBadge: 'لك',
+    downloadA11yLabel: 'تنزيل {name}',
+    shareAlert: {
+      confirmTitle: 'مشاركة مع المجتمع',
+      confirmMessage:
+        'هل تريد نشر "{name}" ليتمكن أي شخص من تنزيلها؟ إذا كنت قد شاركت هذه المجموعة من قبل فسيتم تحديث النسخة المشارَكة.',
+      confirmButton: 'مشاركة',
+      noCardsMessage: 'أضف بطاقة واحدة على الأقل قبل مشاركة هذه المجموعة.',
+      successTitle: 'تمت مشاركة المجموعة',
+      successMessage: 'أصبحت "{name}" الآن ضمن مجموعات المجتمع.',
+      failedTitle: 'فشلت المشاركة',
+    },
+    errors: {
+      network: 'تعذر الوصول إلى المجتمع. تحقق من اتصالك بالإنترنت وحاول مرة أخرى.',
+      server: 'حدثت مشكلة في خدمة المجتمع. حاول مرة أخرى لاحقًا.',
+      notOwner: 'تمت مشاركة هذه المجموعة من جهاز آخر، لذا لا يمكن تحديثها من هذا الجهاز.',
+      invalid: 'لا يمكن مشاركة هذه المجموعة. تحقق من أن لها عنوانًا وبطاقات كاملة.',
+    },
+  },
   decks: {
     decksScreen: {
       searchA11yLabel: 'البحث في المجموعات',
@@ -381,11 +407,13 @@ const messages: Catalogue = {
       title: 'إضافة مجموعة',
       importItem: 'استيراد مجموعة من ملف',
       manualItem: 'إضافة مجموعة يدويًا',
+      communityItem: 'استيراد من المجتمع',
     },
     deckOptionsMenu: {
       startWithOptionsItem: 'بدء جلسة بخيارات',
       editItem: 'تعديل المجموعة',
       exportItem: 'تصدير إلى ملف',
+      shareItem: 'مشاركة مع المجتمع',
       deleteItem: 'حذف المجموعة',
     },
     exportFormatMenu: {

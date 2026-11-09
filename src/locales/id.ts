@@ -313,6 +313,32 @@ const messages: Catalogue = {
       message: 'Mentraktir kopi tidak tersedia saat ini. Silakan coba lagi nanti.',
     },
   },
+  community: {
+    title: 'Dek komunitas',
+    searchPlaceholder: 'Cari dek komunitas',
+    retryButton: 'Coba lagi',
+    emptyTitle: 'Belum ada dek komunitas',
+    emptyMessage: 'Bagikan salah satu dekmu dari menu opsinya untuk memulai koleksi.',
+    loadFailedTitle: 'Dek tidak dapat dimuat',
+    yoursBadge: 'Milikmu',
+    downloadA11yLabel: 'Unduh {name}',
+    shareAlert: {
+      confirmTitle: 'Bagikan ke komunitas',
+      confirmMessage:
+        'Publikasikan "{name}" agar siapa pun dapat mengunduhnya? Jika dek ini pernah dibagikan, salinan yang dibagikan akan diperbarui.',
+      confirmButton: 'Bagikan',
+      noCardsMessage: 'Tambahkan setidaknya satu kartu sebelum membagikan dek ini.',
+      successTitle: 'Dek dibagikan',
+      successMessage: '"{name}" kini ada di dek komunitas.',
+      failedTitle: 'Gagal membagikan',
+    },
+    errors: {
+      network: 'Komunitas tidak dapat dijangkau. Periksa koneksi internetmu lalu coba lagi.',
+      server: 'Layanan komunitas mengalami masalah. Coba lagi nanti.',
+      notOwner: 'Dek ini dibagikan dari perangkat lain, jadi tidak dapat diperbarui dari perangkat ini.',
+      invalid: 'Dek ini tidak dapat dibagikan. Pastikan dek memiliki judul dan kartu yang lengkap.',
+    },
+  },
   decks: {
     decksScreen: {
       searchA11yLabel: 'Cari dek',
@@ -335,11 +361,13 @@ const messages: Catalogue = {
       title: 'Tambah dek',
       importItem: 'Impor dek dari file',
       manualItem: 'Tambah dek secara manual',
+      communityItem: 'Impor dari komunitas',
     },
     deckOptionsMenu: {
       startWithOptionsItem: 'Mulai sesi dengan opsi',
       editItem: 'Edit dek',
       exportItem: 'Ekspor ke file',
+      shareItem: 'Bagikan ke komunitas',
       deleteItem: 'Hapus dek',
     },
     exportFormatMenu: {

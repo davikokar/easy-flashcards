@@ -18,6 +18,8 @@ export type Deck = {
   sourceFileName: string | null;
   createdAt: number;
   lastStudiedAt: number | null;
+  /** The `deck_id` of this deck's published community copy; absent when never shared (ADR-0022). */
+  communityId?: string;
   cards: Card[];
 };
 

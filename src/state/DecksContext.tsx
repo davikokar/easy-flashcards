@@ -26,10 +26,13 @@ type DecksContextValue = State & {
     description: string;
     categoryId: string | null;
     sourceFileName: string | null;
+    /** Set only for a downloaded copy of the user's own community deck (ADR-0022). */
+    communityId?: string;
     cards: ParsedCard[];
   }) => Deck;
   updateDeck: (deckId: string, edit: DeckEdit) => void;
   deleteDeck: (deckId: string) => void;
+  setDeckCommunityId: (deckId: string, communityId: string) => void;
   startSession: (deck: Deck, options: SessionOptions, cardIds?: string[]) => Session;
   replaySession: (
     sourceSessionId: string,
@@ -128,6 +131,7 @@ export function DecksProvider({ children }: { children: React.ReactNode }) {
       sourceFileName: input.sourceFileName,
       createdAt: Date.now(),
       lastStudiedAt: null,
+      ...(input.communityId ? { communityId: input.communityId } : {}),
       cards: input.cards.map(card => ({
         id: createId('card'),
         question: card.question,
@@ -192,6 +196,8 @@ export function DecksProvider({ children }: { children: React.ReactNode }) {
       addDeck,
       updateDeck,
       deleteDeck: deckId => dispatch({ type: 'deleteDeck', deckId }),
+      setDeckCommunityId: (deckId, communityId) =>
+        dispatch({ type: 'setDeckCommunityId', deckId, communityId }),
       startSession,
       replaySession,
       recordAnswer: (sessionId, cardId, answer) =>

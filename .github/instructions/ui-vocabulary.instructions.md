@@ -57,6 +57,15 @@ stack. The two Categories screens are described in more detail under **Categorie
   deck manually** in the **Add deck menu**. One component, two routes: say **Edit deck screen** for
   an existing deck and **New deck screen** for a new one. Described under **Edit deck screen**
   below.
+- **Community decks screen** (`CommunityDecksScreen`, route `CommunityDecks`, no params): the decks
+  other users shared, one **Community deck card** each, with a search field and a Download button
+  per card. Titled `Community decks`. Pushed onto the Decks stack from **Import from community** in
+  the **Add deck menu**. A **Community deck card** (`CommunityDeckCard`) shows the deck's Category
+  square, title, description, card count, a `Yours` pill when this device published it, and a
+  **Download button** that adds a copy to the library
+  ([ADR-0022](../../docs/architecture/decisions/0022-community-decks-shared-through-github-and-a-worker.md)).
+  Not the **Decks screen**: nothing on it is in the library until downloaded. Aliases: **community
+  list**
 - **Learn screen** (`LearnScreen`, route `LearnList`): The list of sessions, one **Session card**
   each, unfinished ones first. Root of the Learn tab. Aliases: **session list**
 - **Study screen** (`StudyScreen`, route `Study`, params `sessionId` and optional `mode`): One
@@ -259,7 +268,9 @@ outcomes.
   category. Holds **Start session with options** (play glyph; opens the **Session setup dialog**,
   where **Shuffle** is checked by default and the only way to get deck order is to uncheck it), **Edit
   deck** (opens the **Edit deck screen**), **Export to file** (`export` glyph; opens the **Export
-  format menu**) and **Delete deck** (destructive, confirmed by an `Alert`) — always last. It was **Shuffle and
+  format menu**), **Share to community** (`share` glyph; after an `Alert` that asks to confirm,
+  publishes the deck, or updates its published copy, through the Worker — see **Community decks
+  screen**) and **Delete deck** (destructive, confirmed by an `Alert`) — always last. It was **Shuffle and
   start session** before
   [ADR-0010](../../docs/architecture/decisions/0010-inverted-sessions.md).
 - **Session setup dialog** (`SessionSetupDialog`): the centred `Modal` that **Start session with
@@ -327,10 +338,11 @@ outcomes.
   labelled `Add a deck`. It is
   the app's only FAB. Shows a spinner while an import is in flight. Opens the **Add deck menu**.
   Aliases: **the + button**, **the FAB**
-- **Add deck menu**: the Menu sheet behind the Add deck button, titled `Add a deck`, with two items:
+- **Add deck menu**: the Menu sheet behind the Add deck button, titled `Add a deck`, with three items:
   **Import deck from file**, which opens the system file picker directly — there is no format
   choice; the user picks a CSV or JSON file and the app detects the format from its content
-  ([ADR-0017](../../docs/architecture/decisions/0017-deck-import-reads-exported-formats.md)) — and
+  ([ADR-0017](../../docs/architecture/decisions/0017-deck-import-reads-exported-formats.md)) —
+  **Import from community** (`globe` glyph), which opens the **Community decks screen**, and
   **Add deck manually**, which opens the **New deck screen**. Do not describe the app as supporting
   XML or JSONL.
 - **Decks empty state**: `No decks yet`.

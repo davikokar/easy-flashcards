@@ -326,6 +326,32 @@ export const fr: Language = {
         message: "Offrir un café n'est pas possible pour le moment. Réessayez plus tard.",
       },
     },
+    community: {
+      title: 'Paquets de la communauté',
+      searchPlaceholder: 'Rechercher des paquets de la communauté',
+      retryButton: 'Réessayer',
+      emptyTitle: 'Aucun paquet de la communauté pour le moment',
+      emptyMessage: "Partagez l'un de vos paquets depuis son menu d'options pour démarrer la collection.",
+      loadFailedTitle: 'Impossible de charger les paquets',
+      yoursBadge: 'Le vôtre',
+      downloadA11yLabel: 'Télécharger {name}',
+      shareAlert: {
+        confirmTitle: 'Partager avec la communauté',
+        confirmMessage:
+          'Publier "{name}" pour que tout le monde puisse le télécharger ? Si vous avez déjà partagé ce paquet, la copie partagée est mise à jour.',
+        confirmButton: 'Partager',
+        noCardsMessage: 'Ajoutez au moins une carte avant de partager ce paquet.',
+        successTitle: 'Paquet partagé',
+        successMessage: '"{name}" fait maintenant partie des paquets de la communauté.',
+        failedTitle: 'Le partage a échoué',
+      },
+      errors: {
+        network: "Impossible de joindre la communauté. Vérifiez votre connexion Internet et réessayez.",
+        server: 'Le service de la communauté a rencontré un problème. Réessayez plus tard.',
+        notOwner: "Ce paquet a été partagé depuis un autre appareil, il ne peut donc pas être mis à jour depuis celui-ci.",
+        invalid: 'Ce paquet ne peut pas être partagé. Vérifiez qu\'il a un titre et des cartes complètes.',
+      },
+    },
     decks: {
       decksScreen: {
         searchA11yLabel: 'Rechercher des paquets',
@@ -349,11 +375,13 @@ export const fr: Language = {
         title: 'Ajouter un paquet',
         importItem: 'Importer un paquet depuis un fichier',
         manualItem: 'Ajouter un paquet manuellement',
+        communityItem: 'Importer depuis la communauté',
       },
       deckOptionsMenu: {
         startWithOptionsItem: 'Démarrer une session avec options',
         editItem: 'Modifier le paquet',
         exportItem: 'Exporter vers un fichier',
+        shareItem: 'Partager avec la communauté',
         deleteItem: 'Supprimer le paquet',
       },
       exportFormatMenu: {

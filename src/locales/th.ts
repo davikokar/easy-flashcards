@@ -311,6 +311,32 @@ const messages: Catalogue = {
       message: 'ขณะนี้ไม่สามารถเลี้ยงกาแฟได้ โปรดลองอีกครั้งในภายหลัง',
     },
   },
+  community: {
+    title: 'ชุดการ์ดของชุมชน',
+    searchPlaceholder: 'ค้นหาชุดการ์ดของชุมชน',
+    retryButton: 'ลองใหม่',
+    emptyTitle: 'ยังไม่มีชุดการ์ดของชุมชน',
+    emptyMessage: 'แชร์ชุดการ์ดของคุณจากเมนูตัวเลือกของชุดนั้น เพื่อเริ่มคอลเลคชัน',
+    loadFailedTitle: 'โหลดชุดการ์ดไม่ได้',
+    yoursBadge: 'ของคุณ',
+    downloadA11yLabel: 'ดาวน์โหลด {name}',
+    shareAlert: {
+      confirmTitle: 'แชร์ไปยังชุมชน',
+      confirmMessage:
+        'เผยแพร่ "{name}" ให้ทุกคนดาวน์โหลดได้หรือไม่ หากเคยแชร์ชุดนี้แล้ว จะอัปเดตสำเนาที่แชร์ไว้',
+      confirmButton: 'แชร์',
+      noCardsMessage: 'เพิ่มการ์ดอย่างน้อยหนึ่งใบก่อนแชร์ชุดนี้',
+      successTitle: 'แชร์ชุดการ์ดแล้ว',
+      successMessage: '"{name}" อยู่ในชุดการ์ดของชุมชนแล้ว',
+      failedTitle: 'แชร์ไม่สำเร็จ',
+    },
+    errors: {
+      network: 'เชื่อมต่อกับชุมชนไม่ได้ ตรวจสอบการเชื่อมต่ออินเทอร์เน็ตแล้วลองใหม่',
+      server: 'บริการของชุมชนมีปัญหา โปรดลองใหม่ในภายหลัง',
+      notOwner: 'ชุดนี้ถูกแชร์จากอุปกรณ์อื่น จึงอัปเดตจากอุปกรณ์เครื่องนี้ไม่ได้',
+      invalid: 'แชร์ชุดนี้ไม่ได้ ตรวจสอบว่ามีชื่อชุดและการ์ดครบถ้วน',
+    },
+  },
   decks: {
     decksScreen: {
       searchA11yLabel: 'ค้นหาชุดการ์ด',
@@ -333,11 +359,13 @@ const messages: Catalogue = {
       title: 'เพิ่มชุดการ์ด',
       importItem: 'นำเข้าชุดการ์ดจากไฟล์',
       manualItem: 'เพิ่มชุดการ์ดด้วยตนเอง',
+      communityItem: 'นำเข้าจากชุมชน',
     },
     deckOptionsMenu: {
       startWithOptionsItem: 'เริ่มเซสชันพร้อมตัวเลือก',
       editItem: 'แก้ไขชุดการ์ด',
       exportItem: 'ส่งออกเป็นไฟล์',
+      shareItem: 'แชร์ไปยังชุมชน',
       deleteItem: 'ลบชุดการ์ด',
     },
     exportFormatMenu: {

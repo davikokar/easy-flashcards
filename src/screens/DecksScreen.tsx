@@ -35,6 +35,8 @@ import { DeckImportError } from '../utils/deckImport';
 import { shuffle } from '../utils/shuffle';
 import { ExportCancelledError, exportDeck } from '../services/exportDeck';
 import { ImportCancelledError, pickAndParseDeck } from '../services/importDeck';
+import { CommunityError } from '../services/communityDecks';
+import { shareDeckToCommunity } from '../services/shareDeck';
 import { colors, radius, spacing } from '../theme';
 
 type Props = CompositeScreenProps<
@@ -45,10 +47,13 @@ type Props = CompositeScreenProps<
 const START_DEBOUNCE_MS = 1000;
 
 export default function DecksScreen({ navigation }: Props) {
-  const { decks, sessions, categories, error, addDeck, deleteDeck, startSession } = useDecks();
+  const { decks, sessions, categories, error, addDeck, deleteDeck, setDeckCommunityId, startSession } =
+    useDecks();
   const t = useT();
   const openSettings = useOpenSettings();
   const [isImporting, setIsImporting] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
+  const shareInFlight = useRef(false);
   const lastStartAt = useRef(0);
   const [openMenu, setOpenMenu] = useState<'add' | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -139,6 +144,54 @@ export default function DecksScreen({ navigation }: Props) {
     }
   }, [addDeck, t]);
 
+  const startShare = useCallback(
+    async (deck: Deck) => {
+      // The ref, not the state, is the guard: state is stale until the next render.
+      if (shareInFlight.current) {
+        return;
+      }
+      shareInFlight.current = true;
+      setIsSharing(true);
+      try {
+        await shareDeckToCommunity(deck, findCategory(deck.categoryId, categories), communityId =>
+          setDeckCommunityId(deck.id, communityId),
+        );
+        Alert.alert(
+          t('community.shareAlert.successTitle'),
+          t('community.shareAlert.successMessage', { name: deck.name }),
+        );
+      } catch (shareError) {
+        const code = shareError instanceof CommunityError ? shareError.code : 'server';
+        Alert.alert(t('community.shareAlert.failedTitle'), t(`community.errors.${code}`));
+      } finally {
+        shareInFlight.current = false;
+        setIsSharing(false);
+      }
+    },
+    [categories, setDeckCommunityId, t],
+  );
+
+  const confirmShare = useCallback(
+    (deck: Deck) => {
+      if (deck.cards.length === 0) {
+        Alert.alert(
+          t('community.shareAlert.confirmTitle'),
+          t('community.shareAlert.noCardsMessage'),
+        );
+        return;
+      }
+      Alert.alert(
+        t('community.shareAlert.confirmTitle'),
+        t('community.shareAlert.confirmMessage', { name: deck.name }),
+        [
+          { text: t('common.actions.cancel'), style: 'cancel' },
+          { text: t('community.shareAlert.confirmButton'), onPress: () => startShare(deck) },
+        ],
+      );
+    },
+    [startShare, t],
+  );
+
   const confirmDelete = useCallback(
     (deck: Deck) => {
       Alert.alert(
@@ -215,6 +268,11 @@ export default function DecksScreen({ navigation }: Props) {
         label: t('decks.addDeckMenu.importItem'),
         icon: 'import' as const,
         onPress: handleImport,
+      },
+      {
+        label: t('decks.addDeckMenu.communityItem'),
+        icon: 'globe' as const,
+        onPress: () => navigation.navigate('CommunityDecks'),
       },
       {
         label: t('decks.addDeckMenu.manualItem'),
@@ -386,6 +444,11 @@ export default function DecksScreen({ navigation }: Props) {
                   },
                 },
                 {
+                  label: t('decks.deckOptionsMenu.shareItem'),
+                  icon: 'share',
+                  onPress: () => confirmShare(item),
+                },
+                {
                   label: t('decks.deckOptionsMenu.deleteItem'),
                   icon: 'delete',
                   destructive: true,
@@ -400,10 +463,10 @@ export default function DecksScreen({ navigation }: Props) {
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={t('decks.decksScreen.addDeckA11yLabel')}
-        disabled={isImporting}
+        disabled={isImporting || isSharing}
         onPress={() => setOpenMenu('add')}
         style={({ pressed }) => [styles.fab, pressed && styles.fabPressed]}>
-        {isImporting ? (
+        {isImporting || isSharing ? (
           <ActivityIndicator color="#0c1118" />
         ) : (
           <>

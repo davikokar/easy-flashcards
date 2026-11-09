@@ -71,6 +71,41 @@ describe('reducer: loading', () => {
   });
 });
 
+describe('reducer: community link', () => {
+  it('links a deck to its community copy and leaves the others alone', () => {
+    const state = stateOf([deck('a', ['x']), deck('b', ['x'])], []);
+
+    const next = reducer(state, { type: 'setDeckCommunityId', deckId: 'a', communityId: 'uuid-1' });
+
+    expect(next.decks[0].communityId).toBe('uuid-1');
+    expect(next.decks[1]).toBe(state.decks[1]);
+  });
+
+  it('returns the same state for an unknown deck or an unchanged link', () => {
+    const linked: Deck = { ...deck('a', ['x']), communityId: 'uuid-1' };
+    const state = stateOf([linked], []);
+
+    expect(reducer(state, { type: 'setDeckCommunityId', deckId: 'zz', communityId: 'u' })).toBe(state);
+    expect(reducer(state, { type: 'setDeckCommunityId', deckId: 'a', communityId: 'uuid-1' })).toBe(state);
+  });
+
+  it('keeps the link through an edit', () => {
+    const linked: Deck = { ...deck('a', ['x']), communityId: 'uuid-1' };
+
+    const next = reducer(stateOf([linked], []), {
+      type: 'updateDeck',
+      deckId: 'a',
+      name: 'Renamed',
+      description: '',
+      categoryId: null,
+      cards: [{ id: 'x', question: 'q', answer: 'a' }],
+      at: 5,
+    });
+
+    expect(next.decks[0].communityId).toBe('uuid-1');
+  });
+});
+
 describe('reducer: addDeck and deleteDeck', () => {
   it('puts a new deck first', () => {
     const state = stateOf([deck('old', ['a'])], []);

@@ -318,6 +318,32 @@ const messages: Catalogue = {
       message: 'Invitar a un café no está disponible ahora mismo. Inténtalo de nuevo más tarde.',
     },
   },
+  community: {
+    title: 'Mazos de la comunidad',
+    searchPlaceholder: 'Buscar mazos de la comunidad',
+    retryButton: 'Reintentar',
+    emptyTitle: 'Aún no hay mazos de la comunidad',
+    emptyMessage: 'Comparte uno de tus mazos desde su menú de opciones para empezar la colección.',
+    loadFailedTitle: 'No se pudieron cargar los mazos',
+    yoursBadge: 'Tuyo',
+    downloadA11yLabel: 'Descargar {name}',
+    shareAlert: {
+      confirmTitle: 'Compartir con la comunidad',
+      confirmMessage:
+        '¿Publicar "{name}" para que cualquiera pueda descargarlo? Si ya compartiste este mazo, se actualiza la copia compartida.',
+      confirmButton: 'Compartir',
+      noCardsMessage: 'Añade al menos una tarjeta antes de compartir este mazo.',
+      successTitle: 'Mazo compartido',
+      successMessage: '"{name}" ya está en los mazos de la comunidad.',
+      failedTitle: 'No se pudo compartir',
+    },
+    errors: {
+      network: 'No se pudo conectar con la comunidad. Comprueba tu conexión a Internet e inténtalo de nuevo.',
+      server: 'El servicio de la comunidad tuvo un problema. Inténtalo de nuevo más tarde.',
+      notOwner: 'Este mazo se compartió desde otro dispositivo, por lo que no se puede actualizar desde este.',
+      invalid: 'Este mazo no se puede compartir. Comprueba que tenga un título y tarjetas completas.',
+    },
+  },
   decks: {
     decksScreen: {
       searchA11yLabel: 'Buscar mazos',
@@ -340,11 +366,13 @@ const messages: Catalogue = {
       title: 'Añadir un mazo',
       importItem: 'Importar mazo desde archivo',
       manualItem: 'Añadir mazo manualmente',
+      communityItem: 'Importar de la comunidad',
     },
     deckOptionsMenu: {
       startWithOptionsItem: 'Iniciar sesión con opciones',
       editItem: 'Editar mazo',
       exportItem: 'Exportar a archivo',
+      shareItem: 'Compartir con la comunidad',
       deleteItem: 'Eliminar mazo',
     },
     exportFormatMenu: {

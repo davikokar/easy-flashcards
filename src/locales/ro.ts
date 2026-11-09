@@ -336,6 +336,32 @@ export const ro: Language = {
         message: 'Cumpărarea unei cafele nu este disponibilă acum. Încearcă din nou mai târziu.',
       },
     },
+    community: {
+      title: 'Pachete din comunitate',
+      searchPlaceholder: 'Caută pachete din comunitate',
+      retryButton: 'Încearcă din nou',
+      emptyTitle: 'Nu există încă pachete din comunitate',
+      emptyMessage: 'Partajează unul dintre pachetele tale din meniul său de opțiuni pentru a porni colecția.',
+      loadFailedTitle: 'Pachetele nu au putut fi încărcate',
+      yoursBadge: 'Al tău',
+      downloadA11yLabel: 'Descarcă {name}',
+      shareAlert: {
+        confirmTitle: 'Partajează cu comunitatea',
+        confirmMessage:
+          'Publici "{name}" pentru ca oricine să îl poată descărca? Dacă ai partajat deja acest pachet, copia partajată este actualizată.',
+        confirmButton: 'Partajează',
+        noCardsMessage: 'Adaugă cel puțin un card înainte de a partaja acest pachet.',
+        successTitle: 'Pachet partajat',
+        successMessage: '"{name}" este acum în pachetele din comunitate.',
+        failedTitle: 'Partajarea a eșuat',
+      },
+      errors: {
+        network: 'Comunitatea nu poate fi accesată. Verifică conexiunea la internet și încearcă din nou.',
+        server: 'Serviciul comunității a avut o problemă. Încearcă din nou mai târziu.',
+        notOwner: 'Acest pachet a fost partajat de pe alt dispozitiv, deci nu poate fi actualizat de pe acesta.',
+        invalid: 'Acest pachet nu poate fi partajat. Verifică să aibă un titlu și carduri complete.',
+      },
+    },
     decks: {
       decksScreen: {
         searchA11yLabel: 'Caută pachete',
@@ -359,11 +385,13 @@ export const ro: Language = {
         title: 'Adaugă un pachet',
         importItem: 'Importă pachet din fișier',
         manualItem: 'Adaugă pachet manual',
+        communityItem: 'Importă din comunitate',
       },
       deckOptionsMenu: {
         startWithOptionsItem: 'Începe sesiunea cu opțiuni',
         editItem: 'Editează pachetul',
         exportItem: 'Exportă în fișier',
+        shareItem: 'Partajează cu comunitatea',
         deleteItem: 'Șterge pachetul',
       },
       exportFormatMenu: {

@@ -12,6 +12,8 @@ type Props = {
   placeholder: string;
   /** Differs from the Search button's label so the two can be told apart. */
   inputLabel?: string;
+  /** Opens the keyboard on mount; true unless the screen has other content to show first. */
+  autoFocus?: boolean;
 };
 
 export default function SearchBar({
@@ -20,6 +22,7 @@ export default function SearchBar({
   onClose,
   placeholder,
   inputLabel,
+  autoFocus = true,
 }: Props) {
   const t = useT();
   return (
@@ -27,7 +30,7 @@ export default function SearchBar({
       <MenuIcon name="search" color={colors.textMuted} />
       <TextInput
         accessibilityLabel={inputLabel ?? t('shell.searchBar.inputA11yLabel')}
-        autoFocus
+        autoFocus={autoFocus}
         autoCapitalize="none"
         autoCorrect={false}
         returnKeyType="search"

@@ -1,0 +1,11 @@
+# Cloudflare Worker for community decks (ADR-0022). Deploy from this folder:
+#   npx wrangler secret put GITHUB_TOKEN   # fine-grained token: Contents read/write on the repo only
+#   npx wrangler deploy
+# The existing Worker is named autumn-dew-fc59; keep that name to keep its address.
+name = "autumn-dew-fc59"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+
+[vars]
+GITHUB_REPO = "davikokar/community-decks"
+# GITHUB_BRANCH = "main"

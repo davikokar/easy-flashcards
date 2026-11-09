@@ -6,8 +6,10 @@ Guidance for AI agents working in this repository.
 
 **Easy Flashcards** is a React Native flashcards app, built and tested on Android. The user
 imports a deck from a local CSV or JSON file, studies it card by card, and the app records how well each
-card is known. It has no account, no network calls, and no backend: everything the app stores lives
-in AsyncStorage on the device, one key per module (see *Storage keys*). Both sides of a card carry a small subset of HTML, which
+card is known. It has no account and no backend of its own: everything the app stores lives
+in AsyncStorage on the device, one key per module (see *Storage keys*). Its only network calls are
+the community decks' ([ADR-0022](docs/architecture/decisions/0022-community-decks-shared-through-github-and-a-worker.md)).
+Both sides of a card carry a small subset of HTML, which
 the app parses and renders itself. Prefer clear, conventional code over clever abstractions, and
 explain non-obvious decisions in short commit messages.
 
@@ -60,6 +62,14 @@ explain non-obvious decisions in short commit messages.
   imported only by [src/services/tipJar.ts](src/services/tipJar.ts) for the Settings screen's
   one-off tip ([ADR-0021](docs/architecture/decisions/0021-settings-screen-language-choice-and-tip-purchase.md)).
   Share, rate, mail and links use React Native's `Share` and `Linking`, no dependency.
+- **Community decks:** a public GitHub repository is read with `fetch`, and a Cloudflare Worker in
+  [worker/](worker/) is the only writer, holding the GitHub token. The wire format, validation and
+  ownership rule are one pure module, [src/utils/communityDeck.ts](src/utils/communityDeck.ts),
+  imported by the app and by the Worker, so keep it free of React. The author's secret
+  `author_uuid` is sent to the Worker and never stored in the repository — only its SHA-256
+  (`author_hash`) is. `react-native-get-random-values` (native) and `uuid` make the UUIDs and are
+  imported only by [src/services/identity.ts](src/services/identity.ts)
+  ([ADR-0022](docs/architecture/decisions/0022-community-decks-shared-through-github-and-a-worker.md)).
 - **HTML:** parsed and rendered in-repo — [src/utils/html.ts](src/utils/html.ts) and
   [src/components/RichText.tsx](src/components/RichText.tsx)
   ([ADR-0001](docs/architecture/decisions/0001-own-the-html-renderer.md)).
@@ -101,6 +111,7 @@ src/
 __tests__/              # Jest unit tests: utils, the catalogue, the reducer, the storage loaders
 docs/                   # Architecture, decisions, and the original requirements
 samples/                # Example deck files, CSV and JSON (sampleDeck.test.ts checks the sample pair)
+worker/                 # The Cloudflare Worker that publishes community decks (ADR-0022); deployed with wrangler, not bundled in the app
 ```
 
 `src/utils/`, `src/locales/`, `src/types.ts` and `src/state/reducer.ts` import nothing from `react`
@@ -308,6 +319,13 @@ the owning document instead, so that adding an ADR or a screen does not touch an
   custom category.
   `addCategory` trims and mints the id but does **not** validate: call `validateCategoryName` first,
   as the New category screen does.
+- **Sharing a deck links it; downloading never replaces.** `Deck.communityId` is the `deck_id` of
+  the deck's published copy, absent when never shared, written only by `setDeckCommunityId`, and
+  dispatched **before** the request so a retry updates the same file. A download is always a new
+  deck through `addDeck`, and carries a `communityId` only when the file's `author_hash` is the
+  hash of this device's `author_uuid`
+  ([ADR-0022](docs/architecture/decisions/0022-community-decks-shared-through-github-and-a-worker.md)).
+  Never write `author_uuid` into a file, a log or a repository.
 - **A deck refers to at most one category; a session refers to none.** `Deck.categoryId` is a
   default or custom id, or `null`. A deck file, CSV or JSON, names its category by one string,
   `categoryReference` in [src/utils/categories.ts](src/utils/categories.ts): a built-in's id,
@@ -341,6 +359,7 @@ writing, and normalising it.
 | `@easy-flashcards/sessions/v2` | every `Session` — active, completed, and cleared — with the cards fixed in its error review (`fixedCardIds`), its direction (`inverted`), and each result's `answeredAt` ([ADR-0015](docs/architecture/decisions/0015-answers-carry-a-timestamp-under-v2-keys.md)) | [src/storage/sessionsStorage.ts](src/storage/sessionsStorage.ts) |
 | `@easy-flashcards/categories/v1` | every custom `Category`; never the built-in ones ([ADR-0012](docs/architecture/decisions/0012-custom-categories-third-storage-key.md)) | [src/storage/categoriesStorage.ts](src/storage/categoriesStorage.ts) |
 | `@easy-flashcards/settings/v1` | the language the user chose, `{ language: string \| null }` — a registered language code, or `null` for the device's ([ADR-0021](docs/architecture/decisions/0021-settings-screen-language-choice-and-tip-purchase.md)); loaded and saved by `I18nProvider`, not by `DecksContext` | [src/storage/settingsStorage.ts](src/storage/settingsStorage.ts) |
+| `@easy-flashcards/identity/v1` | the secret that proves this device published a community deck, `{ authorUuid: string }` ([ADR-0022](docs/architecture/decisions/0022-community-decks-shared-through-github-and-a-worker.md)); created on the first share by `src/services/identity.ts`, loaded by no provider, never published — losing it loses the right to update what was shared | [src/storage/identityStorage.ts](src/storage/identityStorage.ts) |
 
 - **Decks and sessions are on `/v2`; categories stayed on `/v1`.** The `/v1` decks and sessions
   keys are orphaned: nothing reads, converts or deletes them, so upgrading showed an empty library
@@ -482,6 +501,10 @@ These are not preferences. Each one cost a session.
   - **npm will not warn about it on a React Native upgrade.** Its peer ranges are `*`; check its
     supported React Native versions by hand. It is native: installing or upgrading it needs a
     native rebuild, not a Metro reload.
+- **`react-native-get-random-values` is native**, so installing it needs a native rebuild, not a
+  Metro reload, and it must be imported before `uuid` is called (`src/services/identity.ts` does).
+  Do not pass an `AbortController` signal to `fetch`: its type clashes with React Native's, which
+  is why `src/services/communityDecks.ts` times out with `Promise.race`.
 - **`react-native-iap` is native and cannot be tried from a sideloaded build.** Installing or
   upgrading it (and `react-native-nitro-modules`) needs a native rebuild, not a Metro reload. A
   purchase works only once the `tip_coffee` product exists in the Play Console and the app is

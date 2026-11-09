@@ -313,6 +313,32 @@ const messages: Catalogue = {
       message: '現在コーヒーをおごることはできません。しばらくしてからもう一度お試しください。',
     },
   },
+  community: {
+    title: 'コミュニティのデッキ',
+    searchPlaceholder: 'コミュニティのデッキを検索',
+    retryButton: 'もう一度試す',
+    emptyTitle: 'コミュニティのデッキはまだありません',
+    emptyMessage: 'デッキのオプションメニューから共有して、コレクションを始めましょう。',
+    loadFailedTitle: 'デッキを読み込めませんでした',
+    yoursBadge: '自分の',
+    downloadA11yLabel: '{name} をダウンロード',
+    shareAlert: {
+      confirmTitle: 'コミュニティに共有',
+      confirmMessage:
+        '「{name}」を公開して、誰でもダウンロードできるようにしますか？このデッキを以前に共有している場合、共有済みのコピーが更新されます。',
+      confirmButton: '共有',
+      noCardsMessage: 'このデッキを共有する前に、カードを 1 枚以上追加してください。',
+      successTitle: 'デッキを共有しました',
+      successMessage: '「{name}」がコミュニティのデッキに追加されました。',
+      failedTitle: '共有に失敗しました',
+    },
+    errors: {
+      network: 'コミュニティに接続できません。インターネット接続を確認してもう一度お試しください。',
+      server: 'コミュニティサービスで問題が発生しました。しばらくしてからもう一度お試しください。',
+      notOwner: 'このデッキは別のデバイスから共有されたため、このデバイスからは更新できません。',
+      invalid: 'このデッキは共有できません。タイトルと完全なカードがあるか確認してください。',
+    },
+  },
   decks: {
     decksScreen: {
       searchA11yLabel: 'デッキを検索',
@@ -335,11 +361,13 @@ const messages: Catalogue = {
       title: 'デッキを追加',
       importItem: 'ファイルからデッキをインポート',
       manualItem: '手動でデッキを追加',
+      communityItem: 'コミュニティからインポート',
     },
     deckOptionsMenu: {
       startWithOptionsItem: 'オプションを指定してセッションを開始',
       editItem: 'デッキを編集',
       exportItem: 'ファイルにエクスポート',
+      shareItem: 'コミュニティに共有',
       deleteItem: 'デッキを削除',
     },
     exportFormatMenu: {

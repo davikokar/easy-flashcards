@@ -311,6 +311,32 @@ const messages: Catalogue = {
       message: 'Hiện không thể mời cà phê. Vui lòng thử lại sau.',
     },
   },
+  community: {
+    title: 'Bộ thẻ của cộng đồng',
+    searchPlaceholder: 'Tìm bộ thẻ của cộng đồng',
+    retryButton: 'Thử lại',
+    emptyTitle: 'Chưa có bộ thẻ nào của cộng đồng',
+    emptyMessage: 'Hãy chia sẻ một bộ thẻ của bạn từ menu tùy chọn để bắt đầu bộ sưu tập.',
+    loadFailedTitle: 'Không thể tải các bộ thẻ',
+    yoursBadge: 'Của bạn',
+    downloadA11yLabel: 'Tải xuống {name}',
+    shareAlert: {
+      confirmTitle: 'Chia sẻ với cộng đồng',
+      confirmMessage:
+        'Công khai "{name}" để mọi người có thể tải xuống? Nếu bạn đã chia sẻ bộ thẻ này trước đó, bản sao đã chia sẻ sẽ được cập nhật.',
+      confirmButton: 'Chia sẻ',
+      noCardsMessage: 'Hãy thêm ít nhất một thẻ trước khi chia sẻ bộ thẻ này.',
+      successTitle: 'Đã chia sẻ bộ thẻ',
+      successMessage: '"{name}" hiện đã có trong các bộ thẻ của cộng đồng.',
+      failedTitle: 'Chia sẻ không thành công',
+    },
+    errors: {
+      network: 'Không thể kết nối với cộng đồng. Hãy kiểm tra kết nối Internet và thử lại.',
+      server: 'Dịch vụ của cộng đồng gặp sự cố. Hãy thử lại sau.',
+      notOwner: 'Bộ thẻ này được chia sẻ từ thiết bị khác nên không thể cập nhật từ thiết bị này.',
+      invalid: 'Không thể chia sẻ bộ thẻ này. Hãy kiểm tra bộ thẻ có tiêu đề và các thẻ đầy đủ.',
+    },
+  },
   decks: {
     decksScreen: {
       searchA11yLabel: 'Tìm bộ thẻ',
@@ -332,11 +358,13 @@ const messages: Catalogue = {
       title: 'Thêm bộ thẻ',
       importItem: 'Nhập bộ thẻ từ tệp',
       manualItem: 'Thêm bộ thẻ thủ công',
+      communityItem: 'Nhập từ cộng đồng',
     },
     deckOptionsMenu: {
       startWithOptionsItem: 'Bắt đầu phiên với tùy chọn',
       editItem: 'Sửa bộ thẻ',
       exportItem: 'Xuất ra tệp',
+      shareItem: 'Chia sẻ với cộng đồng',
       deleteItem: 'Xóa bộ thẻ',
     },
     exportFormatMenu: {

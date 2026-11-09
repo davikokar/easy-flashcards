@@ -316,6 +316,32 @@ const messages: Catalogue = {
       message: 'Kahve ısmarlamak şu anda mümkün değil. Lütfen daha sonra tekrar dene.',
     },
   },
+  community: {
+    title: 'Topluluk desteleri',
+    searchPlaceholder: 'Topluluk destelerinde ara',
+    retryButton: 'Tekrar dene',
+    emptyTitle: 'Henüz topluluk destesi yok',
+    emptyMessage: 'Koleksiyonu başlatmak için deste seçenekleri menüsünden destelerinden birini paylaş.',
+    loadFailedTitle: 'Desteler yüklenemedi',
+    yoursBadge: 'Senin',
+    downloadA11yLabel: '{name} indir',
+    shareAlert: {
+      confirmTitle: 'Toplulukla paylaş',
+      confirmMessage:
+        '"{name}" herkesin indirebilmesi için yayınlansın mı? Bu desteyi daha önce paylaştıysan paylaşılan kopya güncellenir.',
+      confirmButton: 'Paylaş',
+      noCardsMessage: 'Bu desteyi paylaşmadan önce en az bir kart ekle.',
+      successTitle: 'Deste paylaşıldı',
+      successMessage: '"{name}" artık topluluk destelerinde.',
+      failedTitle: 'Paylaşım başarısız oldu',
+    },
+    errors: {
+      network: 'Topluluğa ulaşılamadı. İnternet bağlantını kontrol edip tekrar dene.',
+      server: 'Topluluk hizmetinde bir sorun oluştu. Daha sonra tekrar dene.',
+      notOwner: 'Bu deste başka bir cihazdan paylaşıldığı için bu cihazdan güncellenemez.',
+      invalid: 'Bu deste paylaşılamaz. Bir başlığı ve tam kartları olduğundan emin ol.',
+    },
+  },
   decks: {
     decksScreen: {
       searchA11yLabel: 'Destelerde ara',
@@ -337,11 +363,13 @@ const messages: Catalogue = {
       title: 'Deste ekle',
       importItem: 'Dosyadan deste içe aktar',
       manualItem: 'Deste elle ekle',
+      communityItem: 'Topluluktan içe aktar',
     },
     deckOptionsMenu: {
       startWithOptionsItem: 'Seçeneklerle oturum başlat',
       editItem: 'Desteyi düzenle',
       exportItem: 'Dosyaya dışa aktar',
+      shareItem: 'Toplulukla paylaş',
       deleteItem: 'Desteyi sil',
     },
     exportFormatMenu: {

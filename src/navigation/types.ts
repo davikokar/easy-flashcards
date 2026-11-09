@@ -4,6 +4,7 @@ export type DecksStackParamList = {
   DecksList: undefined;
   EditDeck: { deckId: string };
   NewDeck: undefined;
+  CommunityDecks: undefined;
 };
 
 export type LearnStackParamList = {

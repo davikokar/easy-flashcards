@@ -68,6 +68,19 @@ describe('loadDecks', () => {
     expect(deck.sourceFileName).toBeNull();
   });
 
+  it('keeps a string communityId and reads anything else as absent', async () => {
+    stored([
+      { id: 'a', name: 'A', communityId: 'uuid-1', cards: [] },
+      { id: 'b', name: 'B', communityId: 3, cards: [] },
+      { id: 'c', name: 'C', communityId: '', cards: [] },
+      { id: 'd', name: 'D', cards: [] },
+    ]);
+
+    const decks = await loadDecks();
+
+    expect(decks.map(d => d.communityId)).toEqual(['uuid-1', undefined, undefined, undefined]);
+  });
+
   it('reads a missing or non-string description as an empty string', async () => {
     stored([
       { id: 'a', name: 'A', cards: [] },

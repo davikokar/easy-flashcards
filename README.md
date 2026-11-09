@@ -36,6 +36,14 @@ them card by card, and track how well you know each card.
   digit, whitespace, a double quote or `#`. Statistics and sessions are not exported. Both formats
   import back with the title, description and cards, and the category when it exists on this
   device. See [Export formats](#export-formats).
+- **Community decks**: *Import from community* in the add deck menu lists decks other people
+  shared and adds a copy of the one you download; *Share to community* in a deck's menu publishes
+  the deck, or updates the copy you shared before, after you confirm. There are no accounts: the
+  app makes a secret identifier on first share and only the device that holds it can update a
+  deck, so losing the app's data loses that right. Shared decks are public and kept in a GitHub
+  repository, written through a Cloudflare Worker (see [worker](worker)). Everything else in the
+  app works offline.
+  ([ADR-0022](docs/architecture/decisions/0022-community-decks-shared-through-github-and-a-worker.md))
 - **Study sessions** with an animated card flip, three icon feedback buttons — *Not Ok* (cross),
   *Okeish* (question mark) and *Ok* (tick) — a progress indicator, and an end-of-session summary
   that offers to review the cards you missed or were unsure of, or to study the whole deck again
@@ -248,11 +256,12 @@ with `npm run android`; reloading the JavaScript in Metro is not enough. The fir
 | [src/components](src/components) | Flip card, HTML renderer, buttons, progress bars, the session history chart, dialogs, category tiles, squares and pickers, colour sliders |
 | [src/state](src/state) | Context store (`DecksContext.tsx`) over a pure reducer (`reducer.ts`), auto-persisting |
 | [src/storage](src/storage) | AsyncStorage read/write with defensive normalisation, one module per key |
-| [src/services](src/services) | Document picker + file read + CSV or JSON parsing; deck and sample deck export through the save dialog; reading the device language; share, store, mail and link hand-offs; the in-app tip purchase |
+| [src/services](src/services) | Document picker + file read + CSV or JSON parsing; deck and sample deck export through the save dialog; reading the device language; share, store, mail and link hand-offs; the in-app tip purchase; the community decks' network calls and the author identity |
 | [src/utils](src/utils) | Pure logic: CSV, JSON and HTML parsing, deck import and export formats, statistics, the session chart's geometry, search, categories, colour maths, the translation engine, and more |
 | [src/locales](src/locales) | The UI text catalogue: English, one file per area; one file per translation; and the registry of languages |
 | [src/i18n](src/i18n) | The provider with the `useT()` and `useLanguage()` hooks that give screens and components their text and the saved language choice |
 | [src/assets/category-icons](src/assets/category-icons) | Category icons: Material Symbols by Google (Apache License 2.0, see its `NOTICE`) as Android vector drawables |
+| [worker](worker) | The Cloudflare Worker that publishes community decks to GitHub; deployed with `npx wrangler deploy` from that folder, with the `GITHUB_TOKEN` secret set, and not part of the app |
 | [\_\_tests\_\_](__tests__) | Jest unit tests for the utils, the reducer and the storage loaders |
 
 ## Notes on dependencies
@@ -273,3 +282,7 @@ with `npm run android`; reloading the JavaScript in Metro is not enough. The fir
   ([ADR-0021](docs/architecture/decisions/0021-settings-screen-language-choice-and-tip-purchase.md)).
   It is native, so installing it needs a rebuild, and a purchase can only be tried from a build
   installed through Google Play once the `tip_coffee` product exists in the Play Console.
+- `react-native-get-random-values` and `uuid` make the secure random identifiers behind
+  *Share to community*, and are used in one file
+  ([ADR-0022](docs/architecture/decisions/0022-community-decks-shared-through-github-and-a-worker.md)).
+  The first is native, so installing it needs a rebuild.

@@ -313,6 +313,32 @@ const messages: Catalogue = {
       message: '지금은 커피를 사줄 수 없어요. 나중에 다시 시도해 주세요.',
     },
   },
+  community: {
+    title: '커뮤니티 덱',
+    searchPlaceholder: '커뮤니티 덱 검색',
+    retryButton: '다시 시도',
+    emptyTitle: '아직 커뮤니티 덱이 없습니다',
+    emptyMessage: '덱의 옵션 메뉴에서 덱을 공유해 컴렉션을 시작하세요.',
+    loadFailedTitle: '덱을 불러올 수 없습니다',
+    yoursBadge: '내 덱',
+    downloadA11yLabel: '{name} 다운로드',
+    shareAlert: {
+      confirmTitle: '커뮤니티에 공유',
+      confirmMessage:
+        '누구나 다운로드할 수 있도록 "{name}" 덱을 게시할까요? 이 덱을 이전에 공유했다면 공유된 사본이 업데이트됩니다.',
+      confirmButton: '공유',
+      noCardsMessage: '이 덱을 공유하기 전에 카드를 하나 이상 추가하세요.',
+      successTitle: '덱을 공유했습니다',
+      successMessage: '"{name}" 덱이 이제 커뮤니티 덱에 있습니다.',
+      failedTitle: '공유하지 못했습니다',
+    },
+    errors: {
+      network: '커뮤니티에 연결할 수 없습니다. 인터넷 연결을 확인한 후 다시 시도하세요.',
+      server: '커뮤니티 서비스에 문제가 생겼습니다. 나중에 다시 시도하세요.',
+      notOwner: '이 덱은 다른 기기에서 공유되어 이 기기에서는 업데이트할 수 없습니다.',
+      invalid: '이 덱을 공유할 수 없습니다. 제목과 완성된 카드가 있는지 확인하세요.',
+    },
+  },
   decks: {
     decksScreen: {
       searchA11yLabel: '덱 검색',
@@ -334,11 +360,13 @@ const messages: Catalogue = {
       title: '덱 추가',
       importItem: '파일에서 덱 가져오기',
       manualItem: '덱 직접 추가',
+      communityItem: '커뮤니티에서 가져오기',
     },
     deckOptionsMenu: {
       startWithOptionsItem: '옵션으로 세션 시작',
       editItem: '덱 편집',
       exportItem: '파일로 내보내기',
+      shareItem: '커뮤니티에 공유',
       deleteItem: '덱 삭제',
     },
     exportFormatMenu: {

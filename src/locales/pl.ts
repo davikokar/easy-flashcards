@@ -350,6 +350,32 @@ export const pl: Language = {
         message: 'Postawienie kawy jest teraz niedostępne. Spróbuj ponownie później.',
       },
     },
+    community: {
+      title: 'Talie społeczności',
+      searchPlaceholder: 'Szukaj w taliach społeczności',
+      retryButton: 'Spróbuj ponownie',
+      emptyTitle: 'Brak talii społeczności',
+      emptyMessage: 'Udostępnij jedną ze swoich talii z jej menu opcji, aby zacząć kolekcję.',
+      loadFailedTitle: 'Nie udało się wczytać talii',
+      yoursBadge: 'Twoja',
+      downloadA11yLabel: 'Pobierz {name}',
+      shareAlert: {
+        confirmTitle: 'Udostępnij społeczności',
+        confirmMessage:
+          'Opublikować "{name}", aby każdy mógł ją pobrać? Jeśli ta talia była już udostępniona, udostępniona kopia zostanie zaktualizowana.',
+        confirmButton: 'Udostępnij',
+        noCardsMessage: 'Dodaj co najmniej jedną fiszkę, zanim udostępnisz tę talię.',
+        successTitle: 'Talia udostępniona',
+        successMessage: '"{name}" jest teraz w taliach społeczności.',
+        failedTitle: 'Udostępnianie nie powiodło się',
+      },
+      errors: {
+        network: 'Nie można połączyć się ze społecznością. Sprawdź połączenie z internetem i spróbuj ponownie.',
+        server: 'Usługa społeczności napotkała problem. Spróbuj ponownie później.',
+        notOwner: 'Ta talia została udostępniona z innego urządzenia, więc nie można jej zaktualizować z tego.',
+        invalid: 'Tej talii nie można udostępnić. Sprawdź, czy ma tytuł i kompletne fiszki.',
+      },
+    },
     decks: {
       decksScreen: {
         searchA11yLabel: 'Szukaj talii',
@@ -372,11 +398,13 @@ export const pl: Language = {
         title: 'Dodaj talię',
         importItem: 'Importuj talię z pliku',
         manualItem: 'Dodaj talię ręcznie',
+        communityItem: 'Importuj ze społeczności',
       },
       deckOptionsMenu: {
         startWithOptionsItem: 'Rozpocznij sesję z opcjami',
         editItem: 'Edytuj talię',
         exportItem: 'Eksportuj do pliku',
+        shareItem: 'Udostępnij społeczności',
         deleteItem: 'Usuń talię',
       },
       exportFormatMenu: {

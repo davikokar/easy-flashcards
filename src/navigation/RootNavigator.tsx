@@ -4,6 +4,7 @@ import { DefaultTheme, NavigationContainer, Theme } from '@react-navigation/nati
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import CategoriesScreen from '../screens/CategoriesScreen';
+import CommunityDecksScreen from '../screens/CommunityDecksScreen';
 import DecksScreen from '../screens/DecksScreen';
 import EditDeckScreen from '../screens/EditDeckScreen';
 import LearnScreen from '../screens/LearnScreen';
@@ -72,6 +73,11 @@ function DecksNavigator() {
         name="NewDeck"
         component={EditDeckScreen}
         options={{ title: t('navigation.headers.newDeck') }}
+      />
+      <DecksStack.Screen
+        name="CommunityDecks"
+        component={CommunityDecksScreen}
+        options={{ title: t('community.title') }}
       />
     </DecksStack.Navigator>
   );

@@ -324,6 +324,32 @@ export const pt: Language = {
         message: 'Pagar um café não está disponível agora. Tente novamente mais tarde.',
       },
     },
+    community: {
+      title: 'Baralhos da comunidade',
+      searchPlaceholder: 'Pesquisar baralhos da comunidade',
+      retryButton: 'Tentar novamente',
+      emptyTitle: 'Ainda não há baralhos da comunidade',
+      emptyMessage: 'Compartilhe um dos seus baralhos pelo menu de opções dele para iniciar a coleção.',
+      loadFailedTitle: 'Não foi possível carregar os baralhos',
+      yoursBadge: 'Seu',
+      downloadA11yLabel: 'Baixar {name}',
+      shareAlert: {
+        confirmTitle: 'Compartilhar com a comunidade',
+        confirmMessage:
+          'Publicar "{name}" para que qualquer pessoa possa baixá-lo? Se você já compartilhou este baralho, a cópia compartilhada é atualizada.',
+        confirmButton: 'Compartilhar',
+        noCardsMessage: 'Adicione pelo menos um cartão antes de compartilhar este baralho.',
+        successTitle: 'Baralho compartilhado',
+        successMessage: '"{name}" agora está nos baralhos da comunidade.',
+        failedTitle: 'Falha ao compartilhar',
+      },
+      errors: {
+        network: 'Não foi possível acessar a comunidade. Verifique sua conexão com a internet e tente novamente.',
+        server: 'O serviço da comunidade teve um problema. Tente novamente mais tarde.',
+        notOwner: 'Este baralho foi compartilhado de outro dispositivo, então não pode ser atualizado a partir deste.',
+        invalid: 'Este baralho não pode ser compartilhado. Verifique se ele tem um título e cartões completos.',
+      },
+    },
     decks: {
       decksScreen: {
         searchA11yLabel: 'Buscar baralhos',
@@ -346,11 +372,13 @@ export const pt: Language = {
         title: 'Adicionar baralho',
         importItem: 'Importar baralho de arquivo',
         manualItem: 'Adicionar baralho manualmente',
+        communityItem: 'Importar da comunidade',
       },
       deckOptionsMenu: {
         startWithOptionsItem: 'Iniciar sessão com opções',
         editItem: 'Editar baralho',
         exportItem: 'Exportar para arquivo',
+        shareItem: 'Compartilhar com a comunidade',
         deleteItem: 'Excluir baralho',
       },
       exportFormatMenu: {

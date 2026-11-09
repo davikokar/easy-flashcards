@@ -32,6 +32,7 @@ export type Action =
       at: number;
     }
   | { type: 'deleteDeck'; deckId: string }
+  | { type: 'setDeckCommunityId'; deckId: string; communityId: string }
   | { type: 'startSession'; session: Session }
   | { type: 'replaySession'; session: Session; sourceSessionId: string; at: number }
   | { type: 'recordAnswer'; sessionId: string; cardId: string; answer: Answer; at: number }
@@ -128,6 +129,18 @@ export function reducer(state: State, action: Action): State {
         decks: state.decks.filter(deck => deck.id !== action.deckId),
         sessions: state.sessions.filter(session => session.deckId !== action.deckId),
       };
+    case 'setDeckCommunityId': {
+      const deck = state.decks.find(item => item.id === action.deckId);
+      if (!deck || deck.communityId === action.communityId) {
+        return state;
+      }
+      return {
+        ...state,
+        decks: state.decks.map(item =>
+          item === deck ? { ...deck, communityId: action.communityId } : item,
+        ),
+      };
+    }
     case 'startSession':
       return { ...state, sessions: [action.session, ...state.sessions] };
     case 'replaySession':
