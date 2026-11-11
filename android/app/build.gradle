@@ -77,9 +77,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "com.easyflashcards"
+    namespace "com.davide.seddio.easyflashcards"
     defaultConfig {
-        applicationId "com.easyflashcards"
+        applicationId "com.davide.seddio.easyflashcards"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

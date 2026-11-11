@@ -1,4 +1,4 @@
-package com.easyflashcards
+package com.davide.seddio.easyflashcards
 
 import android.app.Application
 import com.facebook.react.PackageList

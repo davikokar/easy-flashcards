@@ -1,6 +1,8 @@
 import {
   PLAY_STORE_MARKET_URL,
   PLAY_STORE_WEB_URL,
+  PRIVACY_POLICY_URL,
+  TERMS_URL,
   SUPPORT_EMAIL,
   SUPPORT_SUBJECT,
   supportMailtoUrl,
@@ -20,9 +22,11 @@ describe('supportMailtoUrl', () => {
   });
 });
 
-describe('store links', () => {
-  it('point at this app by its package id', () => {
+describe('store and legal links', () => {
+  it('point at this app by its package id and real legal URLs', () => {
     expect(PLAY_STORE_MARKET_URL).toBe('market://details?id=com.easyflashcards');
     expect(PLAY_STORE_WEB_URL).toBe('https://play.google.com/store/apps/details?id=com.easyflashcards');
+    expect(PRIVACY_POLICY_URL).toBe('https://davikokar.github.io/android-docs/easy-flashcards/privacy.html');
+    expect(TERMS_URL).toBe('https://davikokar.github.io/android-docs/easy-flashcards/terms.html');
   });
 });

@@ -1,4 +1,4 @@
-package com.easyflashcards
+package com.davide.seddio.easyflashcards
 
 import android.os.Bundle
 import com.facebook.react.ReactActivity
