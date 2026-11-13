@@ -379,6 +379,7 @@ const messages: Catalogue = {
     },
     deckCard: {
       optionsA11yLabel: 'Opsi untuk {name}',
+      cardCount: '({count})',
       activeCount: '{count} aktif',
       lastSession: 'Terakhir: {date}',
       startA11yLabel: 'Mulai sesi untuk {name}',

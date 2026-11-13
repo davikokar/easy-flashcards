@@ -197,6 +197,7 @@ export default function StatsScreen({ navigation }: Props) {
         renderItem={({ item: row }) => (
           <DeckStatsCard
             name={row.deck.name}
+            description={row.deck.description}
             category={row.category}
             cardCount={row.stats.cardCount}
             reviewCount={row.stats.reviewCount}

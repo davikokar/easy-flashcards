@@ -38,6 +38,7 @@ export const decks = {
   },
   deckCard: {
     optionsA11yLabel: 'Options for {name}',
+    cardCount: '({count})',
     activeCount: '{count} active',
     lastSession: 'Last: {date}',
     startA11yLabel: 'Start session for {name}',

@@ -377,6 +377,7 @@ const messages: Catalogue = {
     },
     deckCard: {
       optionsA11yLabel: 'ตัวเลือกของ {name}',
+      cardCount: '({count})',
       activeCount: 'กำลังดำเนินการ {count}',
       lastSession: 'ล่าสุด: {date}',
       startA11yLabel: 'เริ่มเซสชันของ {name}',

@@ -376,6 +376,7 @@ const messages: Catalogue = {
     },
     deckCard: {
       optionsA11yLabel: 'Tùy chọn cho {name}',
+      cardCount: '({count})',
       activeCount: '{count} chưa xong',
       lastSession: 'Gần nhất: {date}',
       startA11yLabel: 'Bắt đầu phiên cho {name}',

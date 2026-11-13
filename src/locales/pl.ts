@@ -416,6 +416,7 @@ export const pl: Language = {
       },
       deckCard: {
         optionsA11yLabel: 'Opcje: {name}',
+        cardCount: '({count})',
         activeCount: 'Aktywne: {count}',
         lastSession: 'Ostatnio: {date}',
         startA11yLabel: 'Rozpocznij sesję: {name}',

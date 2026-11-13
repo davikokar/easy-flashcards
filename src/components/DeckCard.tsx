@@ -14,6 +14,8 @@ const renderPlayIcon = (color: string) => <MenuIcon name="play" color={color} />
 
 type Props = {
   name: string;
+  /** `''` when the deck has none: nothing is drawn and no space is taken. */
+  description: string;
   /** Drawn at the top left, before the title. Nothing, and no gap, when absent. */
   category?: Category | null;
   cardCount: number;
@@ -27,6 +29,7 @@ type Props = {
 
 export default function DeckCard({
   name,
+  description,
   category,
   cardCount,
   shares,
@@ -44,12 +47,21 @@ export default function DeckCard({
       <View style={styles.header}>
         {category ? <CategorySquare category={category} /> : null}
         <View style={styles.title}>
-          <Text style={styles.name} numberOfLines={1}>
-            {name}
-          </Text>
-          <Text style={styles.count}>
-            {t('common.counts.cards', { count: cardCount })}
-          </Text>
+          <View style={styles.nameRow}>
+            <Text style={styles.name} numberOfLines={1}>
+              {name}
+            </Text>
+            <Text
+              style={styles.count}
+              accessibilityLabel={t('common.counts.cards', { count: cardCount })}>
+              {t('decks.deckCard.cardCount', { count: cardCount })}
+            </Text>
+          </View>
+          {description !== '' ? (
+            <Text style={styles.description} numberOfLines={2}>
+              {description}
+            </Text>
+          ) : null}
         </View>
         <KebabMenu
           title={name}
@@ -116,12 +128,24 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 2,
   },
+  // The name shrinks first, so the count stays beside it however long the title is.
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: spacing.xs,
+  },
   name: {
+    flexShrink: 1,
     color: colors.text,
     fontSize: 17,
     fontWeight: '700',
   },
   count: {
+    flexShrink: 0,
+    color: colors.textMuted,
+    fontSize: 13,
+  },
+  description: {
     color: colors.textMuted,
     fontSize: 13,
   },

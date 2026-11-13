@@ -68,6 +68,14 @@ export default function LearnScreen({ navigation }: Props) {
     }
     return byId;
   }, [ordered, getDeck, categories]);
+  // Likewise the description: the deck's, and none when the deck is gone.
+  const sessionDescriptions = useMemo(() => {
+    const byId = new Map<string, string>();
+    for (const session of ordered) {
+      byId.set(session.id, getDeck(session.deckId)?.description ?? '');
+    }
+    return byId;
+  }, [ordered, getDeck]);
 
   const closeSearch = useCallback(() => {
     setSearchOpen(false);
@@ -241,6 +249,7 @@ export default function LearnScreen({ navigation }: Props) {
           return (
             <SessionCard
               deckName={item.deckName}
+              description={sessionDescriptions.get(item.id) ?? ''}
               category={sessionCategories.get(item.id) ?? null}
               isActive={isActive}
               inverted={item.inverted}

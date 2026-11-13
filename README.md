@@ -25,7 +25,8 @@ them card by card, and track how well you know each card.
   description, its category and its cards. Edit a card's
   question or answer, add a card, or remove one, then press *Save*; nothing changes until you do.
   Editing a card keeps its statistics, removing one deletes them, and the title change reaches the
-  deck's sessions.
+  deck's sessions. A description shows under the deck's title on the *Decks*, *Learn* and
+  *Statistics* tabs.
 - **Deck creation by hand**: *Add deck manually* in the add deck menu opens the same form, blank —
   a title, an optional description, a category and no cards until you add one. *Save* asks for a
   title and for both sides of every card, then adds the deck to the *Decks* tab. A deck may have

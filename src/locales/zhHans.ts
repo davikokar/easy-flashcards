@@ -377,6 +377,7 @@ const messages: Catalogue = {
     },
     deckCard: {
       optionsA11yLabel: '{name} 的选项',
+      cardCount: '({count})',
       activeCount: '{count} 个进行中',
       lastSession: '上次：{date}',
       startA11yLabel: '开始 {name} 的学习会话',

@@ -9,6 +9,8 @@ import { colors, radius, spacing } from '../theme';
 
 type Props = {
   name: string;
+  /** `''` when the deck has none: nothing is drawn and no space is taken. */
+  description: string;
   /** Already resolved by the screen. Nothing, and no gap, when null. */
   category: Category | null;
   cardCount: number;
@@ -27,6 +29,7 @@ const VALUE_LINE_HEIGHT = 18;
 
 export default function DeckStatsCard({
   name,
+  description,
   category,
   cardCount,
   reviewCount,
@@ -54,9 +57,16 @@ export default function DeckStatsCard({
       style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
       <View style={styles.header}>
         {category ? <CategorySquare category={category} /> : null}
-        <Text style={styles.name} numberOfLines={1}>
-          {name}
-        </Text>
+        <View style={styles.title}>
+          <Text style={styles.name} numberOfLines={1}>
+            {name}
+          </Text>
+          {description !== '' ? (
+            <Text style={styles.description} numberOfLines={2}>
+              {description}
+            </Text>
+          ) : null}
+        </View>
         <View style={styles.chevron} />
       </View>
 
@@ -123,11 +133,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
   },
-  name: {
+  title: {
     flex: 1,
+    gap: 2,
+  },
+  name: {
     color: colors.text,
     fontSize: 17,
     fontWeight: '700',
+  },
+  description: {
+    color: colors.textMuted,
+    fontSize: 13,
   },
   // A right-pointing chevron: two borders of a square, turned 45 degrees (as in CategoryField).
   chevron: {

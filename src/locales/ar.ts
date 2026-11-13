@@ -425,6 +425,7 @@ const messages: Catalogue = {
     },
     deckCard: {
       optionsA11yLabel: 'خيارات المجموعة «{name}»',
+      cardCount: '({count})',
       activeCount: '{count} نشطة',
       lastSession: 'الأخيرة: {date}',
       startA11yLabel: 'بدء جلسة للمجموعة «{name}»',

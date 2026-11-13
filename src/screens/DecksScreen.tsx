@@ -417,6 +417,7 @@ export default function DecksScreen({ navigation }: Props) {
           return (
             <DeckCard
               name={item.name}
+              description={item.description}
               category={findCategory(item.categoryId, categories)}
               cardCount={stats.cardCount}
               shares={answerShares(stats)}

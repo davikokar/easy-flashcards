@@ -409,6 +409,7 @@ const messages: Catalogue = {
     },
     deckCard: {
       optionsA11yLabel: 'Параметри колоди: {name}',
+      cardCount: '({count})',
       activeCount: 'Активних: {count}',
       lastSession: 'Остання: {date}',
       startA11yLabel: 'Почати сесію для колоди «{name}»',

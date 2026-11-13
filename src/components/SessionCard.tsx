@@ -25,6 +25,8 @@ type Review = {
 
 type Props = {
   deckName: string;
+  /** The deck's, looked up by the screen; `''` when it has none or is gone: nothing is drawn. */
+  description: string;
   /** Drawn at the top left, before the deck name. Nothing, and no gap, when absent. */
   category?: Category | null;
   isActive: boolean;
@@ -45,6 +47,7 @@ type Props = {
 
 export default function SessionCard({
   deckName,
+  description,
   category,
   isActive,
   inverted = false,
@@ -76,30 +79,11 @@ export default function SessionCard({
           <Text style={styles.name} numberOfLines={1}>
             {deckName}
           </Text>
-          <View style={styles.pills}>
-            <View style={[styles.pill, isActive ? styles.pillActive : styles.pillDone]}>
-              {isActive ? (
-                <View style={styles.pillDot} />
-              ) : (
-                <AnswerIcon name="tick" color={colors.success} size={12} />
-              )}
-              <Text
-                style={[styles.pillText, isActive ? styles.pillTextActive : styles.pillTextDone]}
-                numberOfLines={1}>
-                {status}
-              </Text>
-            </View>
-            {inverted ? (
-              <View
-                accessible
-                accessibilityLabel={t('learn.sessionCard.invertedPillA11yLabel')}
-                style={[styles.pill, styles.pillInverted]}>
-                <Text style={[styles.pillText, styles.pillTextInverted]} numberOfLines={1}>
-                  {t('learn.sessionCard.invertedPill')}
-                </Text>
-              </View>
-            ) : null}
-          </View>
+          {description !== '' ? (
+            <Text style={styles.description} numberOfLines={2}>
+              {description}
+            </Text>
+          ) : null}
         </View>
         <KebabMenu
           title={deckName}
@@ -112,37 +96,63 @@ export default function SessionCard({
       <SessionResultsBar shares={shares} tally={tally} cardCount={cardCount} />
 
       <View style={styles.footer}>
-        <View style={styles.started}>
-          <MenuIcon name="clock" color={colors.textDim} size={14} />
-          <Text style={styles.startedText} numberOfLines={1}>
-            {t('learn.sessionCard.started', { date: startedLabel })}
-          </Text>
+        <View style={styles.pills}>
+          <View style={[styles.pill, isActive ? styles.pillActive : styles.pillDone]}>
+            {isActive ? (
+              <View style={styles.pillDot} />
+            ) : (
+              <AnswerIcon name="tick" color={colors.success} size={12} />
+            )}
+            <Text
+              style={[styles.pillText, isActive ? styles.pillTextActive : styles.pillTextDone]}
+              numberOfLines={1}>
+              {status}
+            </Text>
+          </View>
+          {inverted ? (
+            <View
+              accessible
+              accessibilityLabel={t('learn.sessionCard.invertedPillA11yLabel')}
+              style={[styles.pill, styles.pillInverted]}>
+              <Text style={[styles.pillText, styles.pillTextInverted]} numberOfLines={1}>
+                {t('learn.sessionCard.invertedPill')}
+              </Text>
+            </View>
+          ) : null}
         </View>
-        <View style={styles.actions}>
-          {isActive && onResume ? (
-            <Button
-              variant="primary"
-              accessibilityLabel={t('learn.sessionCard.resumeButtonA11yLabel', { deckName })}
-              icon={renderResumeIcon}
-              onPress={onResume}
-            />
-          ) : null}
-          {!isActive && review ? (
-            <ReviewErrorsButton
-              count={review.count}
-              done={review.done}
-              accessibilityLabel={reviewLabel}
-              onPress={review.onPress}
-            />
-          ) : null}
-          {!isActive && onReplay ? (
-            <Button
-              variant="secondary"
-              accessibilityLabel={t('learn.sessionCard.replayButtonA11yLabel', { deckName })}
-              icon={renderReplayIcon}
-              onPress={onReplay}
-            />
-          ) : null}
+        <View style={styles.footerRow}>
+          <View style={styles.started}>
+            <MenuIcon name="clock" color={colors.textDim} size={14} />
+            <Text style={styles.startedText} numberOfLines={1}>
+              {t('learn.sessionCard.started', { date: startedLabel })}
+            </Text>
+          </View>
+          <View style={styles.actions}>
+            {isActive && onResume ? (
+              <Button
+                variant="primary"
+                accessibilityLabel={t('learn.sessionCard.resumeButtonA11yLabel', { deckName })}
+                icon={renderResumeIcon}
+                onPress={onResume}
+              />
+            ) : null}
+            {!isActive && review ? (
+              <ReviewErrorsButton
+                count={review.count}
+                done={review.done}
+                accessibilityLabel={reviewLabel}
+                onPress={review.onPress}
+              />
+            ) : null}
+            {!isActive && onReplay ? (
+              <Button
+                variant="secondary"
+                accessibilityLabel={t('learn.sessionCard.replayButtonA11yLabel', { deckName })}
+                icon={renderReplayIcon}
+                onPress={onReplay}
+              />
+            ) : null}
+          </View>
         </View>
       </View>
     </View>
@@ -167,12 +177,16 @@ const styles = StyleSheet.create({
   },
   title: {
     flex: 1,
-    gap: spacing.xs,
+    gap: 2,
   },
   name: {
     color: colors.text,
     fontSize: 17,
     fontWeight: '700',
+  },
+  description: {
+    color: colors.textMuted,
+    fontSize: 13,
   },
   // Wraps, so the Inverted pill drops under the status pill rather than squeezing it.
   pills: {
@@ -225,14 +239,18 @@ const styles = StyleSheet.create({
   pillTextInverted: {
     color: colors.textMuted,
   },
+  // Status pills sit above the Started row, full width so a long status is never truncated.
   footer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     gap: spacing.sm,
     borderTopWidth: 1,
     borderTopColor: colors.border,
     paddingTop: spacing.sm,
+  },
+  footerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
   },
   started: {
     flex: 1,

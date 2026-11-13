@@ -381,6 +381,7 @@ const messages: Catalogue = {
     },
     deckCard: {
       optionsA11yLabel: '{name} seçenekleri',
+      cardCount: '({count})',
       activeCount: '{count} etkin',
       lastSession: 'Son: {date}',
       startA11yLabel: '{name} için oturum başlat',

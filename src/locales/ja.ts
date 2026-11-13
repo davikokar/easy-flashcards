@@ -379,6 +379,7 @@ const messages: Catalogue = {
     },
     deckCard: {
       optionsA11yLabel: '{name}のオプション',
+      cardCount: '({count})',
       activeCount: '進行中{count}件',
       lastSession: '前回：{date}',
       startA11yLabel: '{name}のセッションを開始',

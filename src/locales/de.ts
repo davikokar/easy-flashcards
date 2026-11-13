@@ -386,6 +386,7 @@ const messages: Catalogue = {
     },
     deckCard: {
       optionsA11yLabel: 'Optionen für {name}',
+      cardCount: '({count})',
       activeCount: '{count} aktiv',
       lastSession: 'Zuletzt: {date}',
       startA11yLabel: 'Sitzung für {name} starten',

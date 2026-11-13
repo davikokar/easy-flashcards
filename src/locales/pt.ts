@@ -390,6 +390,7 @@ export const pt: Language = {
       },
       deckCard: {
         optionsA11yLabel: 'Opções de {name}',
+        cardCount: '({count})',
         activeCount: 'Ativas: {count}',
         lastSession: 'Última: {date}',
         startA11yLabel: 'Iniciar sessão de {name}',

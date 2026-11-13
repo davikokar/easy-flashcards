@@ -232,8 +232,21 @@ outcomes.
 ## Decks screen
 
 - **Deck card** (`DeckCard`): one deck's row — a header (the **Category square** at the top left
-  when the deck has a category, then its name on one truncated line, its card count, and the
+  when the deck has a category, then the **Deck title row** over the **Deck description**, and the
   **Deck options menu**), a **Mastery bar**, and a **Deck meta row**. A deck with no category shows no square and leaves no gap.
+- **Deck title row**: the first line of the Deck card's header — the deck's name on one truncated
+  line and, immediately after it, the **Deck card count**. The name shrinks first, so the count stays
+  beside it however long the title is.
+- **Deck card count**: the deck's number of cards in parentheses, in a smaller muted font, such as
+  `(120)`, from the message ``({count})`` (`decks.deckCard.cardCount`). Because the number alone
+  says little, it is read as `{n} cards` (`common.counts.cards`). Shown only on the Deck card. Not
+  the **Card count pill** of the Deck identity row, and not the card count of a **Community deck
+  card**.
+- **Deck description** (a `Text` in `DeckCard`, `SessionCard` and `DeckStatsCard`): the deck's
+  description as **plain text** under its title, in a smaller muted font and at most two lines. A
+  deck with no description (`''`) draws nothing and takes no space. A **Session card** shows its
+  deck's description **as it is now** and none when the deck is gone, as with the category square;
+  a session stores no description. Not searched.
 - **Mastery bar** (`MasteryBar`): the darker inset panel on a Deck card and a **Deck stats card** — a **Mastery track** with one
   segment per answer, then a three-column legend of **Answer icon** (tick, question mark, cross) and
   percentage, with no text label. Segments and icons are green `Ok`, amber `Okeish`, red `Not ok`,
@@ -360,8 +373,9 @@ sections below say where the two differ; everything else applies to both.
 
 - **Deck fields**: two labelled text fields at the top. **Title** (single line) and **Description**
   (multi-line, placeholder `Optional`). Followed by the **Category field** and then a count heading,
-  `{n} card(s)`. The description is shown only here: not on the **Deck card** or the **Session
-  card**, and it is not searched.
+  `{n} card(s)`. Besides here, the description is shown on the **Deck card**, **Session card** and
+  **Deck stats card** as the **Deck description**, and on the **Community deck card**; it is not
+  searched.
 - **Category field** (`CategoryField`): the labelled row under Description, in the same style as the
   text fields — the label `Category`, then a row holding the **Category square** and the
   category's name on one truncated line, with a right-pointing chevron at its end. With no
@@ -413,13 +427,14 @@ sections below say where the two differ; everything else applies to both.
 
 - **Session card** (`SessionCard`): one session's row — a header (the **Category square** at the top
   left when the session's deck has a category, then the deck name on one truncated line over the
-  **Session status pill**, and the **Session options menu**), a **Session results bar**, and a
+  **Deck description**, and the **Session options menu**), a **Session results bar**, and a
   **Session card footer**. Active and completed cards share this structure and the same neutral
   border; the pill and the footer buttons are what differ. Only **listed** sessions get one —
   active, or completed and not cleared. The square shows the deck's category **as it is now**, not
   as it was when the session was studied, and a session whose deck is gone shows none
   ([ADR-0014](../../docs/architecture/decisions/0014-deck-belongs-to-one-category.md)).
-- **Session status pill**: the small rounded pill under the deck name, whose text is
+- **Session status pill**: the small rounded pill at the top of the **Session card footer**, just
+  above the `Started` line, whose text is
   ``In progress — {answered}/{total} cards`` on an active session and ``Completed — {n} cards`` on a
   completed one. Active is tinted primary with a dot; completed is tinted success with a tick
   (**Answer icon**). "In progress" and "Completed" are the user-facing words; **active** is the
@@ -439,8 +454,9 @@ sections below say where the two differ; everything else applies to both.
   bar** on the Study screen, which shows position through the session as one white bar, and not the
   **Success bar** or the **Mastery bar**, which are sized by answers as a share of *reviews* or a
   single rate.
-- **Session card footer**: the bottom row of a Session card, under a divider — on the left a clock
-  glyph and `Started {date}`, on the right the buttons below, vertically centred: the **Resume
+- **Session card footer**: the bottom area of a Session card, under a divider — first a full-width
+  row holding the **Session status pill** (and the **Inverted pill**), then a row with, on the left,
+  a clock glyph and `Started {date}`, and on the right the buttons below, vertically centred: the **Resume
   button** on an active session; on a completed one the **Review errors button** (when the session
   ever had errors) to the left of the **Replay button**.
 - **Resume button**: the primary icon-only Button with a play glyph, shown **only on an active
@@ -799,7 +815,8 @@ A deck belongs to at most one category
   `Decks breakdown` with `{n} deck(s)` at its end (the number shown, so it follows search), above
   the **Deck stats cards**.
 - **Deck stats card** (`DeckStatsCard`): one deck in the Decks breakdown — a header (the **Category
-  square** when the deck has a category, then its name on one truncated line and a right-pointing
+  square** when the deck has a category, then its name on one truncated line over the **Deck
+  description**, and a right-pointing
   chevron), a **Mastery bar**, and an inset row of four figures: `Cards`, `Sessions`, `Reviews` and
   `Last` (`formatDate`, `Never` when the deck has no session); `Last` is the widest column and the
   four shrink their text to fit rather than truncate it. The **Mastery bar**, `Sessions` and `Reviews`

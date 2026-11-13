@@ -403,6 +403,7 @@ export const ro: Language = {
       },
       deckCard: {
         optionsA11yLabel: 'Opțiuni pentru {name}',
+        cardCount: '({count})',
         activeCount: 'Active: {count}',
         lastSession: 'Ultima: {date}',
         startA11yLabel: 'Începe sesiunea pentru {name}',
