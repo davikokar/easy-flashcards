@@ -16,7 +16,9 @@ content, never its progress, and every file the app exports imports again
 [ADR-0017](decisions/0017-deck-import-reads-exported-formats.md)); both files are format version 2
 and name a category the same way ([ADR-0019](decisions/0019-deck-file-format-version-2.md)).
 
-- **App id / namespace:** `com.easyflashcards`
+- **App id / namespace:** the `applicationId` and `namespace` in
+  [`android/app/build.gradle`](../../android/app/build.gradle), currently the same string. Every
+  `adb` command that names the installed app takes the `applicationId`; do not restate it here.
 - **Language:** TypeScript · **UI:** React Native primitives, no component library
 - **Versions:** [`package.json`](../../package.json) owns every dependency version;
   [`android/build.gradle`](../../android/build.gradle) owns the SDK levels. Do not restate one
@@ -1075,7 +1077,8 @@ were checked unchanged when it landed — and every upgrade of it needs that che
   device run catches it ([ADR-0010](decisions/0010-inverted-sessions.md)). Likewise `shuffle` is
   tested but the Decks screen's use of it is not: a Start session button back in deck order, or a
   Session setup dialog opening with **Shuffle** unticked, passes `npm test` (ADR-0010 Amendment 1).
-- **A downgrade shows a different library, and between older builds it still loses data.** A build
+- **A downgrade that keeps the data shows a different library, and between older builds it still
+  loses data.** A build
   older than the `/v2` keys reads and writes only the `/v1` decks and sessions keys, so a downgrade
   from this build shows the library as it was before the upgrade and never touches the `/v2` data;
   reinstalling this build shows the `/v2` library again, and the two never merge
@@ -1093,13 +1096,19 @@ were checked unchanged when it landed — and every upgrade of it needs that che
   button creates counted sessions again, and an active inverted session resumes showing the
   question first. The custom categories themselves survive a build that predates their key,
   because it never touches it; a build that has categories but predates the extra icons rewrites
-  every custom category with an extra icon to the fallback icon on its first save (see §5). Nothing
-  blocks it: `versionCode`
-  in [`android/app/build.gradle`](../../android/app/build.gradle) has never been bumped and release
-  builds share the debug keystore. Accepted in ADR-0007, ADR-0008, ADR-0009, ADR-0010, ADR-0011,
-  [ADR-0014](decisions/0014-deck-belongs-to-one-category.md),
+  every custom category with an extra icon to the fallback icon on its first save (see §5). Android
+  now refuses the usual route: `versionCode` in
+  [`android/app/build.gradle`](../../android/app/build.gradle), which owns the number, has been
+  bumped, and an APK with a lower `versionCode` does not install over a newer one, so
+  `adb install -r` of a build from before the bump is rejected. That is a property of the build,
+  not a decision, and it is partial: it holds only between builds whose `versionCode` differs and
+  only while a release that changes a stored shape is given a higher one, which nothing enforces;
+  adb's `-d` flag allows the downgrade for a debuggable package; and uninstalling first still
+  allows it, deleting the whole library with the app's data. Release builds still share the debug
+  keystore, so the signature blocks nothing. Accepted in ADR-0007, ADR-0008, ADR-0009, ADR-0010,
+  ADR-0011, [ADR-0014](decisions/0014-deck-belongs-to-one-category.md),
   [ADR-0012](decisions/0012-custom-categories-third-storage-key.md) Amendment 2 and ADR-0015, not
-  mitigated.
+  otherwise mitigated ([ADR-0007](decisions/0007-okeish-third-answer.md) Amendment 2).
 - **An error review is invisible to Statistics and cannot be undone.** A card fixed in a review
   keeps the rate its sessions gave it; Okeish and Not ok answers in a review are recorded nowhere;
   an accidental Ok removes the card from that session's later passes, and only a Replay or a new

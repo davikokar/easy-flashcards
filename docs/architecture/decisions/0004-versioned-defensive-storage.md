@@ -178,6 +178,14 @@ whose `answeredAt` is not a finite number reads as its session's `startedAt`, no
 pre-upgrade library and never touches `/v2`; reinstalling the newer build shows the `/v2` data.
 Neither overwrites the other, and they never merge.
 
+## Amendment 5 — 2026-11-13
+
+The decision above is unchanged. Amendment 1's "nothing blocks a downgrade today, because
+`versionCode` has never been bumped" no longer holds: it has been bumped, so Android rejects an
+in-place install of a build from before the bump. A downgrade is still possible by uninstalling
+first, which deletes the data, and between builds sharing a `versionCode`. The details are in
+[ADR-0007](0007-okeish-third-answer.md) Amendment 2.
+
 ## References
 
 - [`src/storage/decksStorage.ts`](../../../src/storage/decksStorage.ts),

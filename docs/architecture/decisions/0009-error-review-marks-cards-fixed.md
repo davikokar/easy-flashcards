@@ -202,6 +202,14 @@ belong to [the UI vocabulary](../../../.github/instructions/ui-vocabulary.instru
 - `DecksContextValue` gains a function and `Session` gains a field. Every screen consumes the
   context value, so the blast radius is wider than the diff.
 
+## Amendment 1 — 2026-11-13
+
+The decision above is unchanged. The *Negative* consequence's "nothing blocks the downgrade
+(`versionCode` has never been bumped)" no longer holds: it has been bumped, so Android rejects an
+in-place install of a build from before the bump. A downgrade is still possible by uninstalling
+first, which deletes the data, and between builds sharing a `versionCode`. The details are in
+[ADR-0007](0007-okeish-third-answer.md) Amendment 2.
+
 ## References
 
 - [ADR-0002](0002-sessions-are-snapshots.md) — amended by this record (Amendment 2)

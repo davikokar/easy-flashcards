@@ -522,8 +522,9 @@ These are not preferences. Each one cost a session.
     function, and why the mainstream i18n libraries would need a polyfill here. Do not call
     `Intl.PluralRules`; `Intl.DateTimeFormat`, `Intl.NumberFormat` and `localeCompare` do work.
   - **Android's per-app `en-XA` pseudo-locale is ignored by the test phone.** Setting it with
-    `adb shell cmd locale set-app-locales com.easyflashcards --locales en-XA` left the app on
-    `en-US` on the Samsung test phone, so the shipped pseudo-language cannot be selected there that
+    `adb shell cmd locale set-app-locales <applicationId> --locales en-XA` (the `applicationId` in
+    [android/app/build.gradle](android/app/build.gradle)) left the app on `en-US` on the Samsung
+    test phone, so the shipped pseudo-language cannot be selected there that
     way. A per-app `de-DE` does reach the app — it is what
     `Intl.DateTimeFormat().resolvedOptions().locale` returns after a relaunch. To see the
     pseudo-language on that phone, build with the pseudo-language's `code` in

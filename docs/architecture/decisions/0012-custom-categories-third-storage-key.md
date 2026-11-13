@@ -327,6 +327,14 @@ Consequences of this amendment:
 - The name rule's result now depends on the device language, so the same name can be accepted on
   one device and refused on another.
 
+## Amendment 5 — 2026-11-13
+
+The decision above is unchanged. Amendment 2's "nothing blocks a downgrade, because `versionCode`
+has never been bumped" no longer holds: it has been bumped, so Android rejects an in-place install
+of a build from before the bump. A downgrade is still possible by uninstalling first, which
+deletes the data, and between builds sharing a `versionCode`. The details are in
+[ADR-0007](0007-okeish-third-answer.md) Amendment 2.
+
 ## References
 
 - [ADR-0001](0001-own-the-html-renderer.md) — the precedent for owning a control rather than
@@ -352,6 +360,8 @@ Consequences of this amendment:
   names become display text and the name rule compares in two languages (Amendment 4)
 - [ADR-0019](0019-deck-file-format-version-2.md) — a built-in category travels in a file by its
   id, never its name (Amendment 4)
+- [ADR-0007](0007-okeish-third-answer.md) — Amendment 2, the `versionCode` bump and what still
+  allows a downgrade (Amendment 5 here)
 - [`src/storage/categoriesStorage.ts`](../../../src/storage/categoriesStorage.ts)
 - [`src/utils/categories.ts`](../../../src/utils/categories.ts) — the defaults, the icon keys and
   the name rule

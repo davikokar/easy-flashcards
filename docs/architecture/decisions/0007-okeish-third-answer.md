@@ -153,6 +153,31 @@ ones, and the success rate is still `ok / (ok + okeish + notOk)`. One detail mov
   leave it outstanding for the next pass, and neither is counted anywhere. Okeish keeps its meaning
   in a session exactly as decided above.
 
+## Amendment 2 — 2026-11-13
+
+Recorded after the change it describes. The decision above is unchanged. One fact in *Context*,
+which the *Negative* consequence relies on, no longer holds: "`versionCode` … has never been
+bumped", so "nothing blocks the downgrade". That was a property of the build, not part of the
+decision.
+
+- **`versionCode` has been bumped**, for the first time, with the 1.0.1 release.
+  [`android/app/build.gradle`](../../../android/app/build.gradle) owns the number. Android refuses
+  to install an APK whose `versionCode` is lower than the installed one's, so `adb install -r` of a
+  build from before the bump over one from after it is now rejected, and the silent in-place
+  downgrade described under *Negative* cannot happen that way.
+- **A downgrade by uninstalling first still works**, and it loses everything: uninstalling deletes
+  the app's AsyncStorage, so the older build starts with an empty library. That is a larger loss
+  than the one accepted above, but not a silent one.
+- **The protection is partial.** It holds only between builds whose `versionCode` differs, and only
+  while a release that changes a stored shape is given a higher one; nothing enforces that, and
+  two builds sharing a `versionCode` still install over each other with the data kept. adb's `-d`
+  flag allows a version-code downgrade for a debuggable package. Release builds are still signed
+  with the debug keystore, so the signature blocks nothing.
+
+The loss accepted under *Negative* therefore still stands for any downgrade that keeps the data;
+it is now harder to reach by accident, not mitigated by decision. ADR-0004, ADR-0009, ADR-0010 and
+ADR-0012, which repeat the old fact, each carry a short amendment pointing here.
+
 ## References
 
 - [ADR-0004](0004-versioned-defensive-storage.md) — amended by this record (Amendment 1)

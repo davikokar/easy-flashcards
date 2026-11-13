@@ -123,6 +123,11 @@ for the required format and status rules.
 > screen by category: a community deck is listed under the category its download would get, and
 > one that resolves to none on this device goes into a last group. It changes nothing persisted,
 > the wire format or the Worker; ARCHITECTURE.md links to it now that the work has landed.
+> ADR-0007 carries an Amendment 2, recorded after the change it describes, with Amendment 5 to
+> ADR-0004, Amendment 1 to ADR-0009, Amendment 2 to ADR-0010 and Amendment 5 to ADR-0012: the
+> first `versionCode` bump means Android now rejects an in-place install of an older build, so
+> "nothing blocks a downgrade" no longer holds, though uninstalling first, a shared `versionCode`
+> or adb's `-d` flag still allow one. No decision changes, and nothing persisted changes.
 
 ### Index
 

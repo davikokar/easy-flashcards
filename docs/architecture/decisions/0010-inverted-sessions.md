@@ -225,6 +225,14 @@ Consequences of this amendment:
   to deck order, or a dialog opening with **Shuffle** unchecked, passes `npm test` and shows only on
   a device. `shuffle` itself is tested.
 
+## Amendment 2 — 2026-11-13
+
+The decision above is unchanged. The *Negative* consequence's "nothing blocks the downgrade
+(`versionCode` has never been bumped)" no longer holds: it has been bumped, so Android rejects an
+in-place install of a build from before the bump. A downgrade is still possible by uninstalling
+first, which deletes the data, and between builds sharing a `versionCode`. The details are in
+[ADR-0007](0007-okeish-third-answer.md) Amendment 2.
+
 ## References
 
 - [ADR-0001](0001-own-the-html-renderer.md) — both faces go through the same renderer
