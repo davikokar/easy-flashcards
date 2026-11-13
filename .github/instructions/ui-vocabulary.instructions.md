@@ -519,8 +519,8 @@ sections below say where the two differ; everything else applies to both.
   active, or completed and not cleared. The square shows the deck's category **as it is now**, not
   as it was when the session was studied, and a session whose deck is gone shows none
   ([ADR-0014](../../docs/architecture/decisions/0014-deck-belongs-to-one-category.md)).
-- **Session status pill**: the small rounded pill at the top of the **Session card footer**, just
-  above the `Started` line, whose text is
+- **Session status pill**: the small rounded pill on the first line of the **Session card footer**,
+  just above the `Started` line, whose text is
   ``In progress — {answered}/{total} cards`` on an active session and ``Completed — {n} cards`` on a
   completed one. Active is tinted primary with a dot; completed is tinted success with a tick
   (**Answer icon**). "In progress" and "Completed" are the user-facing words; **active** is the
@@ -540,11 +540,12 @@ sections below say where the two differ; everything else applies to both.
   bar** on the Study screen, which shows position through the session as one white bar, and not the
   **Success bar** or the **Mastery bar**, which are sized by answers as a share of *reviews* or a
   single rate.
-- **Session card footer**: the bottom area of a Session card, under a divider — first a full-width
-  row holding the **Session status pill** (and the **Inverted pill**), then a row with, on the left,
-  a clock glyph and `Started {date}`, and on the right the buttons below, vertically centred: the **Resume
-  button** on an active session; on a completed one the **Review errors button** (when the session
-  ever had errors) to the left of the **Replay button**.
+- **Session card footer**: the bottom area of a Session card, under a divider, laid out like the
+  **Deck meta row** — on the left, two lines close together: the **Session status pill** (and the
+  **Inverted pill**), then a clock glyph and `Started {date}`; on the right the buttons below,
+  vertically centred against both lines: the **Resume button** on an active session; on a completed
+  one the **Review errors button** (when the session ever had errors) to the left of the **Replay
+  button**. A long status or the date wraps rather than truncates when the buttons leave little room.
 - **Resume button**: the primary icon-only Button with a play glyph, shown **only on an active
   session**, labelled ``Resume session for {deck name}``. Continues that session in the Study
   screen.
