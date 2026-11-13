@@ -1,5 +1,5 @@
 export const APP_NAME = 'Easy Flashcards';
-export const ANDROID_PACKAGE = 'com.easyflashcards';
+export const ANDROID_PACKAGE = 'com.davide.seddio.easyflashcards';
 
 export const SUPPORT_EMAIL = 'davidemela.support@gmail.com';
 export const SUPPORT_SUBJECT = 'Easy Flashcards support request';
