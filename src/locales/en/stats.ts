@@ -25,10 +25,6 @@ export const stats = {
     },
     tileA11yLabel: '{label}: {value}, {caption}',
     decksBreakdownHeading: 'Decks breakdown',
-    deckCount: {
-      one: '{count} deck',
-      other: '{count} decks',
-    },
     emptyState: {
       title: 'No statistics yet',
       message: 'Import a deck and study it; results will show up here.',

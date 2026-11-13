@@ -25,7 +25,14 @@ const messages: Catalogue = {
       noMatchesMessage: 'Tidak ada yang cocok dengan "{query}".',
       clearSearchButton: 'Hapus pencarian',
     },
+    titleToggle: {
+      expandA11yLabel: 'Tampilkan judul lengkap',
+      collapseA11yLabel: 'Persingkat judul',
+    },
     counts: {
+      decks: {
+        other: '{count} dek',
+      },
       cards: {
         other: '{count} kartu',
       },
@@ -322,6 +329,14 @@ const messages: Catalogue = {
     loadFailedTitle: 'Dek tidak dapat dimuat',
     yoursBadge: 'Milikmu',
     downloadA11yLabel: 'Unduh {name}',
+    otherGroup: {
+      name: 'Lainnya',
+    },
+    communityDecksScreen: {
+      categoryTileA11yLabel: {
+        other: '{name}, {count} dek',
+      },
+    },
     shareAlert: {
       confirmTitle: 'Bagikan ke komunitas',
       confirmMessage:
@@ -681,9 +696,6 @@ const messages: Catalogue = {
       },
       tileA11yLabel: '{label}: {value}, {caption}',
       decksBreakdownHeading: 'Rincian dek',
-      deckCount: {
-        other: '{count} dek',
-      },
       emptyState: {
         title: 'Belum ada statistik',
         message: 'Impor dek dan pelajari; hasilnya akan muncul di sini.',

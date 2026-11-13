@@ -23,7 +23,15 @@ const messages: Catalogue = {
       noMatchesMessage: '"{query}" ile eşleşen sonuç yok.',
       clearSearchButton: 'Aramayı temizle',
     },
+    titleToggle: {
+      expandA11yLabel: 'Başlığın tamamını göster',
+      collapseA11yLabel: 'Başlığı daralt',
+    },
     counts: {
+      decks: {
+        one: '{count} deste',
+        other: '{count} deste',
+      },
       cards: {
         one: '{count} kart',
         other: '{count} kart',
@@ -325,6 +333,15 @@ const messages: Catalogue = {
     loadFailedTitle: 'Desteler yüklenemedi',
     yoursBadge: 'Senin',
     downloadA11yLabel: '{name} indir',
+    otherGroup: {
+      name: 'Diğer',
+    },
+    communityDecksScreen: {
+      categoryTileA11yLabel: {
+        one: '{name}, {count} deste',
+        other: '{name}, {count} deste',
+      },
+    },
     shareAlert: {
       confirmTitle: 'Toplulukla paylaş',
       confirmMessage:
@@ -688,10 +705,6 @@ const messages: Catalogue = {
       },
       tileA11yLabel: '{label}: {value}, {caption}',
       decksBreakdownHeading: 'Deste dökümü',
-      deckCount: {
-        one: '{count} deste',
-        other: '{count} deste',
-      },
       emptyState: {
         title: 'Henüz istatistik yok',
         message: 'Bir deste içe aktarıp çalışın; sonuçlar burada görünür.',

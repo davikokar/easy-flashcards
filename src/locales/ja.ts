@@ -25,7 +25,14 @@ const messages: Catalogue = {
       noMatchesMessage: '「{query}」に一致するものはありません。',
       clearSearchButton: '検索をクリア',
     },
+    titleToggle: {
+      expandA11yLabel: 'タイトルをすべて表示',
+      collapseA11yLabel: 'タイトルを折りたたむ',
+    },
     counts: {
+      decks: {
+        other: '{count}デッキ',
+      },
       cards: {
         other: '{count}枚',
       },
@@ -322,6 +329,14 @@ const messages: Catalogue = {
     loadFailedTitle: 'デッキを読み込めませんでした',
     yoursBadge: '自分の',
     downloadA11yLabel: '{name} をダウンロード',
+    otherGroup: {
+      name: 'その他',
+    },
+    communityDecksScreen: {
+      categoryTileA11yLabel: {
+        other: '{name}、{count}デッキ',
+      },
+    },
     shareAlert: {
       confirmTitle: 'コミュニティに共有',
       confirmMessage:
@@ -680,9 +695,6 @@ const messages: Catalogue = {
       },
       tileA11yLabel: '{label}：{value}、{caption}',
       decksBreakdownHeading: 'デッキ別の内訳',
-      deckCount: {
-        other: '{count}デッキ',
-      },
       emptyState: {
         title: '統計はまだありません',
         message: 'デッキをインポートして学習すると、結果がここに表示されます。',

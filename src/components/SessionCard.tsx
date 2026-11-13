@@ -11,6 +11,7 @@ import MenuIcon from './MenuIcons';
 import { MenuItem } from './MenuSheet';
 import ReviewErrorsButton from './ReviewErrorsButton';
 import SessionResultsBar from './SessionResultsBar';
+import { useTitleToggle } from './useTitleToggle';
 
 const renderResumeIcon = (color: string) => <MenuIcon name="resume" color={color} />;
 const renderReplayIcon = (color: string) => <MenuIcon name="replay" color={color} />;
@@ -62,6 +63,7 @@ export default function SessionCard({
   review,
 }: Props) {
   const t = useT();
+  const title = useTitleToggle();
   const status = isActive
     ? t('learn.sessionCard.inProgressStatus', { count: cardCount, answered: answeredCount })
     : t('learn.sessionCard.completedStatus', { count: cardCount });
@@ -76,7 +78,13 @@ export default function SessionCard({
       <View style={styles.header}>
         {category ? <CategorySquare category={category} /> : null}
         <View style={styles.title}>
-          <Text style={styles.name} numberOfLines={1}>
+          <Text
+            style={styles.name}
+            numberOfLines={title.expanded ? undefined : 1}
+            accessibilityRole="text"
+            onLongPress={title.onLongPress}
+            accessibilityActions={title.accessibilityActions}
+            onAccessibilityAction={title.onAccessibilityAction}>
             {deckName}
           </Text>
           {description !== '' ? (

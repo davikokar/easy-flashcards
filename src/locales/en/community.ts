@@ -7,6 +7,16 @@ export const community = {
   loadFailedTitle: 'Could not load decks',
   yoursBadge: 'Yours',
   downloadA11yLabel: 'Download {name}',
+  // The decks with no category, or a category this device does not have.
+  otherGroup: {
+    name: 'Other',
+  },
+  communityDecksScreen: {
+    categoryTileA11yLabel: {
+      one: '{name}, {count} deck',
+      other: '{name}, {count} decks',
+    },
+  },
   shareAlert: {
     confirmTitle: 'Share to community',
     confirmMessage:

@@ -25,7 +25,14 @@ const messages: Catalogue = {
       noMatchesMessage: '"{query}"에 해당하는 항목이 없어요.',
       clearSearchButton: '검색어 지우기',
     },
+    titleToggle: {
+      expandA11yLabel: '전체 제목 보기',
+      collapseA11yLabel: '제목 접기',
+    },
     counts: {
+      decks: {
+        other: '덱 {count}개',
+      },
       cards: {
         other: '카드 {count}장',
       },
@@ -322,6 +329,14 @@ const messages: Catalogue = {
     loadFailedTitle: '덱을 불러올 수 없습니다',
     yoursBadge: '내 덱',
     downloadA11yLabel: '{name} 다운로드',
+    otherGroup: {
+      name: '기타',
+    },
+    communityDecksScreen: {
+      categoryTileA11yLabel: {
+        other: '{name}, 덱 {count}개',
+      },
+    },
     shareAlert: {
       confirmTitle: '커뮤니티에 공유',
       confirmMessage:
@@ -678,9 +693,6 @@ const messages: Catalogue = {
       },
       tileA11yLabel: '{label}: {value}, {caption}',
       decksBreakdownHeading: '덱별 내역',
-      deckCount: {
-        other: '덱 {count}개',
-      },
       emptyState: {
         title: '아직 통계가 없어요',
         message: '덱을 가져와 학습하면 결과가 여기에 표시돼요.',

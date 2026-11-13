@@ -24,7 +24,15 @@ const messages: Catalogue = {
       noMatchesMessage: 'Keine Treffer für „{query}“.',
       clearSearchButton: 'Suche leeren',
     },
+    titleToggle: {
+      expandA11yLabel: 'Ganzen Titel anzeigen',
+      collapseA11yLabel: 'Titel verkürzen',
+    },
     counts: {
+      decks: {
+        one: '{count} Stapel',
+        other: '{count} Stapel',
+      },
       cards: {
         one: '{count} Karte',
         other: '{count} Karten',
@@ -329,6 +337,15 @@ const messages: Catalogue = {
     loadFailedTitle: 'Stapel konnten nicht geladen werden',
     yoursBadge: 'Von dir',
     downloadA11yLabel: '{name} herunterladen',
+    otherGroup: {
+      name: 'Andere',
+    },
+    communityDecksScreen: {
+      categoryTileA11yLabel: {
+        one: '{name}, {count} Stapel',
+        other: '{name}, {count} Stapel',
+      },
+    },
     shareAlert: {
       confirmTitle: 'In der Community teilen',
       confirmMessage:
@@ -695,10 +712,6 @@ const messages: Catalogue = {
       },
       tileA11yLabel: '{label}: {value}, {caption}',
       decksBreakdownHeading: 'Stapelübersicht',
-      deckCount: {
-        one: '{count} Stapel',
-        other: '{count} Stapel',
-      },
       emptyState: {
         title: 'Noch keine Statistik',
         message: 'Einen Stapel importieren und lernen; die Ergebnisse erscheinen hier.',

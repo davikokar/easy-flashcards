@@ -25,7 +25,14 @@ const messages: Catalogue = {
       noMatchesMessage: 'ไม่มีรายการที่ตรงกับ "{query}"',
       clearSearchButton: 'ล้างการค้นหา',
     },
+    titleToggle: {
+      expandA11yLabel: 'แสดงชื่อเต็ม',
+      collapseA11yLabel: 'ย่อชื่อ',
+    },
     counts: {
+      decks: {
+        other: '{count} ชุด',
+      },
       cards: {
         other: '{count} การ์ด',
       },
@@ -320,6 +327,14 @@ const messages: Catalogue = {
     loadFailedTitle: 'โหลดชุดการ์ดไม่ได้',
     yoursBadge: 'ของคุณ',
     downloadA11yLabel: 'ดาวน์โหลด {name}',
+    otherGroup: {
+      name: 'อื่น ๆ',
+    },
+    communityDecksScreen: {
+      categoryTileA11yLabel: {
+        other: '{name}, {count} ชุด',
+      },
+    },
     shareAlert: {
       confirmTitle: 'แชร์ไปยังชุมชน',
       confirmMessage:
@@ -676,9 +691,6 @@ const messages: Catalogue = {
       },
       tileA11yLabel: '{label}: {value}, {caption}',
       decksBreakdownHeading: 'แยกตามชุดการ์ด',
-      deckCount: {
-        other: '{count} ชุด',
-      },
       emptyState: {
         title: 'ยังไม่มีสถิติ',
         message: 'นำเข้าชุดการ์ดแล้วเริ่มเรียน ผลลัพธ์จะแสดงที่นี่',

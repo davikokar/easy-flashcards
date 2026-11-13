@@ -2,6 +2,7 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import CategorySquare from './CategorySquare';
 import MasteryBar from './MasteryBar';
+import { useTitleToggle } from './useTitleToggle';
 import { useT } from '../i18n/I18nProvider';
 import type { AnswerShares, Category } from '../types';
 import { describeAnswerShares, formatDate } from '../utils/stats';
@@ -39,6 +40,7 @@ export default function DeckStatsCard({
   onPress,
 }: Props) {
   const t = useT();
+  const title = useTitleToggle();
   const last = formatDate(lastSessionAt, t);
 
   return (
@@ -53,12 +55,15 @@ export default function DeckStatsCard({
         last,
       })}
       accessibilityHint={t('stats.deckStatsCard.openA11yHint')}
+      accessibilityActions={title.accessibilityActions}
+      onAccessibilityAction={title.onAccessibilityAction}
       onPress={onPress}
+      onLongPress={title.onLongPress}
       style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
       <View style={styles.header}>
         {category ? <CategorySquare category={category} /> : null}
         <View style={styles.title}>
-          <Text style={styles.name} numberOfLines={1}>
+          <Text style={styles.name} numberOfLines={title.expanded ? undefined : 1}>
             {name}
           </Text>
           {description !== '' ? (

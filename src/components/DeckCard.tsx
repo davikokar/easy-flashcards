@@ -9,6 +9,7 @@ import MenuIcon from './MenuIcons';
 import { useT } from '../i18n/I18nProvider';
 import { AnswerShares, Category } from '../types';
 import { colors, radius, spacing } from '../theme';
+import { useTitleToggle } from './useTitleToggle';
 
 const renderPlayIcon = (color: string) => <MenuIcon name="play" color={color} />;
 
@@ -40,6 +41,7 @@ export default function DeckCard({
   onStart,
 }: Props) {
   const t = useT();
+  const title = useTitleToggle();
   const hasActive = activeCount > 0;
 
   return (
@@ -48,7 +50,13 @@ export default function DeckCard({
         {category ? <CategorySquare category={category} /> : null}
         <View style={styles.title}>
           <View style={styles.nameRow}>
-            <Text style={styles.name} numberOfLines={1}>
+            <Text
+              style={styles.name}
+              numberOfLines={title.expanded ? undefined : 1}
+              accessibilityRole="text"
+              onLongPress={title.onLongPress}
+              accessibilityActions={title.accessibilityActions}
+              onAccessibilityAction={title.onAccessibilityAction}>
               {name}
             </Text>
             <Text

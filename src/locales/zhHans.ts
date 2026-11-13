@@ -26,7 +26,14 @@ const messages: Catalogue = {
       noMatchesMessage: '没有与“{query}”匹配的内容。',
       clearSearchButton: '清除搜索',
     },
+    titleToggle: {
+      expandA11yLabel: '显示完整标题',
+      collapseA11yLabel: '收起标题',
+    },
     counts: {
+      decks: {
+        other: '{count} 个卡组',
+      },
       cards: {
         other: '{count} 张卡片',
       },
@@ -321,6 +328,14 @@ const messages: Catalogue = {
     loadFailedTitle: '无法加载卡组',
     yoursBadge: '我的',
     downloadA11yLabel: '下载 {name}',
+    otherGroup: {
+      name: '其他',
+    },
+    communityDecksScreen: {
+      categoryTileA11yLabel: {
+        other: '{name}，{count} 个卡组',
+      },
+    },
     shareAlert: {
       confirmTitle: '分享到社区',
       confirmMessage:
@@ -674,9 +689,6 @@ const messages: Catalogue = {
       },
       tileA11yLabel: '{label}：{value}，{caption}',
       decksBreakdownHeading: '卡组明细',
-      deckCount: {
-        other: '{count} 个卡组',
-      },
       emptyState: {
         title: '还没有统计数据',
         message: '导入卡组并开始学习，结果会显示在这里。',

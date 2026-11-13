@@ -29,7 +29,15 @@ export const pt: Language = {
         noMatchesMessage: 'Nada corresponde a "{query}".',
         clearSearchButton: 'Limpar busca',
       },
+      titleToggle: {
+        expandA11yLabel: 'Mostrar o título completo',
+        collapseA11yLabel: 'Recolher o título',
+      },
       counts: {
+        decks: {
+          one: '{count} baralho',
+          other: '{count} baralhos',
+        },
         cards: {
           one: '{count} cartão',
           other: '{count} cartões',
@@ -333,6 +341,15 @@ export const pt: Language = {
       loadFailedTitle: 'Não foi possível carregar os baralhos',
       yoursBadge: 'Seu',
       downloadA11yLabel: 'Baixar {name}',
+      otherGroup: {
+        name: 'Outros',
+      },
+      communityDecksScreen: {
+        categoryTileA11yLabel: {
+          one: '{name}, {count} baralho',
+          other: '{name}, {count} baralhos',
+        },
+      },
       shareAlert: {
         confirmTitle: 'Compartilhar com a comunidade',
         confirmMessage:
@@ -703,10 +720,6 @@ export const pt: Language = {
         },
         tileA11yLabel: '{label}: {value}, {caption}',
         decksBreakdownHeading: 'Detalhamento por baralho',
-        deckCount: {
-          one: '{count} baralho',
-          other: '{count} baralhos',
-        },
         emptyState: {
           title: 'Nenhuma estatística ainda',
           message:

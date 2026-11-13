@@ -119,6 +119,10 @@ for the required format and status rules.
 > public GitHub repository and a Cloudflare Worker that alone writes to it, with a fifth storage key
 > for the author's identity and an optional `communityId` on a deck. ARCHITECTURE.md links to it
 > now that the work has landed.
+> ADR-0014 carries an Amendment 9, recorded ahead of the work that groups the Community decks
+> screen by category: a community deck is listed under the category its download would get, and
+> one that resolves to none on this device goes into a last group. It changes nothing persisted,
+> the wire format or the Worker; ARCHITECTURE.md links to it now that the work has landed.
 
 ### Index
 

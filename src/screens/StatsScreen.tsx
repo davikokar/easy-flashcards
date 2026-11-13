@@ -173,7 +173,7 @@ export default function StatsScreen({ navigation }: Props) {
                   {t('stats.statsScreen.decksBreakdownHeading')}
                 </Text>
                 <Text style={styles.deckCount}>
-                  {t('stats.statsScreen.deckCount', { count: rows.length })}
+                  {t('common.counts.decks', { count: rows.length })}
                 </Text>
               </View>
             </View>

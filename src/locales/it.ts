@@ -27,7 +27,15 @@ export const it: Language = {
         noMatchesMessage: 'Nessun risultato per "{query}".',
         clearSearchButton: 'Cancella ricerca',
       },
+      titleToggle: {
+        expandA11yLabel: 'Mostra il titolo completo',
+        collapseA11yLabel: 'Riduci il titolo',
+      },
       counts: {
+        decks: {
+          one: '{count} mazzo',
+          other: '{count} mazzi',
+        },
         cards: {
           one: '{count} carta',
           other: '{count} carte',
@@ -330,6 +338,15 @@ export const it: Language = {
       loadFailedTitle: 'Impossibile caricare i mazzi',
       yoursBadge: 'Tuo',
       downloadA11yLabel: 'Scarica {name}',
+      otherGroup: {
+        name: 'Altri',
+      },
+      communityDecksScreen: {
+        categoryTileA11yLabel: {
+          one: '{name}, {count} mazzo',
+          other: '{name}, {count} mazzi',
+        },
+      },
       shareAlert: {
         confirmTitle: 'Condividi con la community',
         confirmMessage:
@@ -700,10 +717,6 @@ export const it: Language = {
         },
         tileA11yLabel: '{label}: {value}, {caption}',
         decksBreakdownHeading: 'Dettaglio dei mazzi',
-        deckCount: {
-          one: '{count} mazzo',
-          other: '{count} mazzi',
-        },
         emptyState: {
           title: 'Ancora nessuna statistica',
           message: 'Importa un mazzo e studialo: i risultati compariranno qui.',

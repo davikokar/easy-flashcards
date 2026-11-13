@@ -24,7 +24,15 @@ const messages: Catalogue = {
       noMatchesMessage: 'Nada coincide con "{query}".',
       clearSearchButton: 'Borrar búsqueda',
     },
+    titleToggle: {
+      expandA11yLabel: 'Mostrar el título completo',
+      collapseA11yLabel: 'Acortar el título',
+    },
     counts: {
+      decks: {
+        one: '{count} mazo',
+        other: '{count} mazos',
+      },
       cards: {
         one: '{count} tarjeta',
         other: '{count} tarjetas',
@@ -327,6 +335,15 @@ const messages: Catalogue = {
     loadFailedTitle: 'No se pudieron cargar los mazos',
     yoursBadge: 'Tuyo',
     downloadA11yLabel: 'Descargar {name}',
+    otherGroup: {
+      name: 'Otros',
+    },
+    communityDecksScreen: {
+      categoryTileA11yLabel: {
+        one: '{name}, {count} mazo',
+        other: '{name}, {count} mazos',
+      },
+    },
     shareAlert: {
       confirmTitle: 'Compartir con la comunidad',
       confirmMessage:
@@ -697,10 +714,6 @@ const messages: Catalogue = {
       },
       tileA11yLabel: '{label}: {value}, {caption}',
       decksBreakdownHeading: 'Desglose por mazo',
-      deckCount: {
-        one: '{count} mazo',
-        other: '{count} mazos',
-      },
       emptyState: {
         title: 'Aún no hay estadísticas',
         message: 'Importa un mazo y estúdialo; los resultados aparecerán aquí.',

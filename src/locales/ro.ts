@@ -35,7 +35,16 @@ export const ro: Language = {
         noMatchesMessage: 'Nimic nu se potrivește cu "{query}".',
         clearSearchButton: 'Șterge căutarea',
       },
+      titleToggle: {
+        expandA11yLabel: 'Afișează titlul complet',
+        collapseA11yLabel: 'Restrânge titlul',
+      },
       counts: {
+        decks: {
+          one: '{count} pachet',
+          few: '{count} pachete',
+          other: '{count} de pachete',
+        },
         cards: {
           one: '{count} card',
           few: '{count} carduri',
@@ -345,6 +354,16 @@ export const ro: Language = {
       loadFailedTitle: 'Pachetele nu au putut fi încărcate',
       yoursBadge: 'Al tău',
       downloadA11yLabel: 'Descarcă {name}',
+      otherGroup: {
+        name: 'Altele',
+      },
+      communityDecksScreen: {
+        categoryTileA11yLabel: {
+          one: '{name}, {count} pachet',
+          few: '{name}, {count} pachete',
+          other: '{name}, {count} de pachete',
+        },
+      },
       shareAlert: {
         confirmTitle: 'Partajează cu comunitatea',
         confirmMessage:
@@ -730,11 +749,6 @@ export const ro: Language = {
         },
         tileA11yLabel: '{label}: {value}, {caption}',
         decksBreakdownHeading: 'Detalii pe pachete',
-        deckCount: {
-          one: '{count} pachet',
-          few: '{count} pachete',
-          other: '{count} de pachete',
-        },
         emptyState: {
           title: 'Nicio statistică încă',
           message:

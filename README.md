@@ -26,7 +26,8 @@ them card by card, and track how well you know each card.
   question or answer, add a card, or remove one, then press *Save*; nothing changes until you do.
   Editing a card keeps its statistics, removing one deletes them, and the title change reaches the
   deck's sessions. A description shows under the deck's title on the *Decks*, *Learn* and
-  *Statistics* tabs.
+  *Statistics* tabs, where a long title is cut to one line: long-press it to show it in full, and
+  again to shorten it.
 - **Deck creation by hand**: *Add deck manually* in the add deck menu opens the same form, blank —
   a title, an optional description, a category and no cards until you add one. *Save* asks for a
   title and for both sides of every card, then adds the deck to the *Decks* tab. A deck may have
@@ -38,7 +39,8 @@ them card by card, and track how well you know each card.
   import back with the title, description and cards, and the category when it exists on this
   device. See [Export formats](#export-formats).
 - **Community decks**: *Import from community* in the add deck menu lists decks other people
-  shared and adds a copy of the one you download; *Share to community* in a deck's menu publishes
+  shared, grouped by category — pick a category, or *Other*, to see its decks, or search titles
+  across all of them — and adds a copy of the one you download; *Share to community* in a deck's menu publishes
   the deck, or updates the copy you shared before, after you confirm. There are no accounts: the
   app makes a secret identifier on first share and only the device that holds it can update a
   deck, so losing the app's data loses that right. Shared decks are public and kept in a GitHub

@@ -28,7 +28,15 @@ export const fr: Language = {
         noMatchesMessage: 'Aucun résultat pour «\u00a0{query}\u00a0».',
         clearSearchButton: 'Effacer la recherche',
       },
+      titleToggle: {
+        expandA11yLabel: 'Afficher le titre en entier',
+        collapseA11yLabel: 'Réduire le titre',
+      },
       counts: {
+        decks: {
+          one: '{count} paquet',
+          other: '{count} paquets',
+        },
         cards: {
           one: '{count} carte',
           other: '{count} cartes',
@@ -335,6 +343,15 @@ export const fr: Language = {
       loadFailedTitle: 'Impossible de charger les paquets',
       yoursBadge: 'Le vôtre',
       downloadA11yLabel: 'Télécharger {name}',
+      otherGroup: {
+        name: 'Autres',
+      },
+      communityDecksScreen: {
+        categoryTileA11yLabel: {
+          one: '{name}, {count} paquet',
+          other: '{name}, {count} paquets',
+        },
+      },
       shareAlert: {
         confirmTitle: 'Partager avec la communauté',
         confirmMessage:
@@ -708,10 +725,6 @@ export const fr: Language = {
         },
         tileA11yLabel: '{label}\u00a0: {value}, {caption}',
         decksBreakdownHeading: 'Détail par paquet',
-        deckCount: {
-          one: '{count} paquet',
-          other: '{count} paquets',
-        },
         emptyState: {
           title: 'Pas encore de statistiques',
           message:

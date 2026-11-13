@@ -24,6 +24,8 @@ type Props = Look & {
    * Leave it undefined for an ordinary button tile.
    */
   selected?: boolean;
+  /** One muted line under the name. Hidden from accessibility: `accessibilityLabel` must cover it. */
+  caption?: string;
 };
 
 const GLYPH_SIZE = 44;
@@ -40,6 +42,7 @@ export default function CategoryTile({
   accessibilityLabel,
   nameDimmed = false,
   selected,
+  caption,
 }: Props) {
   const content = (
     <>
@@ -61,6 +64,15 @@ export default function CategoryTile({
       <Text style={[styles.name, nameDimmed && styles.nameDimmed]} numberOfLines={2}>
         {name}
       </Text>
+      {caption ? (
+        <Text
+          style={styles.caption}
+          numberOfLines={1}
+          accessibilityElementsHidden
+          importantForAccessibility="no">
+          {caption}
+        </Text>
+      ) : null}
     </>
   );
 
@@ -130,6 +142,11 @@ const styles = StyleSheet.create({
   },
   nameDimmed: {
     color: colors.textDim,
+  },
+  caption: {
+    color: colors.textMuted,
+    fontSize: 12,
+    textAlign: 'center',
   },
   pressed: {
     opacity: 0.75,

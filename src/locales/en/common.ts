@@ -18,7 +18,16 @@ export const common = {
     noMatchesMessage: 'Nothing matches "{query}".',
     clearSearchButton: 'Clear search',
   },
+  // Accessibility actions on the title of a Deck card, Session card and Deck stats card.
+  titleToggle: {
+    expandA11yLabel: 'Show full title',
+    collapseA11yLabel: 'Show shortened title',
+  },
   counts: {
+    decks: {
+      one: '{count} deck',
+      other: '{count} decks',
+    },
     cards: {
       one: '{count} card',
       other: '{count} cards',

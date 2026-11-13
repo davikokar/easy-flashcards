@@ -323,6 +323,40 @@ Amendments 3 and 4 said about a category in an exported or imported file, under
   category aggregation in Statistics.
 - Nothing persisted changes and no dependency is added.
 
+## Amendment 9 — 2026-11-13
+
+Recorded ahead of the work it governs. The decision above is unchanged; this settles the *Not
+decided here* item "filtering by category" for the **Community decks screen** only
+([ADR-0022](0022-community-decks-shared-through-github-and-a-worker.md)).
+
+- **The Community decks screen groups the community's decks by category.** It first shows one
+  Category tile per category that has at least one listed deck, with how many, and the user opens
+  one to see its decks. The Decks, Learn and Statistics screens are not filtered.
+- **A community deck is grouped under the category its download would get.** Its file names a
+  category by a reference ([ADR-0019](0019-deck-file-format-version-2.md)) — a built-in id or the
+  author's custom category name — resolved with `resolveCategoryReference` against this device's
+  custom categories, which is the rule the reducer's `addDeck` applies when the deck is downloaded
+  (Amendment 8). A deck is therefore listed under the category it will have in the library. A
+  built-in category is never matched by its name.
+- **A deck whose reference does not resolve here is grouped with the decks that have none**, in one
+  group listed after every category. That includes a custom category the author has and this
+  device does not. The author's name for it is not offered as a group: it carries no colour or
+  icon, and the deck would not keep it on download. No category is created.
+- **Amendment 8's line "*Resolving an id* still holds for everything a deck stores and everything
+  displayed" is read with this in mind.** A community deck is not a stored deck; what the screen
+  shows is a file's reference, resolved as its download would resolve it. The Community deck card's
+  Category square has done this since ADR-0022; this amendment records it. Everything a stored
+  deck holds is still resolved by `findCategory`.
+- **The grouping is derived, never stored**, from the files the screen already loads. Each
+  published file already carries its `category`, so the wire format, the Worker and the repository
+  do not change, and ADR-0022's listing — fetched on open and on **Try again**, nothing cached — is
+  unchanged. It is computed against this device's custom categories, so creating or deleting one
+  while the screen is open regroups the list.
+- **Still not decided:** a deck count on the Categories tab's tiles, filtering the Decks, Learn or
+  Statistics screens by category, and a category aggregation in Statistics.
+- Nothing persisted changes, and no route and no dependency is added. On iOS a tile would show its
+  colour without its glyph, as Amendment 1 records for the other places.
+
 ## References
 
 - [ADR-0002](0002-sessions-are-snapshots.md) — snapshots; amended by this record (Amendment 6)
@@ -340,6 +374,8 @@ Amendments 3 and 4 said about a category in an exported or imported file, under
   (Amendment 4)
 - [ADR-0019](0019-deck-file-format-version-2.md) — the category reference in both files, and its
   resolution on import (Amendment 8)
+- [ADR-0022](0022-community-decks-shared-through-github-and-a-worker.md) — community decks, grouped
+  by category on the Community decks screen (Amendment 9)
 - [`src/types.ts`](../../../src/types.ts) — `Deck`
 - [`src/storage/decksStorage.ts`](../../../src/storage/decksStorage.ts) — the `categoryId` default
 - [`src/state/reducer.ts`](../../../src/state/reducer.ts) — `updateDeck`, `deleteCategory`;

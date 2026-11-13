@@ -1,6 +1,8 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, StyleSheet, View } from 'react-native';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, FlatList, ScrollView, StyleSheet, View } from 'react-native';
+import { usePreventRemove } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import CategoryTile from '../components/CategoryTile';
 import CommunityDeckCard from '../components/CommunityDeckCard';
 import EmptyState from '../components/EmptyState';
 import SearchBar from '../components/SearchBar';
@@ -9,8 +11,15 @@ import { useDecks } from '../state/DecksContext';
 import { DecksStackParamList } from '../navigation/types';
 import { CommunityError, CommunityErrorCode, fetchCommunityDecks } from '../services/communityDecks';
 import { loadAuthorUuid } from '../storage/identityStorage';
-import { resolveCategoryReference } from '../utils/categories';
+import { categoryDisplayName, resolveCategoryReference } from '../utils/categories';
 import { CommunityDeckFile, importOfCommunityFile, isOwnedBy } from '../utils/communityDeck';
+import {
+  CommunityGroup,
+  CommunityGroupSelection,
+  findCommunityGroup,
+  groupCommunityDecks,
+  selectionOfCommunityGroup,
+} from '../utils/communityGroups';
 import { filterByTitle } from '../utils/search';
 import { colors, spacing } from '../theme';
 
@@ -20,7 +29,7 @@ type Status = 'loading' | 'ready' | 'error';
 
 const DOWNLOAD_DEBOUNCE_MS = 1000;
 
-export default function CommunityDecksScreen(_props: Props) {
+export default function CommunityDecksScreen({ navigation }: Props) {
   const { categories, addDeck } = useDecks();
   const t = useT();
   const [status, setStatus] = useState<Status>('loading');
@@ -28,13 +37,49 @@ export default function CommunityDecksScreen(_props: Props) {
   const [files, setFiles] = useState<CommunityDeckFile[]>([]);
   const [authorUuid, setAuthorUuid] = useState<string | null>(null);
   const [query, setQuery] = useState('');
+  // null is the Category level; otherwise the Deck level of that group.
+  const [selection, setSelection] = useState<CommunityGroupSelection | null>(null);
   const lastDownloadAt = useRef(0);
   const loadId = useRef(0);
+
+  const groups = useMemo(() => groupCommunityDecks(files, categories, t), [files, categories, t]);
+  const activeGroup = useMemo(
+    () => (selection === null ? undefined : findCommunityGroup(groups, selection)),
+    [groups, selection],
+  );
+  const groupName = useCallback(
+    (group: CommunityGroup) =>
+      group.category === null ? t('community.otherGroup.name') : categoryDisplayName(group.category, t),
+    [t],
+  );
+
+  const backToCategories = useCallback(() => {
+    setSelection(null);
+    setQuery('');
+  }, []);
+
+  // While a group is open, every removal of the route (Back, popToTop) returns to the Category level instead.
+  usePreventRemove(activeGroup !== undefined, backToCategories);
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      title: activeGroup ? groupName(activeGroup) : t('community.title'),
+    });
+  }, [navigation, activeGroup, groupName, t]);
+
+  // The selected group has no decks any more, e.g. its custom category was deleted on another tab.
+  useEffect(() => {
+    if (selection !== null && activeGroup === undefined) {
+      backToCategories();
+    }
+  }, [selection, activeGroup, backToCategories]);
 
   const load = useCallback(async () => {
     loadId.current += 1;
     const thisLoad = loadId.current;
     setStatus('loading');
+    setSelection(null);
+    setQuery('');
     try {
       const [list, uuid] = await Promise.all([
         fetchCommunityDecks(),
@@ -57,7 +102,17 @@ export default function CommunityDecksScreen(_props: Props) {
     load();
   }, [load]);
 
-  const visibleFiles = useMemo(() => filterByTitle(files, query, file => file.title), [files, query]);
+  // The Deck level searches within its group; the Category level, across every group.
+  const visibleFiles = useMemo(
+    () => filterByTitle(activeGroup ? activeGroup.files : files, query, file => file.title),
+    [activeGroup, files, query],
+  );
+  const showGrid = activeGroup === undefined && files.length > 0 && query.trim() === '';
+
+  const openGroup = useCallback((group: CommunityGroup) => {
+    setSelection(selectionOfCommunityGroup(group));
+    setQuery('');
+  }, []);
 
   const download = useCallback(
     (file: CommunityDeckFile) => {
@@ -114,35 +169,76 @@ export default function CommunityDecksScreen(_props: Props) {
           placeholder={t('community.searchPlaceholder')}
         />
       ) : null}
-      <FlatList
-        data={visibleFiles}
-        keyExtractor={file => file.deck_id}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="on-drag"
-        contentContainerStyle={[styles.listContent, files.length === 0 && styles.listContentEmpty]}
-        ListEmptyComponent={
-          files.length === 0 ? (
-            <EmptyState title={t('community.emptyTitle')} message={t('community.emptyMessage')} />
-          ) : (
-            <EmptyState
-              title={t('common.search.noMatchesTitle')}
-              message={t('common.search.noMatchesMessage', { query: query.trim() })}
-              actionLabel={t('common.search.clearSearchButton')}
-              onAction={() => setQuery('')}
+      {showGrid ? (
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          contentContainerStyle={styles.gridContent}>
+          <View style={styles.grid}>
+            {groups.map(group => {
+              const name = groupName(group);
+              const count = group.files.length;
+              const selectionOfGroup = selectionOfCommunityGroup(group);
+              const tileProps = {
+                name,
+                caption: t('common.counts.decks', { count }),
+                accessibilityLabel: t('community.communityDecksScreen.categoryTileA11yLabel', {
+                  name,
+                  count,
+                }),
+                onPress: () => openGroup(group),
+              };
+              return (
+                <View
+                  key={
+                    selectionOfGroup.kind === 'other' ? 'other' : `category:${selectionOfGroup.id}`
+                  }
+                  style={styles.cell}>
+                  {group.category === null ? (
+                    <CategoryTile {...tileProps} none />
+                  ) : (
+                    <CategoryTile
+                      {...tileProps}
+                      color={group.category.color}
+                      icon={group.category.icon}
+                    />
+                  )}
+                </View>
+              );
+            })}
+          </View>
+        </ScrollView>
+      ) : (
+        <FlatList
+          data={visibleFiles}
+          keyExtractor={file => file.deck_id}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          contentContainerStyle={[styles.listContent, files.length === 0 && styles.listContentEmpty]}
+          ListEmptyComponent={
+            files.length === 0 ? (
+              <EmptyState title={t('community.emptyTitle')} message={t('community.emptyMessage')} />
+            ) : (
+              <EmptyState
+                title={t('common.search.noMatchesTitle')}
+                message={t('common.search.noMatchesMessage', { query: query.trim() })}
+                actionLabel={t('common.search.clearSearchButton')}
+                onAction={() => setQuery('')}
+              />
+            )
+          }
+          renderItem={({ item }) => (
+            <CommunityDeckCard
+              title={item.title}
+              description={item.description}
+              category={activeGroup ? null : resolveCategoryReference(item.category, categories)}
+              cardCount={item.cards.length}
+              mine={authorUuid !== null && isOwnedBy(item, authorUuid)}
+              onDownload={() => download(item)}
             />
-          )
-        }
-        renderItem={({ item }) => (
-          <CommunityDeckCard
-            title={item.title}
-            description={item.description}
-            category={resolveCategoryReference(item.category, categories)}
-            cardCount={item.cards.length}
-            mine={authorUuid !== null && isOwnedBy(item, authorUuid)}
-            onDownload={() => download(item)}
-          />
-        )}
-      />
+          )}
+        />
+      )}
     </View>
   );
 }
@@ -157,6 +253,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.background,
+  },
+  gridContent: {
+    padding: spacing.md,
+  },
+  // The negative margin cancels the cells' side padding, so tiles line up with the content edge.
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginHorizontal: -spacing.xs,
+  },
+  cell: {
+    width: `${100 / 3}%`,
+    paddingHorizontal: spacing.xs,
+    paddingBottom: spacing.md,
   },
   listContent: {
     padding: spacing.md,

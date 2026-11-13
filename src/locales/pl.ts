@@ -44,7 +44,17 @@ export const pl: Language = {
         noMatchesMessage: 'Nic nie pasuje do "{query}".',
         clearSearchButton: 'Wyczyść wyszukiwanie',
       },
+      titleToggle: {
+        expandA11yLabel: 'Pokaż cały tytuł',
+        collapseA11yLabel: 'Zwiń tytuł',
+      },
       counts: {
+        decks: {
+          one: '{count} talia',
+          few: '{count} talie',
+          many: '{count} talii',
+          other: '{count} talii',
+        },
         cards: {
           one: '{count} fiszka',
           few: '{count} fiszki',
@@ -359,6 +369,17 @@ export const pl: Language = {
       loadFailedTitle: 'Nie udało się wczytać talii',
       yoursBadge: 'Twoja',
       downloadA11yLabel: 'Pobierz {name}',
+      otherGroup: {
+        name: 'Inne',
+      },
+      communityDecksScreen: {
+        categoryTileA11yLabel: {
+          one: '{name}, {count} talia',
+          few: '{name}, {count} talie',
+          many: '{name}, {count} talii',
+          other: '{name}, {count} talii',
+        },
+      },
       shareAlert: {
         confirmTitle: 'Udostępnij społeczności',
         confirmMessage:
@@ -748,12 +769,6 @@ export const pl: Language = {
         },
         tileA11yLabel: '{label}: {value}, {caption}',
         decksBreakdownHeading: 'Podział według talii',
-        deckCount: {
-          one: '{count} talia',
-          few: '{count} talie',
-          many: '{count} talii',
-          other: '{count} talii',
-        },
         emptyState: {
           title: 'Brak statystyk',
           message:

@@ -42,7 +42,19 @@ const messages: Catalogue = {
       noMatchesMessage: 'لا توجد نتائج مطابقة لـ «{query}».',
       clearSearchButton: 'مسح البحث',
     },
+    titleToggle: {
+      expandA11yLabel: 'عرض العنوان كاملاً',
+      collapseA11yLabel: 'تقليص العنوان',
+    },
     counts: {
+      decks: {
+        zero: '{count} مجموعات',
+        one: '{count} مجموعة',
+        two: '{count} مجموعتان',
+        few: '{count} مجموعات',
+        many: '{count} مجموعة',
+        other: '{count} مجموعة',
+      },
       cards: {
         zero: '{count} بطاقات',
         one: '{count} بطاقة',
@@ -369,6 +381,19 @@ const messages: Catalogue = {
     loadFailedTitle: 'تعذر تحميل المجموعات',
     yoursBadge: 'لك',
     downloadA11yLabel: 'تنزيل {name}',
+    otherGroup: {
+      name: 'أخرى',
+    },
+    communityDecksScreen: {
+      categoryTileA11yLabel: {
+        zero: '{name}، {count} مجموعات',
+        one: '{name}، {count} مجموعة',
+        two: '{name}، {count} مجموعتان',
+        few: '{name}، {count} مجموعات',
+        many: '{name}، {count} مجموعة',
+        other: '{name}، {count} مجموعة',
+      },
+    },
     shareAlert: {
       confirmTitle: 'مشاركة مع المجتمع',
       confirmMessage:
@@ -774,14 +799,6 @@ const messages: Catalogue = {
       },
       tileA11yLabel: '{label}: {value}، {caption}',
       decksBreakdownHeading: 'تفصيل المجموعات',
-      deckCount: {
-        zero: '{count} مجموعات',
-        one: '{count} مجموعة',
-        two: '{count} مجموعتان',
-        few: '{count} مجموعات',
-        many: '{count} مجموعة',
-        other: '{count} مجموعة',
-      },
       emptyState: {
         title: 'لا توجد إحصائيات بعد',
         message: 'استورد مجموعة وادرسها؛ ستظهر النتائج هنا.',

@@ -25,7 +25,14 @@ const messages: Catalogue = {
       noMatchesMessage: 'Không có kết quả nào khớp với "{query}".',
       clearSearchButton: 'Xóa tìm kiếm',
     },
+    titleToggle: {
+      expandA11yLabel: 'Hiện đầy đủ tiêu đề',
+      collapseA11yLabel: 'Thu gọn tiêu đề',
+    },
     counts: {
+      decks: {
+        other: '{count} bộ thẻ',
+      },
       cards: {
         other: '{count} thẻ',
       },
@@ -320,6 +327,14 @@ const messages: Catalogue = {
     loadFailedTitle: 'Không thể tải các bộ thẻ',
     yoursBadge: 'Của bạn',
     downloadA11yLabel: 'Tải xuống {name}',
+    otherGroup: {
+      name: 'Khác',
+    },
+    communityDecksScreen: {
+      categoryTileA11yLabel: {
+        other: '{name}, {count} bộ thẻ',
+      },
+    },
     shareAlert: {
       confirmTitle: 'Chia sẻ với cộng đồng',
       confirmMessage:
@@ -673,9 +688,6 @@ const messages: Catalogue = {
       },
       tileA11yLabel: '{label}: {value}, {caption}',
       decksBreakdownHeading: 'Chi tiết theo bộ thẻ',
-      deckCount: {
-        other: '{count} bộ thẻ',
-      },
       emptyState: {
         title: 'Chưa có thống kê',
         message: 'Nhập một bộ thẻ và học; kết quả sẽ hiện ở đây.',

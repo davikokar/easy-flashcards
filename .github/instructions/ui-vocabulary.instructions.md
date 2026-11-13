@@ -58,12 +58,12 @@ stack. The two Categories screens are described in more detail under **Categorie
   an existing deck and **New deck screen** for a new one. Described under **Edit deck screen**
   below.
 - **Community decks screen** (`CommunityDecksScreen`, route `CommunityDecks`, no params): the decks
-  other users shared, one **Community deck card** each, with a search field and a Download button
-  per card. Titled `Community decks`. Pushed onto the Decks stack from **Import from community** in
-  the **Add deck menu**. A **Community deck card** (`CommunityDeckCard`) shows the deck's Category
-  square, title, description, card count, a `Yours` pill when this device published it, and a
-  **Download button** that adds a copy to the library
-  ([ADR-0022](../../docs/architecture/decisions/0022-community-decks-shared-through-github-and-a-worker.md)).
+  other users shared, grouped by category on **one screen with two levels** — the **Category
+  level**, then the **Deck level** of the chosen group — plus a search field. Titled `Community
+  decks` at the Category level. Pushed onto the Decks stack from **Import from community** in the
+  **Add deck menu**. Described under **Community decks screen** below
+  ([ADR-0022](../../docs/architecture/decisions/0022-community-decks-shared-through-github-and-a-worker.md),
+  [ADR-0014](../../docs/architecture/decisions/0014-deck-belongs-to-one-category.md) Amendment 9).
   Not the **Decks screen**: nothing on it is in the library until downloaded. Aliases: **community
   list**
 - **Learn screen** (`LearnScreen`, route `LearnList`): The list of sessions, one **Session card**
@@ -215,19 +215,24 @@ outcomes.
   query and whether the bar is open. The list filters as the user types; a title matches when
   **every typed word appears in it, in any order, case-insensitively**. A blank query shows
   everything. What is searched is the **title** — the deck's name on Decks and Statistics, the
-  session's deck name on Learn. Aliases: **search field**
+  session's deck name on Learn, the deck's title on the Community decks screen (where the bar has
+  **no Search button**: it is always shown once any community deck is listed, and what it
+  searches depends on the level, see **Community decks screen**). Aliases: **search field**
 - **Search input**: the text field inside the Search bar. Auto-focused on open, with auto-correct
   and auto-capitalise off and a `search` return key. Placeholder `Search decks` on Decks and
-  Statistics, `Search sessions` on Learn. Accessibility label `Search text` — deliberately not the
+  Statistics, `Search sessions` on Learn, `Search community decks` on the Community decks screen at
+  both levels (not auto-focused there). Accessibility label `Search text` — deliberately not the
   Search button's label, so the two can be told apart by label alone.
 - **Close search button**: the × (the `close` Menu icon — not the **Answer icon** `cross`) at the
   end of the Search bar, labelled `Close search`. Clears the query and hides the bar.
 - **Search empty state**: the **Empty state** shown when a query is typed and matches nothing, in
   place of the list: title `No matches`, message `Nothing matches "{query}".`, action
   **Clear search**. **Clear search** empties the query but **leaves the Search bar open** and
-  focused for the next try; only the Close search button and the Search button close it. Distinct
-  from `No decks yet`, `No sessions yet` and `No statistics yet`, which mean there is nothing to
-  search.
+  focused for the next try; only the Close search button and the Search button close it. On the
+  Community decks screen it replaces the **Search results list** or the **Deck level**'s list, and
+  the Search bar never closes. Distinct
+  from `No decks yet`, `No sessions yet`, `No statistics yet` and `No community decks yet`, which
+  mean there is nothing to search.
 
 ## Decks screen
 
@@ -236,7 +241,18 @@ outcomes.
   **Deck options menu**), a **Mastery bar**, and a **Deck meta row**. A deck with no category shows no square and leaves no gap.
 - **Deck title row**: the first line of the Deck card's header — the deck's name on one truncated
   line and, immediately after it, the **Deck card count**. The name shrinks first, so the count stays
-  beside it however long the title is.
+  beside it however long the title is. While the title is an **Expanded title** the name wraps and
+  the count stays beside its first line.
+- **Expanded title** (`useTitleToggle`, in `src/components/`): the state of a **Deck card**,
+  **Session card** or **Deck stats card** whose title is shown in full over as many lines as it
+  needs, instead of one truncated line. A **long press** toggles it, on the title itself on a Deck
+  card and a Session card, and anywhere on a Deck stats card, whose tap still opens the Deck
+  statistics screen; a long press does not also tap. There is no timer: it stays until the next long
+  press. Only the title expands, never the **Deck description**. Screen-reader users get the same
+  through a custom action labelled `Show full title` / `Show shortened title`
+  (`common.titleToggle.*`), on the title and on the Deck stats card respectively. The state is local
+  to the mounted card, so it starts collapsed again whenever the list unmounts the item and never
+  carries to another deck or session. Not the **Search button**'s `accessibilityState.expanded`.
 - **Deck card count**: the deck's number of cards in parentheses, in a smaller muted font, such as
   `(120)`, from the message ``({count})`` (`decks.deckCard.cardCount`). Because the number alone
   says little, it is read as `{n} cards` (`common.counts.cards`). Shown only on the Deck card. Not
@@ -360,6 +376,74 @@ outcomes.
   XML or JSONL.
 - **Decks empty state**: `No decks yet`.
 
+## Community decks screen
+
+Reached from **Import from community** in the **Add deck menu**. **One screen, one route**
+(`CommunityDecks`), with two **levels** held as local state — the chosen group, or none. A level is
+not a screen and not a route: say **level**, never "screen" or "page" for them. Nothing here is in
+the library until a **Download button** is pressed, which adds a copy as a new deck
+([ADR-0022](../../docs/architecture/decisions/0022-community-decks-shared-through-github-and-a-worker.md)).
+Decks are grouped by the category their download would get on this device
+([ADR-0014](../../docs/architecture/decisions/0014-deck-belongs-to-one-category.md) Amendment 9);
+the grouping is derived on every render and never stored.
+
+- **Category level**: the first level and the one the screen opens on, titled `Community decks`.
+  A three-column wrapping grid of **Category tiles** (the Categories screen's look and grid), one
+  per category that has at least one community deck, **alphabetical by display name**, then the
+  **Other tile** last if any deck belongs to the **Other group**. Each tile carries a **Deck count
+  caption**. Pressing a tile opens the **Deck level** of that group and **clears the query**. With
+  no community deck at all the level is the **Empty state** `No community decks yet`, and the
+  Search bar is not shown. While the query is non-empty the grid is replaced by the **Search
+  results list**.
+- **Deck level**: the second level — the **Community deck cards** of the one chosen group, in the
+  order the files are listed, under a header titled with the group's display name (the category's
+  name, or `Other` for the Other group). **While the Deck level is open, every removal of the
+  screen becomes "back to the Category level"**: the header's back arrow, Android's Back and
+  pressing the Decks tab again (which pops its stack to the top) each step back one level first,
+  and a further press then leaves as usual; at the Category level they leave the screen at once.
+  Returning also **clears the query**, so a query typed at one level is never carried to the other.
+  If the open group disappears — e.g. its custom category is deleted on another tab — the screen
+  falls back to the Category level by itself, the header title returns to `Community decks` and
+  the query is cleared. The Search bar filters **within the group only**, with the same
+  placeholder. Its cards **do not show the
+  Category square** — every card is in the same group and the header names it. Not a new
+  **Decks screen**, and not the **Deck card** list.
+- **Deck count caption** (`common.counts.decks`): the second line of a Category tile on the Category
+  level — how many community decks the group holds, as `{n} deck(s)` — a smaller, muted, single
+  line under the name, which keeps its two lines. It is the **tile's** count, not the **Deck card
+  count** (cards in a deck) and not the `{n} deck(s)` of the **Decks breakdown** heading. Hidden
+  from accessibility: the tile's label already says the count. It exists on this level only; the
+  Categories screen and the **Category picker** still show no count.
+- **Other group**: the community decks that have **no category, or a category this device does not
+  have** — a built-in id this device does not know, or a custom category of the author's that the
+  user has no category of the same name for. It is a group, **not a category**: it cannot be chosen
+  for a deck, it never appears in the Categories tab, and nothing about it is stored. A deck's
+  category square is never drawn for it. Its name is `Other`. Not the **No category choice**, which
+  is a choice in the **Category picker**, and not a user category that happens to be called
+  `Other`, which gets an ordinary tile of its own.
+- **Other tile**: the Category tile of the Other group, always **last**, never sorted among the
+  categories. It uses the tile's **`none` look** — the dashed `surfaceAlt` square with the `close`
+  Menu icon, as the **No category choice** does — and its name `Other` in the normal text colour
+  (not dimmed). Pressable like any other tile on this level. The look says *not a real category*;
+  the name and its position say *what it is*.
+- **Search results list**: what the Category level shows **instead of the grid** while the query is
+  non-empty — a flat list of the **Community deck cards** whose title matches, **across every
+  group**, in the order the files are listed. Its cards **keep their Category square** (a deck in
+  the Other group has none), because there the group is not otherwise visible. Not a level of its
+  own: clearing the query brings the grid back, and no tile is pressable while it shows. Nothing
+  in it opens a **Deck level**.
+- **Community deck card** (`CommunityDeckCard`): a deck's row — its **Category square** (in the
+  Search results list only; the Deck level passes none, and with none there is no gap), title,
+  description, card count (`{n} card(s)`), a `Yours` pill when this device published it, and the
+  **Download button**. Not the **Deck card**.
+- **Download button**: the primary icon-only Button (`import` glyph) at the end of a Community deck
+  card, labelled ``Download {name}``. Adds a copy to the library as a new deck and says so in an
+  `Alert`. The guard against a double tap is **screen-wide**: a press on **any** card within a
+  second of the last download is ignored, not only a second press on the same card.
+- **Try again** (`community.retryButton`): the action of the load-failure **Empty state**
+  (`Could not load decks` plus the error's message). It reloads the list and **resets the screen to
+  the Category level with the query cleared**, whatever level was open.
+
 ## Edit deck screen
 
 Titled `Edit deck`. A scrolling form: the **Deck fields**, the **Category field**, then one **Card
@@ -396,7 +480,8 @@ sections below say where the two differ; everything else applies to both.
 - **No category choice**: the first tile of the Category picker, labelled `No category` — a dashed
   square with a `close` glyph rather than a category's colour and pictogram. Picking it clears the
   draft's category. It is selected whenever the draft has none, which includes a deck whose stored
-  category no longer exists.
+  category no longer exists. The **Other tile** of the Community decks screen borrows this look but
+  is not this choice.
 - **Card editor** (`CardEditor`): one card's panel — a `Card {n}` heading with the **Remove card
   button** at its end, then a multi-line **Question** field and a multi-line **Answer** field, both
   raw HTML text. Fields are labelled ``Question for card {n}`` and ``Answer for card {n}``. Not the
@@ -426,7 +511,8 @@ sections below say where the two differ; everything else applies to both.
 ## Learn screen
 
 - **Session card** (`SessionCard`): one session's row — a header (the **Category square** at the top
-  left when the session's deck has a category, then the deck name on one truncated line over the
+  left when the session's deck has a category, then the deck name on one truncated line (an
+  **Expanded title** after a long press) over the
   **Deck description**, and the **Session options menu**), a **Session results bar**, and a
   **Session card footer**. Active and completed cards share this structure and the same neutral
   border; the pill and the footer buttons are what differ. Only **listed** sessions get one —
@@ -638,7 +724,7 @@ and [ADR-0013](../../docs/architecture/decisions/0013-category-icons-are-android
 A deck belongs to at most one category
 ([ADR-0014](../../docs/architecture/decisions/0014-deck-belongs-to-one-category.md)), chosen in the
   **Category field** on the Edit deck screen and shown as the **Category square** on its Deck card,
-  on its **Deck stats card**, in the **Category pill** of the Deck statistics screen and on the Session cards of its sessions. No tile shows a deck count yet.
+  on its **Deck stats card**, in the **Category pill** of the Deck statistics screen and on the Session cards of its sessions. The only tiles that show a deck count are those of the **Community decks screen**'s **Category level** (the **Deck count caption**); the Categories screen's and the Category picker's tiles show none.
 
 - **Categories tab** (`CategoriesTab`): the fourth tab, **between the Learn tab and the Statistics
   tab**, with its own stack. Where the categories are shown and the user's own are created and
@@ -662,14 +748,20 @@ A deck belongs to at most one category
   green, yellow, orange ramp. Not pressable and not editable.
 - **Category tile** (`CategoryTile`): a coloured rounded square with the category's icon centred in
   `colors.background`, and its name below on up to two lines. The sections lay them out as a
-  wrapping three-column grid. A tile is a **button only in the Custom categories section**,
-  labelled ``Options for {name}``, which opens the **Category options menu**; a default tile has
-  no press behaviour. The **preview** on the New category screen is the same component, labelled
+  wrapping three-column grid. **On the Categories screen** a tile is a **button only in the Custom
+  categories section**, labelled ``Options for {name}``, which opens the **Category options menu**;
+  a default tile has no press behaviour. The **preview** on the New category screen is the same component, labelled
   ``Preview: {name}``, and shows the dimmed placeholder `Category name` while the name is blank.
   The **Category picker** reuses it as a radio: a `selected` tile gets a light ring and a tick in
   its corner (the **Answer icon** `tick` on a light disc), so it is not marked by colour alone, and
   the **No category choice** is its `none` look — a dashed `surfaceAlt` square with a `close`
-  **Menu icon** instead of a category colour and pictogram.
+  **Menu icon** instead of a category colour and pictogram. The **Community decks screen**'s
+  **Category level** reuses it a third way: every tile, default and custom alike, is a button
+  labelled ``{name}, {n} deck(s)`` that opens the **Deck level**, with the **Deck count caption**
+  under the name, and the **Other tile** is its `none` look. It is therefore pressable in three
+  places, with three meanings — options (custom tiles on the Categories screen), choose (the
+  picker) and open the group (the Category level) — and **not pressable** among the Default
+  categories on the Categories screen.
 - **Category icon** (`CategoryIcon`): the pictogram on a tile, in the **Category square** or in the
   Icon picker — an Android
   vector drawable drawn with `Image` and tinted, hidden from accessibility. The one icon
@@ -692,7 +784,7 @@ A deck belongs to at most one category
   `colors.background`) centred in it — the category made small enough to sit beside a title. Shown
   at the top left of a **Deck card**, a **Session card** and a **Deck stats card**, inside the **Category field**, and in
   28-point size before the title in the Menu sheet of the **Deck options menu** and the **Session
-  options menu**, and in 24-point size inside the **Category pill** of the Deck statistics screen's **Deck identity row**. It is
+  options menu**, in 24-point size inside the **Category pill** of the Deck statistics screen's **Deck identity row**, and at the left of a **Community deck card** in the **Search results list** (not at the Deck level). It is
   an image for accessibility and has no press behaviour. Not the **Category tile**, which is larger
   and carries the name below it. Do not call it a "badge" (that is the **Review badge**) or a "chip".
 - **Name field**: the `Name` text field on the New category screen (a **FormField**), at most 30
@@ -815,7 +907,8 @@ A deck belongs to at most one category
   `Decks breakdown` with `{n} deck(s)` at its end (the number shown, so it follows search), above
   the **Deck stats cards**.
 - **Deck stats card** (`DeckStatsCard`): one deck in the Decks breakdown — a header (the **Category
-  square** when the deck has a category, then its name on one truncated line over the **Deck
+  square** when the deck has a category, then its name on one truncated line (an **Expanded title**
+  after a long press) over the **Deck
   description**, and a right-pointing
   chevron), a **Mastery bar**, and an inset row of four figures: `Cards`, `Sessions`, `Reviews` and
   `Last` (`formatDate`, `Never` when the deck has no session); `Last` is the widest column and the

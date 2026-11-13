@@ -37,7 +37,17 @@ const messages: Catalogue = {
       noMatchesMessage: 'Нічого не знайдено за запитом «{query}».',
       clearSearchButton: 'Очистити пошук',
     },
+    titleToggle: {
+      expandA11yLabel: 'Показати назву повністю',
+      collapseA11yLabel: 'Згорнути назву',
+    },
     counts: {
+      decks: {
+        one: '{count} колода',
+        few: '{count} колоди',
+        many: '{count} колод',
+        other: '{count} колод',
+      },
       cards: {
         one: '{count} картка',
         few: '{count} картки',
@@ -352,6 +362,17 @@ const messages: Catalogue = {
     loadFailedTitle: 'Не вдалося завантажити колоди',
     yoursBadge: 'Ваша',
     downloadA11yLabel: 'Завантажити {name}',
+    otherGroup: {
+      name: 'Інші',
+    },
+    communityDecksScreen: {
+      categoryTileA11yLabel: {
+        one: '{name}, {count} колода',
+        few: '{name}, {count} колоди',
+        many: '{name}, {count} колод',
+        other: '{name}, {count} колод',
+      },
+    },
     shareAlert: {
       confirmTitle: 'Поділитися зі спільнотою',
       confirmMessage:
@@ -741,12 +762,6 @@ const messages: Catalogue = {
       },
       tileA11yLabel: '{label}: {value}, {caption}',
       decksBreakdownHeading: 'Розподіл за колодами',
-      deckCount: {
-        one: '{count} колода',
-        few: '{count} колоди',
-        many: '{count} колод',
-        other: '{count} колод',
-      },
       emptyState: {
         title: 'Статистики ще немає',
         message: 'Імпортуйте колоду й вивчайте її; результати з’являться тут.',

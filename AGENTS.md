@@ -70,6 +70,10 @@ explain non-obvious decisions in short commit messages.
   (`author_hash`) is. `react-native-get-random-values` (native) and `uuid` make the UUIDs and are
   imported only by [src/services/identity.ts](src/services/identity.ts)
   ([ADR-0022](docs/architecture/decisions/0022-community-decks-shared-through-github-and-a-worker.md)).
+  The Community decks screen groups the listed decks by the category each download would get,
+  through the app-only [src/utils/communityGroups.ts](src/utils/communityGroups.ts); the grouping
+  is derived, never stored, and changes nothing on the wire or in the Worker
+  ([ADR-0014](docs/architecture/decisions/0014-deck-belongs-to-one-category.md) Amendment 9).
 - **HTML:** parsed and rendered in-repo — [src/utils/html.ts](src/utils/html.ts) and
   [src/components/RichText.tsx](src/components/RichText.tsx)
   ([ADR-0001](docs/architecture/decisions/0001-own-the-html-renderer.md)).
@@ -250,7 +254,7 @@ the owning document instead, so that adding an ADR or a screen does not touch an
 - **A `Session` snapshots its direction too.** `inverted` is set from the required
   `{ inverted }` argument of `startSession` / `replaySession` when the session is created, and
   nothing changes it afterwards. A session created from an existing one passes the source's
-  `inverted` — the Learn screen's **Replay button** and **Start a new session**, and the Session
+  `inverted` — the Learn screen's **Replay button** and the Session
   summary's **Study the whole deck again**; only the Decks screen chooses one. A review pass uses
   its session's direction. Which face shows first comes only from `cardFaces`
   in [src/utils/cardFaces.ts](src/utils/cardFaces.ts); answers, counters and every `stats.ts`
@@ -567,10 +571,12 @@ Recorded here so they are not rediscovered as surprises. The full list, with rea
   Category field of the Edit deck and New deck screens, its Deck stats card on the Statistics
   screen and the Category pill of its Deck identity row on the Deck statistics screen
   (ADR-0014 Amendment 6), and nowhere
-  else: a deck count on the Categories tiles, filtering by category and a per-category
-  aggregation in Statistics are deliberate follow-ups
+  else. Only the Community decks screen groups by category, and what it groups is the
+  community's decks, by the category each download would get, with a deck count on its own tiles
+  (ADR-0014 Amendment 9). A deck count on the Categories tab's tiles, filtering the user's decks
+  by category and a per-category aggregation in Statistics are deliberate follow-ups
   ([ADR-0014](docs/architecture/decisions/0014-deck-belongs-to-one-category.md) *Not decided
-  here*, Amendments 1 and 2). An export writes the category reference as the `# category:`
+  here*, Amendments 1, 2 and 9). An export writes the category reference as the `# category:`
   comment line in CSV and as the `category` string in JSON, never as a CSV column. Both importers
   read it back and the reducer resolves it, a custom category by its id or, ignoring case, its
   name on this device; a built-in is never matched by its display name, and no category is ever
